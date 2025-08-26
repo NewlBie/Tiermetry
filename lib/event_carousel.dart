@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/event.dart';
+import '../widget/utility_widgets.dart';
 
 class EventCarousel extends StatefulWidget {
-  const EventCarousel({super.key});
+  final List<Event> events;
+  const EventCarousel({required this.events, super.key});
 
   @override
   State<EventCarousel> createState() => _EventCarouselState();
@@ -14,47 +17,25 @@ class _EventCarouselState extends State<EventCarousel> {
   int _currentPage = 0;
   Timer? _timer;
 
-  final List<Map<String, dynamic>> events = [
-    {
-      'image': 'assets/f00f6d5b.png',
-      'title': 'Weekly All-hands',
-      'subtitle': 'A supportive space to share, heal, and grow alongside others who understand',
-      'time': 'Today, 13:45',
-      'tags': ['Community', 'Growth']
-    },
-    {
-      'image': 'assets/arena color.png',
-      'title': 'Gaming Night 2.0',
-      'subtitle': 'Let the arena decide the best player this weekend',
-      'time': 'Friday, 8:00 PM',
-      'tags': ['Gaming', 'Esports']
-    },
-    {
-      'image': 'assets/Skills color.png',
-      'title': 'Design Mastery',
-      'subtitle': 'From UI to motion — learn how pros think',
-      'time': 'Monday, 6:00 PM',
-      'tags': ['Design', 'Tech']
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
-    _startAutoScroll();
-  }
-
-  void _startAutoScroll() {
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (_pageController.hasClients) {
-        _currentPage = (_currentPage + 1) % events.length;
-        _pageController.animateToPage(
-          _currentPage,
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOutCubic,
-        );
-      }
-    });
+    if (widget.events.length > 1) {
+      _timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
+        if (_currentPage < widget.events.length - 1) {
+          _currentPage++;
+        } else {
+          _currentPage = 0;
+        }
+        if (_pageController.hasClients) {
+          _pageController.animateToPage(
+            _currentPage,
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -66,197 +47,138 @@ class _EventCarouselState extends State<EventCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.events.isEmpty) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: Text(
+            "No featured events right now.",
+            style: TextStyle(color: Colors.white38),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
-      height: 260,
-      child: PageView.builder(
-        controller: _pageController,
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          return AnimatedBuilder(
-            animation: _pageController,
-            builder: (context, child) {
-              double scale = 1.0;
-              if (_pageController.position.haveDimensions) {
-                scale = (_pageController.page! - index).abs();
-                scale = (1 - (scale * 0.15)).clamp(0.88, 1.0);
-              }
-              return Center(
-                child: Transform.scale(
-                  scale: scale,
-                  child: child,
-                ),
-              );
-            },
-            child: _ModernEventCard(
-              image: events[index]['image'],
-              title: events[index]['title'],
-              subtitle: events[index]['subtitle'],
-              time: events[index]['time'],
-              tags: events[index]['tags'],
-              onAddToCalendar: () {
-                print('Added to calendar: ${events[index]['title']}');
+      height: 200,
+      child: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: widget.events.length,
+              onPageChanged: (int page) {
+                setState(() {
+                  _currentPage = page;
+                });
+              },
+              itemBuilder: (context, index) {
+                final event = widget.events[index];
+                return _EventCard(event: event);
               },
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 12),
+          _buildPageIndicator(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPageIndicator() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(widget.events.length, (index) {
+        bool isActive = index == _currentPage;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          height: 8.0,
+          width: isActive ? 24.0 : 8.0,
+          decoration: BoxDecoration(
+            color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _EventCard extends StatelessWidget {
+  final Event event;
+  const _EventCard({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                event.image,
+                fit: BoxFit.cover,
+                color: Colors.black.withOpacity(0.3),
+                colorBlendMode: BlendMode.darken,
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black, Colors.black.withOpacity(0)],
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${event.date} • ${event.location}',
+                      style: GoogleFonts.urbanist(
+                        color: Colors.white.withOpacity(0.85),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _ModernEventCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final String time;
-  final List<String> tags;
-  final String image;
-  final VoidCallback onAddToCalendar;
-
-  const _ModernEventCard({
-    required this.title,
-    required this.subtitle,
-    required this.time,
-    required this.tags,
-    required this.image,
-    required this.onAddToCalendar,
-  });
+class ShimmerCarouselPlaceholder extends StatelessWidget {
+  const ShimmerCarouselPlaceholder({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Stack(
-        children: [
-          // Background image
-          Image.asset(
-            image,
-            width: double.infinity,
-            height: 260,
-            fit: BoxFit.cover,
-          ),
-
-          // Gradient overlay
-          Container(
-            height: 260,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.55),
-                  Colors.black.withOpacity(0.2),
-                  Colors.transparent,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
-          ),
-
-          // Content
-          Positioned.fill(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Time pill + more icon
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          time,
-                          style: GoogleFonts.urbanist(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.more_horiz, color: Colors.white70),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Tags
-                  Row(
-                    children: tags.map((tag) {
-                      return Container(
-                        margin: const EdgeInsets.only(right: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          tag,
-                          style: GoogleFonts.urbanist(
-                            fontSize: 11,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // Title
-                  Text(
-                    title,
-                    style: GoogleFonts.urbanist(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // Subtitle
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.urbanist(
-                      fontSize: 13,
-                      color: Colors.white.withOpacity(0.85),
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  // Add to calendar button
-                  GestureDetector(
-                    onTap: onAddToCalendar,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Add to calendar',
-                          style: GoogleFonts.urbanist(
-                            color: Colors.black,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ],
+    // This is the corrected implementation
+    return SizedBox(
+      height: 200,
+      child: ShimmerLoadingList(
+        itemCount: 1,
+        itemWidth: MediaQuery.of(context).size.width, // Use screen width
       ),
     );
   }

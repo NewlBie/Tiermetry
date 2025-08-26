@@ -1,12 +1,16 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// Assuming all pages are in the /lib/pages or /lib/tabs directory
+// and your custom nav bar is in /lib/widgets
 import 'arena_page.dart';
 import 'events_marketplace_tab.dart';
 import 'home_tab.dart';
-import 'apple_bottom_nav_bar.dart';
+import 'apple_bottom_nav_bar.dart'; // Ensure this path is correct
 import 'profile_page.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -20,13 +24,28 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   bool _menuOpened = false;
   bool _hasNotification = true;
 
-  late final PageController _pageController;
   late final AnimationController _menuAnimationController;
+
+  // ✨ 1. Define the list of navigation bar items
+  final List<AppleBottomNavBarItem> navItems = const [
+    AppleBottomNavBarItem(icon: Icons.home_rounded),
+    AppleBottomNavBarItem(icon: Icons.sports_esports_rounded),
+    AppleBottomNavBarItem(icon: Icons.explore_rounded),
+    AppleBottomNavBarItem(icon: Icons.person_rounded),
+  ];
+
+  // The list of pages for the IndexedStack
+  // This is now clean and uses the backend-ready pages
+  final List<Widget> _pages = const [
+    HomeTab(),
+    ArenaPage(),
+    EventsMarketplaceTab(),
+    ProfilePage(), // No more hardcoded data!
+  ];
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     _menuAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -35,62 +54,23 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    _pageController.dispose();
     _menuAnimationController.dispose();
     super.dispose();
-  }
-
-  void _onTabSelected(int index) {
-    HapticFeedback.lightImpact();
-    setState(() => _selectedIndex = index);
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.easeOutBack,
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black, // A solid background is better for performance
       body: Stack(
         children: [
-          // ⚡️ Instantly switch tabs (like iOS) using IndexedStack
+          // Instantly switch tabs using IndexedStack
           IndexedStack(
             index: _selectedIndex,
-            children: [
-              const HomeTab(),
-              const ArenaPage(),
-              const EventsMarketplaceTab(),
-              ProfilePage(
-                userName: "Neal Biju",
-                userLevel: "Level 6 • Growth Seeker",
-                totalBadges: 120,
-                openedBadges: 38,
-                currentTierName: "Tier VII",
-                currentTierProgress: 0.43,
-                badgeTitles: [
-                  "100 charges",
-                  "Using E-charger",
-                  "Greeting friends",
-                  "Event attended",
-                ],
-                badgeColors: [
-                  Color(0xFFC5A3FF),
-                  Color(0xFFEAC9FF),
-                  Color(0xFFFFDC8C),
-                  Color(0xFF9EFACB),
-                ],
-                electronsCurrent: 3255,
-                electronsSpent: 2002,
-                electronsTotal: 5257,
-              ),
-            ],
+            children: _pages,
           ),
 
-
-          // 🍏 Apple-Style AppBar with animated title
+          // Apple-Style AppBar with animated title
           Positioned(
             top: 0,
             left: 0,
@@ -116,20 +96,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.white.withOpacity(0.1)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.white.withOpacity(0.03),
-                            blurRadius: 30,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 8),
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -142,29 +108,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               switchOutCurve: Curves.easeIn,
                               transitionBuilder: (child, animation) {
                                 final offsetAnimation = Tween<Offset>(
-                                  begin: const Offset(0, 0.5), // from below
+                                  begin: const Offset(0, 0.5),
                                   end: Offset.zero,
                                 ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-
                                 return ClipRect(
                                   child: SlideTransition(
                                     position: offsetAnimation,
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: SizeTransition(
-                                        sizeFactor: animation,
-                                        axisAlignment: 0.0,
-                                        child: child,
-                                      ),
-                                    ),
+                                    child: FadeTransition(opacity: animation, child: child),
                                   ),
                                 );
                               },
                               child: _buildAppBarTitle(_selectedIndex),
                             ),
                           ),
-
-
                           GestureDetector(
                             onTap: () {
                               setState(() => _menuOpened = !_menuOpened);
@@ -192,10 +148,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                         color: Colors.redAccent,
                                         shape: BoxShape.circle,
                                         boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.red.withOpacity(0.4),
-                                            blurRadius: 4,
-                                          )
+                                          BoxShadow(color: Colors.red.withOpacity(0.4), blurRadius: 4)
                                         ],
                                       ),
                                     ),
@@ -212,7 +165,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ),
           ),
 
-          // 🍎 Bottom NavBar
+          // Bottom NavBar
           Positioned(
             left: 0,
             right: 0,
@@ -225,6 +178,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedIndex = index);
                 },
+                // ✨ 2. Pass the 'navItems' list to the widget
+                items: navItems,
               ),
             ),
           ),
@@ -234,46 +189,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildAppBarTitle(int index) {
+    // This widget provides the animated title based on the selected tab
     switch (index) {
       case 0:
-        return Image.asset(
-          'assets/logo.png',
-          key: const ValueKey('logo'),
-          height: 34,
-        );
+        return Image.asset('assets/logo.png', key: const ValueKey('logo'), height: 34);
       case 1:
-        return Text(
-          'Explore',
-          key: const ValueKey('explore'),
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        );
+        return Text('Arenas', key: const ValueKey('arenas'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
       case 2:
-        return Text(
-          'Events',
-          key: const ValueKey('events'),
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        );
+        return Text('Events', key: const ValueKey('events'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
       case 3:
-        return Text(
-          'Profile',
-          key: const ValueKey('profile'),
-          style: GoogleFonts.plusJakartaSans(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        );
+        return Text('Profile', key: const ValueKey('profile'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
       default:
         return const SizedBox.shrink();
     }
   }
-
 }

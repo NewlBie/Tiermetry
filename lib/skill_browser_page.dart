@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'widget/featured_skill_card.dart'; // Make sure this is updated too!
+import 'package:tiermetry/widget/featured_skill_morph_card.dart';
+
+// Correct imports for our backend-ready structure
+import 'models/skill.dart';
+import 'services/api_service.dart';
 
 class SkillBrowserPage extends StatefulWidget {
   const SkillBrowserPage({super.key});
@@ -10,52 +14,23 @@ class SkillBrowserPage extends StatefulWidget {
 }
 
 class _SkillBrowserPageState extends State<SkillBrowserPage> {
+  final ApiService _apiService = ApiService();
+  late Future<List<Skill>> _skillsFuture;
+
   String query = "";
   String selectedFilter = "All";
 
   final filters = ["All", "Beginner", "Intermediate", "Advanced", "Free"];
 
-  final skills = [
-    {
-      'title': "YouTube Masterclass",
-      'subtitle': "Learn from MKBHD",
-      'badge': "Top Rated",
-      'image': 'assets/skills_side.png',
-      'time': "1h 30m",
-      'level': "Intermediate",
-      'price': "\$80",
-      'oldPrice': "\$100",
-    },
-    {
-      'title': "Beginner Design Sprint",
-      'subtitle': "Intro to UI thinking",
-      'badge': "Starter Pack",
-      'image': 'assets/Skills color.png',
-      'time': "50 mins",
-      'level': "Beginner",
-      'price': "Free",
-      'oldPrice': "",
-    },
-    {
-      'title': "Figma Animation Tricks",
-      'subtitle': "Turn static UIs into life",
-      'badge': "Pro Pick",
-      'image': 'assets/grad1.png',
-      'time': "2h",
-      'level': "Advanced",
-      'price': "\$99",
-      'oldPrice': "\$120",
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    // Fetch all skills when the page loads
+    _skillsFuture = _apiService.getFeaturedSkills(); // In a real app, this would be `getAllSkills()`
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = skills.where((skill) {
-      final matchesQuery = query.isEmpty || skill['title']!.toLowerCase().contains(query.toLowerCase());
-      final matchesFilter = selectedFilter == "All" || skill['level'] == selectedFilter || (selectedFilter == "Free" && skill['price'] == "Free");
-      return matchesQuery && matchesFilter;
-    }).toList();
-
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
@@ -141,30 +116,42 @@ class _SkillBrowserPageState extends State<SkillBrowserPage> {
             ),
             const SizedBox(height: 24),
 
-            // Skill Cards List
+            // Skill Cards List (Now using FutureBuilder)
             Expanded(
-              child: filtered.isEmpty
-                  ? const Center(
-                child: Text(
-                  "No matching skills found.",
-                  style: TextStyle(color: Colors.white38),
-                ),
-              )
-                  : ListView.separated(
-                padding: const EdgeInsets.only(bottom: 20),
-                itemCount: filtered.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 20),
-                itemBuilder: (_, index) {
-                  final s = filtered[index];
-                  return FeaturedSkillMorphCard(
-                    title: s['title']!,
-                    subtitle: s['subtitle']!,
-                    badge: s['badge']!,
-                    image: s['image']!,
-                    time: s['time']!,
-                    level: s['level']!,
-                    price: s['price']!,
-                    oldPrice: s['oldPrice']!,
+              child: FutureBuilder<List<Skill>>(
+                future: _skillsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text("Could not load skills.", style: TextStyle(color: Colors.white38)),
+                    );
+                  }
+
+                  // Apply local search and filter to the fetched data
+                  final filtered = snapshot.data!.where((skill) {
+                    final matchesQuery = query.isEmpty || skill.title.toLowerCase().contains(query.toLowerCase());
+                    final matchesFilter = selectedFilter == "All" || skill.level == selectedFilter || (selectedFilter == "Free" && skill.price == "Free");
+                    return matchesQuery && matchesFilter;
+                  }).toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(
+                      child: Text("No matching skills found.", style: TextStyle(color: Colors.white38)),
+                    );
+                  }
+
+                  return ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    itemCount: filtered.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 20),
+                    itemBuilder: (_, index) {
+                      final skill = filtered[index];
+                      // Correctly passing the 'Skill' object to the widget
+                      return FeaturedSkillMorphCard(skill: skill);
+                    },
                   );
                 },
               ),

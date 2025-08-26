@@ -1,58 +1,161 @@
-import 'dart:typed_data';
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:gradient_borders/gradient_borders.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:tiermetry/skill_browser_page.dart';
-import 'package:tiermetry/event_browser_page.dart';
+import 'package:shimmer/shimmer.dart';
 
+// --- Placeholder Pages (for navigation) ---
+class SkillBrowserPage extends StatelessWidget {
+  const SkillBrowserPage({super.key});
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text("Skill Browser")));
+}
+class EventBrowserPage extends StatelessWidget {
+  const EventBrowserPage({super.key});
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: Text("Event Browser")));
+}
+
+
+// --- 1. DATA MODELS ---
+// Represents the structure for a skill.
+class Skill {
+  final String id;
+  final String title;
+  final String subtitle;
+  final String category;
+  final String badge;
+  final String image;
+  final String time;
+  final String level;
+  final String price;
+  final String oldPrice;
+  final double rating;
+
+  Skill({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    this.category = "Content Creation",
+    required this.badge,
+    required this.image,
+    required this.time,
+    required this.level,
+    required this.price,
+    required this.oldPrice,
+    this.rating = 4.9,
+  });
+}
+
+// Represents the structure for an event.
+class Event {
+  final String id;
+  final String title;
+  final String date;
+  final String time;
+  final String location;
+  final String image;
+
+  Event({
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.time,
+    required this.location,
+    required this.image,
+  });
+}
+
+// --- 2. MOCK API SERVICE ---
+// Simulates fetching data from a backend server.
+class ApiService {
+  Future<List<Skill>> getFeaturedSkills() async {
+    // Simulate a network delay
+    await Future.delayed(const Duration(seconds: 2));
+    return [
+      Skill(
+        id: '1',
+        title: "YouTube Masterclass",
+        subtitle: "Learn from MKBHD",
+        badge: "Sponsored",
+        image: 'assets/skills_side.png',
+        time: "1h 30m",
+        level: "Intermediate",
+        price: "\$80",
+        oldPrice: "\$100",
+      ),
+      Skill(
+        id: '2',
+        title: "Viral Video Editing",
+        subtitle: "with Adobe Premiere Pro",
+        badge: "New",
+        image: 'assets/Hackathon.jpg', // Replace with relevant image
+        time: "2h 45m",
+        level: "Beginner",
+        price: "\$60",
+        oldPrice: "\$90",
+      ),
+    ];
+  }
+
+  Future<List<Event>> getUpcomingEvents() async {
+    await Future.delayed(const Duration(seconds: 2));
+    return [
+      Event(
+        id: '1',
+        title: "Flutter Hackathon 2025",
+        date: "12 July 2025",
+        time: "10:00 AM",
+        location: "Bhubaneswar Tech Park",
+        image: 'assets/Hackathon.jpg',
+      ),
+      Event(
+        id: '2',
+        title: "Tech Innovators Meetup",
+        date: "18 Aug 2025",
+        time: "6:00 PM",
+        location: "Online",
+        image: 'assets/arena color.png', // Replace with relevant image
+      ),
+    ];
+  }
+}
+
+// --- 3. MAIN HOME TAB WIDGET ---
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
   @override
   State<HomeTab> createState() => _HomeTabState();
 }
-class _HomeTabState extends State<HomeTab> {
-  // These should be fetched from your backend (e.g. Firebase, Supabase, etc.)
-  final List<Map<String, String>> sponsoredSkills = [
-    {
-      'title': "YouTube Masterclass",
-      'subtitle': "Learn from MKBHD",
-      'badge': "Sponsored",
-      'image': 'assets/skills_side.png',
-      'time': "1h 30m",
-      'level': "Intermediate",
-      'price': "\$80",
-      'oldPrice': "\$100",
-    },
-  ];
 
-  final List<Map<String, String>> weeklyEvents = [
-    {
-      'title': "Flutter Hackathon 2025",
-      'date': "12 July 2025",
-      'time': "10:00 AM",
-      'location': "Bhubaneswar Tech Park",
-      'image': 'assets/Hackathon.jpg',
-    },
-  ];
+class _HomeTabState extends State<HomeTab> {
+  final ApiService _apiService = ApiService();
+  late Future<List<Skill>> _featuredSkillsFuture;
+  late Future<List<Event>> _upcomingEventsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _featuredSkillsFuture = _apiService.getFeaturedSkills();
+    _upcomingEventsFuture = _apiService.getUpcomingEvents();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 70),
-              // 👋 Welcome Header
-              Text(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: const Color(0xFF0A0A0A),
+            pinned: true,
+            expandedHeight: 120.0,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              title: Text(
                 "Hello Neal 👋",
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 22,
@@ -60,166 +163,193 @@ class _HomeTabState extends State<HomeTab> {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 12),
-
-              // 🧠 Metric Cards Row
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    AppleBlurMetricCard(
-                      label: "Score Today",
-                      value: "96",
-                      unit: "pts",
-                      backgroundImage: 'assets/grad1.png',
-                    ),
-                    const SizedBox(width: 10),
-                    AppleBlurMetricCard(
-                      label: "Skills Gained",
-                      value: "4h",
-                      unit: "total",
-                      backgroundImage: 'assets/grad3.png',
-                    ),
-                    const SizedBox(width: 10),
-                    AppleBlurMetricCard(
-                      label: "Time Enjoyed",
-                      value: "4h",
-                      unit: "total",
-                      backgroundImage: 'assets/grad12.png',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 🎁 Promo Card
-              const GlassPromoCard(),
-              const SizedBox(height: 32),
-
-              // 🌍 Explore
-              Text(
-                'Explore',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 16),
-              AppleStyleExploreCard(
-                title: "Step Into Greatness",
-                subtitle: "You deserve a better arena",
-                caption: "Discover curated spaces around you...",
-                image: 'assets/arena color.png',
-              ),
-              const SizedBox(height: 16),
-              AppleStyleExploreCard(
-                title: "Level Up Instantly",
-                subtitle: "Gain some skills",
-                caption: "Learn essential skills to grow...",
-                image: 'assets/Skills color.png',
-              ),
-              const SizedBox(height: 32),
-
-              // 🌟 Featured Skills
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Featured Skills',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const SkillBrowserPage())),
-                    child: Text("View More", style: GoogleFonts.inter(color: Colors.white60)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 260,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: sponsoredSkills.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, index) {
-                    final s = sponsoredSkills[index];
-                    return SizedBox(
-                      width: 260,
-                      child: FeaturedSkillMorphCard(
-                        title: s['title']!,
-                        subtitle: s['subtitle']!,
-                        badge: s['badge']!,
-                        image: s['image']!,
-                        time: s['time']!,
-                        level: s['level']!,
-                        price: s['price']!,
-                        oldPrice: s['oldPrice']!,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 📅 Upcoming Events
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Upcoming Events',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.push(
-                        context, MaterialPageRoute(builder: (_) => const EventBrowserPage())),
-                    child: Text("View More", style: GoogleFonts.inter(color: Colors.white60)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 210,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: weeklyEvents.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, index) {
-                    final e = weeklyEvents[index];
-                    return SizedBox(
-                      width: 300,
-                      child: GlassUpcomingEventsCard(
-                        title: e['title']!,
-                        date: e['date']!,
-                        time: e['time']!,
-                        location: e['location']!,
-                        image: e['image']!,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 90),
-            ],
+              centerTitle: false,
+            ),
           ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  const _MetricCardsSection(),
+                  const SizedBox(height: 24),
+                  const GlassPromoCard(),
+                  const SizedBox(height: 32),
+                  const _ExploreSection(),
+                  const SizedBox(height: 32),
+                  _SectionHeader(
+                    title: 'Featured Skills',
+                    onViewMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SkillBrowserPage())),
+                  ),
+                  const SizedBox(height: 12),
+                  _FeaturedSkillsList(skillsFuture: _featuredSkillsFuture),
+                  const SizedBox(height: 32),
+                  _SectionHeader(
+                    title: 'Upcoming Events',
+                    onViewMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EventBrowserPage())),
+                  ),
+                  const SizedBox(height: 12),
+                  _UpcomingEventsList(eventsFuture: _upcomingEventsFuture),
+                  const SizedBox(height: 90),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- UI SECTIONS (Refactored) ---
+
+class _MetricCardsSection extends StatelessWidget {
+  const _MetricCardsSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 130,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          AppleBlurMetricCard(
+            label: "Score Today",
+            value: "96",
+            unit: "pts",
+            backgroundImage: 'assets/grad1.png',
+          ),
+          const SizedBox(width: 10),
+          AppleBlurMetricCard(
+            label: "Skills Gained",
+            value: "4h",
+            unit: "total",
+            backgroundImage: 'assets/grad3.png',
+          ),
+          const SizedBox(width: 10),
+          AppleBlurMetricCard(
+            label: "Time Enjoyed",
+            value: "4h",
+            unit: "total",
+            backgroundImage: 'assets/grad12.png',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExploreSection extends StatelessWidget {
+  const _ExploreSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Explore',
+          style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
         ),
+        const SizedBox(height: 16),
+        AppleStyleExploreCard(
+          title: "Step Into Greatness",
+          subtitle: "You deserve a better arena",
+          caption: "Discover curated spaces around you...",
+          image: 'assets/arena color.png',
+        ),
+        const SizedBox(height: 16),
+        AppleStyleExploreCard(
+          title: "Level Up Instantly",
+          subtitle: "Gain some skills",
+          caption: "Learn essential skills to grow...",
+          image: 'assets/Skills color.png',
+        ),
+      ],
+    );
+  }
+}
+
+class _FeaturedSkillsList extends StatelessWidget {
+  final Future<List<Skill>> skillsFuture;
+  const _FeaturedSkillsList({required this.skillsFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 260,
+      child: FutureBuilder<List<Skill>>(
+        future: skillsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _ShimmerLoadingList(itemWidth: 260, itemCount: 2);
+          }
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No skills found.", style: TextStyle(color: Colors.white70)));
+          }
+          final skills = snapshot.data!;
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: skills.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              return _AnimatedListItem(
+                index: index,
+                child: SizedBox(
+                  width: 260,
+                  child: FeaturedSkillMorphCard(skill: skills[index]),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _UpcomingEventsList extends StatelessWidget {
+  final Future<List<Event>> eventsFuture;
+  const _UpcomingEventsList({required this.eventsFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 210,
+      child: FutureBuilder<List<Event>>(
+        future: eventsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _ShimmerLoadingList(itemWidth: 300, itemCount: 1);
+          }
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No events found.", style: TextStyle(color: Colors.white70)));
+          }
+          final events = snapshot.data!;
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: events.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              return _AnimatedListItem(
+                index: index,
+                child: SizedBox(
+                  width: 300,
+                  child: GlassUpcomingEventsCard(event: events[index]),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
 
+// --- ENHANCED & REFACTORED WIDGETS ---
 
-// ---------- Metric Card ----------//
-
-class AppleBlurMetricCard extends StatelessWidget {
+class AppleBlurMetricCard extends StatefulWidget {
   final String label;
   final String value;
   final String unit;
@@ -230,82 +360,110 @@ class AppleBlurMetricCard extends StatelessWidget {
     required this.value,
     required this.unit,
     required this.backgroundImage,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
+
+  @override
+  State<AppleBlurMetricCard> createState() => _AppleBlurMetricCardState();
+}
+
+class _AppleBlurMetricCardState extends State<AppleBlurMetricCard> {
+  double _dx = 0;
+  double _dy = 0;
+  StreamSubscription? _gyroscopeSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _gyroscopeSubscription = gyroscopeEvents.listen((GyroscopeEvent event) {
+      setState(() {
+        _dx += event.y * 0.4; // Sensitivity factor
+        _dy -= event.x * 0.4;
+        _dx = _dx.clamp(-20, 20); // Clamp values to avoid excessive tilt
+        _dy = _dy.clamp(-20, 20);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _gyroscopeSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: Stack(
-        children: [
-          // Glowing blurred background
-          Container(
+    return GestureDetector(
+      onPanUpdate: (details) {
+        setState(() {
+          _dx += details.delta.dx * 0.5;
+          _dy += details.delta.dy * 0.5;
+          _dx = _dx.clamp(-20, 20);
+          _dy = _dy.clamp(-20, 20);
+        });
+      },
+      onPanEnd: (_) {
+        setState(() {
+          _dx = 0;
+          _dy = 0;
+        });
+      },
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOut,
+        builder: (context, value, child) {
+          return Transform(
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateX(0.01 * _dy * value)
+              ..rotateY(-0.01 * _dx * value),
+            alignment: FractionalOffset.center,
+            child: child,
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
             width: 130,
             height: 130,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage(backgroundImage),
+                image: AssetImage(widget.backgroundImage),
                 fit: BoxFit.cover,
-
               ),
+              color: Colors.black.withOpacity(0.25),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  widget.label,
+                  style: GoogleFonts.urbanist(color: Colors.white.withOpacity(0.9), fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 4),
+                RichText(
+                  text: TextSpan(children: [
+                    TextSpan(
+                      text: widget.value,
+                      style: GoogleFonts.spaceGrotesk(fontSize: 28, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                    TextSpan(
+                      text: " ${widget.unit}",
+                      style: GoogleFonts.urbanist(fontSize: 14, color: Colors.white.withOpacity(0.6), fontWeight: FontWeight.w400),
+                    ),
+                  ]),
+                ),
+              ],
             ),
           ),
-
-          // Glass blur overlay
-          Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.25),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    label,
-                    style: GoogleFonts.urbanist(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  RichText(
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: value,
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        TextSpan(
-                          text: " $unit",
-                          style: GoogleFonts.urbanist(
-                            fontSize: 14,
-                            color: Colors.white.withOpacity(0.6),
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
-// ---------- Premium Promotion ----------
-
 
 class GlassPromoCard extends StatelessWidget {
   const GlassPromoCard({super.key});
@@ -315,7 +473,6 @@ class GlassPromoCard extends StatelessWidget {
     return Container(
       height: 200,
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
@@ -331,7 +488,6 @@ class GlassPromoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         child: Stack(
           children: [
-            // 🌫️ Glass Background
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -345,29 +501,21 @@ class GlassPromoCard extends StatelessWidget {
                 border: Border.all(color: Colors.white.withOpacity(0.06)),
               ),
             ),
-
-            // ✨ Shine Overlay (static)
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
                     center: Alignment.topLeft,
                     radius: 1.4,
-                    colors: [
-                      Colors.white.withOpacity(0.06),
-                      Colors.transparent,
-                    ],
+                    colors: [Colors.white.withOpacity(0.06), Colors.transparent],
                   ),
                 ),
               ),
             ),
-
-            // 📷 Image & Text
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
               child: Row(
                 children: [
-                  // Promo Image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: Image.asset(
@@ -378,42 +526,25 @@ class GlassPromoCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-
-                  // Text Content
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'Feel the Power of Play',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1.2,
-                          ),
+                          style: GoogleFonts.urbanist(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Subscribe to unlock rewards and pro-level perks.',
-                          style: GoogleFonts.urbanist(
-                            fontSize: 13,
-                            color: Colors.white.withOpacity(0.7),
-                            height: 1.4,
-                          ),
+                          style: GoogleFonts.urbanist(fontSize: 13, color: Colors.white.withOpacity(0.7), height: 1.4),
                         ),
                         const Spacer(),
-
-                        // CTA Button
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [
-                                Colors.white,
-                                Colors.white.withOpacity(0.85),
-                              ],
+                              colors: [Colors.white, Colors.white.withOpacity(0.85)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -431,15 +562,10 @@ class GlassPromoCard extends StatelessWidget {
                             children: [
                               Text(
                                 'Get Premium',
-                                style: GoogleFonts.urbanist(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13.5,
-                                ),
+                                style: GoogleFonts.urbanist(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 13.5),
                               ),
                               const SizedBox(width: 6),
-                              const Icon(Icons.arrow_forward_ios_rounded,
-                                  size: 14, color: Colors.black),
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.black),
                             ],
                           ),
                         ),
@@ -456,35 +582,16 @@ class GlassPromoCard extends StatelessWidget {
   }
 }
 
-// ---------- Featured Skills ---------
-
-
-
 class FeaturedSkillMorphCard extends StatefulWidget {
-  final String title;
-  final String subtitle;
-  final String badge;
-  final String image;
-  final String time;
-  final String level;
-  final String price;
-  final String oldPrice;
+  final Skill skill;
 
   const FeaturedSkillMorphCard({
-    required this.title,
-    required this.subtitle,
-    required this.badge,
-    required this.image,
-    required this.time,
-    required this.level,
-    required this.price,
-    required this.oldPrice,
-    Key? key,
-  }) : super(key: key);
+    required this.skill,
+    super.key,
+  });
 
   @override
-  State<FeaturedSkillMorphCard> createState() =>
-      _FeaturedSkillMorphCardState();
+  State<FeaturedSkillMorphCard> createState() => _FeaturedSkillMorphCardState();
 }
 class _FeaturedSkillMorphCardState extends State<FeaturedSkillMorphCard> {
   bool expanded = false;
@@ -500,192 +607,132 @@ class _FeaturedSkillMorphCardState extends State<FeaturedSkillMorphCard> {
         scale: expanded ? 1.02 : 1.0,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeOutExpo,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 500),
-          opacity: expanded ? 1 : 0.95,
-          child: Container(
-            width: 260,
-            height: 260,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: expanded ? Colors.black : Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
+        child: Container(
+          width: 260,
+          height: 260,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
             child: Stack(
               children: [
-                // Background image with darken effect
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutExpo,
+                      decoration: BoxDecoration(
+                        color: expanded ? const Color(0xFF1A1A1A) : Colors.white,
+                      ),
+                    )
+                ),
+                Positioned.fill(
                   child: ColorFiltered(
                     colorFilter: ColorFilter.mode(
-                      expanded
-                          ? Colors.black.withOpacity(0.3)
-                          : Colors.transparent,
+                      expanded ? Colors.black.withOpacity(0.3) : Colors.transparent,
                       BlendMode.darken,
                     ),
                     child: Image.asset(
-                      widget.image,
+                      widget.skill.image,
                       fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
                     ),
                   ),
                 ),
                 if (!expanded)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 100, // adjust height to match your text zone
+                  Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            Colors.black.withOpacity(0.6),
-                            Colors.transparent,
-                          ],
+                          colors: [Colors.black.withOpacity(0.6), Colors.transparent],
                           begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          end: const Alignment(0, -0.2),
                         ),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
                       ),
                     ),
                   ),
-
-                // Foreground content
                 Padding(
-                  padding: const EdgeInsets.all(10),
-                  child:
-
-                  Column(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Top Row with Category and Enroll Button
                       if (expanded)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              "Content Creation",
-                              style: GoogleFonts.urbanist(
-                                fontSize: 11,
-                                color: Colors.white70,
-                              ),
+                              widget.skill.category.toUpperCase(),
+                              style: GoogleFonts.urbanist(fontSize: 11, color: Colors.white70, letterSpacing: 0.5),
                             ),
                             AnimatedSlide(
                               duration: const Duration(milliseconds: 500),
-                              offset: expanded
-                                  ? Offset.zero
-                                  : const Offset(0.5, 0),
+                              offset: expanded ? Offset.zero : const Offset(0.5, 0),
                               curve: Curves.easeOutBack,
                               child: AnimatedOpacity(
                                 duration: const Duration(milliseconds: 500),
                                 opacity: expanded ? 1.0 : 0.0,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 14, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    "Enroll",
-                                    style: GoogleFonts.urbanist(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                                  child: Text("Enroll", style: GoogleFonts.urbanist(color: Colors.black, fontWeight: FontWeight.w600, fontSize: 12)),
                                 ),
                               ),
                             ),
                           ],
                         ),
-
                       const SizedBox(height: 8),
-
-                      // Title
                       Text(
-                        widget.title,
+                        widget.skill.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.urbanist(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
-                          color: expanded ? Colors.white : Colors.white,
+                          color: Colors.white,
                           shadows: !expanded
-                              ? [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            )
-                          ]
+                              ? [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 4, offset: const Offset(0, 1))]
                               : [],
                         ),
                       ),
-
                       const SizedBox(height: 4),
-
-                      // Subtitle
                       Text(
-                        widget.subtitle,
+                        widget.skill.subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.urbanist(
                           fontSize: 12.5,
-                          color: expanded ? Colors.white70 : Colors.white70,
+                          color: Colors.white70,
                           shadows: !expanded
-                              ? [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 3,
-                              offset: const Offset(0, 1),
-                            )
-                          ]
+                              ? [Shadow(color: Colors.black.withOpacity(0.4), blurRadius: 3, offset: const Offset(0, 1))]
                               : [],
                         ),
                       ),
-
                       const Spacer(),
-
-                      // Animated Stats Row
                       if (expanded)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            AnimatedStat(title: "4.9 ★", label: "RAT NG", index: 0),
-                            AnimatedStat(title: widget.level, label: "LEVEL", index: 1),
-                            AnimatedStat(title: widget.time, label: "TIME", index: 2),
-                            AnimatedStat(title: "EN", label: "LANG", index: 3),
+                            _AnimatedStat(title: "${widget.skill.rating} ★", label: "RATING", index: 0),
+                            _AnimatedStat(title: widget.skill.level, label: "LEVEL", index: 1),
+                            _AnimatedStat(title: widget.skill.time, label: "TIME", index: 2),
+                            _AnimatedStat(title: "EN", label: "LANG", index: 3),
                           ],
                         ),
-
-                      // Badge (collapsed only)
                       if (!expanded)
                         Align(
                           alignment: Alignment.bottomRight,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
                             child: Text(
-                              widget.badge,
-                              style: GoogleFonts.urbanist(
-                                color: Colors.white,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              widget.skill.badge,
+                              style: GoogleFonts.urbanist(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w500),
                             ),
                           ),
                         ),
@@ -701,19 +748,11 @@ class _FeaturedSkillMorphCardState extends State<FeaturedSkillMorphCard> {
   }
 }
 
-// ---------- Animated Stat Widget ----------
-
-class AnimatedStat extends StatelessWidget {
+class _AnimatedStat extends StatelessWidget {
   final String title;
   final String label;
   final int index;
-
-  const AnimatedStat({
-    required this.title,
-    required this.label,
-    required this.index,
-    super.key,
-  });
+  const _AnimatedStat({required this.title, required this.label, required this.index});
 
   @override
   Widget build(BuildContext context) {
@@ -724,75 +763,19 @@ class AnimatedStat extends StatelessWidget {
       builder: (context, value, child) {
         return Transform.translate(
           offset: Offset(0, value),
-          child: Opacity(
-            opacity: (20.0 - value) / 20.0,
-            child: child,
-          ),
+          child: Opacity(opacity: (20.0 - value) / 20.0, child: child),
         );
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.urbanist(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-          Text(
-            label,
-            style: GoogleFonts.urbanist(
-              fontSize: 9.5,
-              color: Colors.white54,
-            ),
-          ),
+          Text(title, style: GoogleFonts.urbanist(fontSize: 12.5, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(label, style: GoogleFonts.urbanist(fontSize: 9.5, color: Colors.white54, letterSpacing: 0.5)),
         ],
       ),
     );
   }
 }
-// Small info box
-
-
-
-
-class _InfoTile extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoTile({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.urbanist(
-            fontSize: 12.5,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label.toUpperCase(),
-          style: GoogleFonts.urbanist(
-            fontSize: 9.5,
-            fontWeight: FontWeight.w400,
-            color: Colors.white.withOpacity(0.5),
-          ),
-        ),
-      ],
-    );
-  }
-}
-// ---------- Explore Card ----------
-
-
-
 
 class AppleStyleExploreCard extends StatelessWidget {
   final String title;
@@ -819,253 +802,261 @@ class AppleStyleExploreCard extends StatelessWidget {
         HapticFeedback.lightImpact();
         onTap?.call();
       },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Container(
-            padding: const EdgeInsets.all(10),
-            height: 160,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        height: 160,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withOpacity(0.06)),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: SizedBox(
+                height: double.infinity,
+                width: 140,
+                child: Image.asset(image, fit: BoxFit.cover),
               ),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(color: Colors.white.withOpacity(0.06)),
             ),
-            child: Row(
-              children: [
-                // LEFT IMAGE
-                Container(
-                  height: double.infinity,
-                  width: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    image: DecorationImage(
-                      image: AssetImage(image),
-                      fit: BoxFit.cover,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text(title, style: GoogleFonts.lexend(fontSize: 20, fontWeight: FontWeight.normal, color: Colors.white, height: 1.25)),
+                  const SizedBox(height: 6),
+                  Text(subtitle, style: GoogleFonts.urbanist(fontSize: 12.5, color: Colors.white.withOpacity(0.75))),
+                  const SizedBox(height: 6),
+                  Text(caption, style: GoogleFonts.urbanist(fontSize: 11.5, color: Colors.white.withOpacity(0.45))),
+                  const Spacer(),
+                  TextButton(
+                    onPressed: onTap,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2),
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      minimumSize: const Size(0, 28),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      buttonText,
+                      style: GoogleFonts.urbanist(color: Colors.black, fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-
-                // RIGHT TEXT + BUTTON
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(
-                        title,
-                        style: GoogleFonts.lexend(
-                          fontSize: 20,
-                          fontWeight: FontWeight.normal,
-                          color: Colors.white,
-                          height: 1.25,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.urbanist(
-                          fontSize: 12.5,
-                          color: Colors.white.withOpacity(0.75),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        caption,
-                        style: GoogleFonts.urbanist(
-                          fontSize: 11.5,
-                          color: Colors.white.withOpacity(0.45),
-                        ),
-                      ),
-                      const Spacer(),
-
-                      // BUTTON
-                      TextButton(
-                        onPressed: onTap,
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 2), // ↓ thinner
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          minimumSize: const Size(0, 28), // Optional: set a smaller min height
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap, // Optional: removes extra touch padding
-                        ),
-                        child: Text(
-                          buttonText,
-                          style: GoogleFonts.urbanist(
-                            color: Colors.black,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                    ],
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
-          ),
+          ],
+        ),
       ),
     );
   }
 }
-// ---------- Navbar ----------//
-
-
-
 
 class GlassUpcomingEventsCard extends StatelessWidget {
-  final String title;
-  final String date;
-  final String time;
-  final String location;
-  final String image;
+  final Event event;
 
-  const GlassUpcomingEventsCard({
-    required this.title,
-    required this.date,
-    required this.time,
-    required this.location,
-    required this.image,
-    Key? key,
-  }) : super(key: key);
+  const GlassUpcomingEventsCard({required this.event, super.key});
 
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: Container(
-          width: double.infinity,
-          height: 200,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.white.withOpacity(0.05),
-                Colors.white.withOpacity(0.02),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.08),
-            ),
+        width: double.infinity,
+        height: 200,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white.withOpacity(0.05), Colors.white.withOpacity(0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: Stack(
-            children: [
-              // Background image on the right
-              Positioned(
-                right: 0,
-                bottom: 0,
-                top: 0,
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Image.asset(
-                    image,
-                    width: 120,
-                    fit: BoxFit.cover,
-                  ),
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: 0,
+              bottom: 0,
+              top: 0,
+              child: Opacity(
+                opacity: 0.15,
+                child: Image.asset(event.image, width: 120, fit: BoxFit.cover),
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8, height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.deepOrangeAccent,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(color: Colors.deepOrangeAccent.withOpacity(0.6), blurRadius: 6, spreadRadius: 1)
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text("Live Soon", style: GoogleFonts.urbanist(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white.withOpacity(0.7))),
+                  ],
                 ),
-              ),
-              // Event info
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Neon dot + label
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: Colors.deepOrangeAccent,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.deepOrangeAccent.withOpacity(0.6),
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                            )
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Live Soon",
-                        style: GoogleFonts.urbanist(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 10),
+                Text(event.title, style: GoogleFonts.urbanist(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 12, color: Colors.white54),
+                    const SizedBox(width: 5),
+                    Text(event.date, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.access_time, size: 12, color: Colors.white54),
+                    const SizedBox(width: 5),
+                    Text(event.time, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined, size: 12, color: Colors.white54),
+                    const SizedBox(width: 5),
+                    Text(event.location, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  ],
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () {},
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                    backgroundColor: Colors.white.withOpacity(0.08),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    style: GoogleFonts.urbanist(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.calendar_today, size: 12, color: Colors.white54),
-                      const SizedBox(width: 5),
-                      Text(
-                        date,
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                      const SizedBox(width: 10),
-                      Icon(Icons.access_time, size: 12, color: Colors.white54),
-                      const SizedBox(width: 5),
-                      Text(
-                        time,
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 12, color: Colors.white54),
-                      const SizedBox(width: 5),
-                      Text(
-                        location,
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () {},
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                      backgroundColor: Colors.white.withOpacity(0.08),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text(
-                      "Notify Me",
-                      style: GoogleFonts.urbanist(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                  child: Text("Notify Me", style: GoogleFonts.urbanist(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// --- UTILITY WIDGETS ---
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback onViewMore;
+  const _SectionHeader({required this.title, required this.onViewMore});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
+        TextButton(
+          onPressed: onViewMore,
+          child: Text("View More", style: GoogleFonts.inter(color: Colors.white60)),
+        ),
+      ],
+    );
+  }
+}
+
+class _AnimatedListItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+  const _AnimatedListItem({required this.child, required this.index});
+
+  @override
+  State<_AnimatedListItem> createState() => __AnimatedListItemState();
+}
+
+class __AnimatedListItemState extends State<_AnimatedListItem>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _offsetAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    final curve = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.decelerate,
+    );
+    _offsetAnimation = Tween<Offset>(
+      begin: const Offset(0.2, 0.0),
+      end: Offset.zero,
+    ).animate(curve);
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(curve);
+
+    Future.delayed(Duration(milliseconds: widget.index * 100), () {
+      if(mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: SlideTransition(
+        position: _offsetAnimation,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+
+class _ShimmerLoadingList extends StatelessWidget {
+  final double itemWidth;
+  final int itemCount;
+  const _ShimmerLoadingList({required this.itemWidth, this.itemCount = 1});
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[900]!,
+      highlightColor: Colors.grey[800]!,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: itemCount,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, __) => Container(
+          width: itemWidth,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(24),
           ),
         ),
+      ),
     );
   }
 }

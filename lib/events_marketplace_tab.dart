@@ -1,11 +1,15 @@
-// 📦 Enhanced Events Marketplace Tab (Apple/Netflix Inspired)
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'event_carousel.dart';
-import 'skill_browser_page.dart';
-import 'event_browser_page.dart';
-import 'home_tab.dart'; // for card widgets
+
+import '../models/skill.dart';
+import '../models/event.dart';
+import '../services/api_service.dart';
+import '../event_carousel.dart';
+import '../skill_browser_page.dart';
+import '../event_browser_page.dart';
+import '../widget/featured_skill_morph_card.dart';
+import '../widget/glass_upcoming_events_card.dart';
+import '../widget/utility_widgets.dart';
 
 class EventsMarketplaceTab extends StatefulWidget {
   const EventsMarketplaceTab({super.key});
@@ -15,216 +19,235 @@ class EventsMarketplaceTab extends StatefulWidget {
 }
 
 class _EventsMarketplaceTabState extends State<EventsMarketplaceTab> {
-  final List<Map<String, String>> eventCarouselItems = [
-    {
-      'image': 'assets/Hackathon.jpg',
-      'title': 'Flutter Hackathon 2025',
-      'subtitle': 'Build the future, today.',
-    },
-    {
-      'image': 'assets/arena color.png',
-      'title': 'Tech Summit 2025',
-      'subtitle': 'Explore new innovations.',
-    },
-    {
-      'image': 'assets/Skills color.png',
-      'title': 'Design Marathon',
-      'subtitle': 'Craft, Animate, Innovate.',
-    },
-  ];
+  final ApiService _apiService = ApiService();
+  late Future<List<Skill>> _featuredSkillsFuture;
+  late Future<List<Event>> _upcomingEventsFuture;
 
-  final skills = [
-    {
-      'title': "YouTube Masterclass",
-      'subtitle': "Learn from MKBHD",
-      'badge': "Top Rated",
-      'image': 'assets/skills_side.png',
-      'time': "1h 30m",
-      'level': "Intermediate",
-      'price': "\$80",
-      'oldPrice': "\$100",
-    },
-    {
-      'title': "Beginner Design Sprint",
-      'subtitle': "Intro to UI thinking",
-      'badge': "Starter Pack",
-      'image': 'assets/Skills color.png',
-      'time': "50 mins",
-      'level': "Beginner",
-      'price': "Free",
-      'oldPrice': "",
-    },
-  ];
-
-  final events = [
-    {
-      'title': "Flutter Hackathon 2025",
-      'date': "12 July 2025",
-      'time': "10:00 AM",
-      'location': "Bhubaneswar Tech Park",
-      'image': 'assets/Hackathon.jpg',
-    },
-    {
-      'title': "Gaming Arena 2.0",
-      'date': "14 July 2025",
-      'time': "8:00 PM",
-      'location': "Chennai Arcade Center",
-      'image': 'assets/arena color.png',
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _featuredSkillsFuture = _apiService.getFeaturedSkills();
+    _upcomingEventsFuture = _apiService.getUpcomingEvents();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 70),
-              // 🎯 Welcome Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: const Color(0xFF0A0A0A),
+            pinned: true,
+            expandedHeight: 120.0,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              centerTitle: false,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Hello, Explorer 👋", style: GoogleFonts.plusJakartaSans(fontSize: 18, color: Colors.white70)),
-                      const SizedBox(height: 4),
-                      Text("Balance Fun & Growth", style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
-                    ],
-                  ),
-                  const CircleAvatar(
-                    backgroundColor: Colors.white10,
-                    radius: 20,
-                    child: Icon(Icons.person, color: Colors.white),
-                  )
+                  Text("Hello, Explorer 👋", style: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.white70)),
+                  Text("Balance Fun & Growth", style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
                 ],
               ),
-              const SizedBox(height: 28),
-
-              // 🔥 Hero Carousel
-              const EventCarousel(),
-              const SizedBox(height: 32),
-
-              // 🎓 Featured Skills Horizontal
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Featured Skills", style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SkillBrowserPage())),
-                    child: Text("View More", style: GoogleFonts.inter(color: Colors.white60)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 260,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: skills.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, index) {
-                    final s = skills[index];
-                    return SizedBox(
-                        width: 260,
-                        height: 260,
-                        child: FeaturedSkillMorphCard(
-                        title: s['title']!,
-                        subtitle: s['subtitle']!,
-                        badge: s['badge']!,
-                        image: s['image']!,
-                        time: s['time']!,
-                        level: s['level']!,
-                        price: s['price']!,
-                        oldPrice: s['oldPrice']!,
-                    ),
-                        );
-                  },
+            ),
+            actions: const [
+              Padding(
+                padding: EdgeInsets.only(right: 20.0),
+                child: CircleAvatar(
+                  backgroundColor: Colors.white10,
+                  radius: 20,
+                  child: Icon(Icons.person, color: Colors.white, size: 22),
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // 📅 Upcoming Events Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Upcoming Events", style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EventBrowserPage())),
-                    child: Text("View More", style: GoogleFonts.inter(color: Colors.white60)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 210,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: events.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 12),
-                  itemBuilder: (_, index) {
-                    final e = events[index];
-                    return SizedBox(
-                      width: 300,
-                      child: GlassUpcomingEventsCard(
-                        title: e['title']!,
-                        date: e['date']!,
-                        time: e['time']!,
-                        location: e['location']!,
-                        image: e['image']!,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 🏆 Tiermetry Score & Leaderboard Preview
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Today's XP", style: GoogleFonts.inter(color: Colors.white60)),
-                        const SizedBox(height: 4),
-                        Text("+12", style: GoogleFonts.plusJakartaSans(fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white)),
-                      ],
-                    ),
-                    Text("Leaderboard >", style: GoogleFonts.inter(color: Colors.white70)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // 📈 Insight of the Day
-              Text("Insight of the Day", style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFF3A3A3A), Color(0xFF1E1E1E)]),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  "Gaming enhances strategic thinking and stress management. Channel it wisely for your growth.",
-                  style: GoogleFonts.inter(color: Colors.white70),
-                ),
-              ),
-              const SizedBox(height: 40),
             ],
           ),
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(
+                [
+                  const SizedBox(height: 16),
+
+                  // This is the corrected implementation
+                  FutureBuilder<List<Event>>(
+                    future: _upcomingEventsFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const ShimmerCarouselPlaceholder();
+                      }
+                      if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox(height: 200, child: Center(child: Text("Could not load events.")));
+                      }
+                      return EventCarousel(events: snapshot.data!);
+                    },
+                  ),
+
+                  const SizedBox(height: 32),
+                  SectionHeader(
+                    title: 'Featured Skills',
+                    onViewMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SkillBrowserPage())),
+                  ),
+                  const SizedBox(height: 12),
+                  _FeaturedSkillsList(skillsFuture: _featuredSkillsFuture),
+                  const SizedBox(height: 32),
+                  SectionHeader(
+                    title: 'Upcoming Events',
+                    onViewMore: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EventBrowserPage())),
+                  ),
+                  const SizedBox(height: 12),
+                  _UpcomingEventsList(eventsFuture: _upcomingEventsFuture),
+                  const SizedBox(height: 32),
+                  const _LeaderboardPreviewCard(),
+                  const SizedBox(height: 32),
+                  _buildInsightCard(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInsightCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Insight of the Day", style: GoogleFonts.plusJakartaSans(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white)),
+        const SizedBox(height: 12),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFF3A3A3A), Color(0xFF1E1E1E)]),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            "Gaming enhances strategic thinking and stress management. Channel it wisely for your growth.",
+            style: GoogleFonts.inter(color: Colors.white70, height: 1.5),
+          ),
         ),
+      ],
+    );
+  }
+}
+
+class _LeaderboardPreviewCard extends StatelessWidget {
+  const _LeaderboardPreviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("TODAY'S XP", style: GoogleFonts.urbanist(fontSize: 11, letterSpacing: 0.5, color: Colors.white60, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text("+12", style: GoogleFonts.spaceGrotesk(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white)),
+            ],
+          ),
+          Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(100),
+              ),
+              child: Row(
+                children: [
+                  Text("Leaderboard", style: GoogleFonts.urbanist(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.white70),
+                ],
+              )),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturedSkillsList extends StatelessWidget {
+  final Future<List<Skill>> skillsFuture;
+  const _FeaturedSkillsList({required this.skillsFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 260,
+      child: FutureBuilder<List<Skill>>(
+        future: skillsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const ShimmerLoadingList(itemWidth: 260, itemCount: 2);
+          }
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No skills found.", style: TextStyle(color: Colors.white70)));
+          }
+          final skills = snapshot.data!;
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: skills.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              return AnimatedListItem(
+                index: index,
+                child: SizedBox(
+                  width: 260,
+                  child: FeaturedSkillMorphCard(skill: skills[index]),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _UpcomingEventsList extends StatelessWidget {
+  final Future<List<Event>> eventsFuture;
+  const _UpcomingEventsList({required this.eventsFuture});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 210,
+      child: FutureBuilder<List<Event>>(
+        future: eventsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const ShimmerLoadingList(itemWidth: 300, itemCount: 1);
+          }
+          if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No events found.", style: TextStyle(color: Colors.white70)));
+          }
+          final events = snapshot.data!;
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: events.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              return AnimatedListItem(
+                index: index,
+                child: SizedBox(
+                  width: 300,
+                  child: GlassUpcomingEventsCard(event: events[index]),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
