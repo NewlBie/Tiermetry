@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:confetti/confetti.dart';
-import 'package:lottie/lottie.dart';
 
 class ReferEarnPage extends StatefulWidget {
   const ReferEarnPage({super.key});
@@ -147,6 +145,39 @@ class _ReferEarnPageState extends State<ReferEarnPage> {
                   )),
             ],
           ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _copyCode,
+                  icon: const Icon(Icons.copy, size: 16),
+                  label: const Text("Copy Code"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white24),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _shareCode,
+                  icon: const Icon(Icons.share, size: 16),
+                  label: const Text("Share Link"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.tealAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 10),
           LinearProgressIndicator(
             value: (totalEarned % 1000) / 1000,
@@ -170,7 +201,7 @@ class _ReferEarnPageState extends State<ReferEarnPage> {
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: unlocked ? Colors.teal.withOpacity(0.2) : Colors.white10,
+                  color: unlocked ? Colors.teal.withValues(alpha: 0.2) : Colors.white10,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: unlocked ? Colors.tealAccent : Colors.white12),
                 ),
@@ -304,3 +335,4 @@ class _ReferEarnPageState extends State<ReferEarnPage> {
     );
   }
 }
+

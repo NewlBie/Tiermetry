@@ -40,9 +40,7 @@ class Arena {
       case MainActivity.arcade:
         return 'Arcade';
       case MainActivity.recreational:
-        return 'Recreational';
-      default:
-        return '';
+        return "Turf/Court";
     }
   }
 }

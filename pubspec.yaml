@@ -60,6 +60,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: "^0.13.1"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,25 +77,22 @@ flutter:
   assets:
     - assets/logo.png
     - assets/menu.png
-    - assets/arena.png
     - assets/skills.png
-    - assets/skills_side.png
-    - assets/money.png
     - assets/Seller.png
     - assets/Hackathon.jpg
     - assets/score.png
     - assets/skill.png
     - assets/time.png
-    - assets/Skills color.png
     - assets/arena color.png
-    - assets/grad1.png
-    - assets/grad12.png
-    - assets/grad3.png
     - assets/arena1.jpeg
     - assets/verified.svg
     - assets/card_yellow.jpg
-    - assets/ps5_card.png
     - assets/pc_card.png
     - assets/kart_arena.png
     - assets/ticket_cut.svg
 
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/app_icon.png"

@@ -67,7 +67,7 @@ class _TierProgressBarState extends State<TierProgressBar>
                   boxShadow: isFilled
                       ? [
                     BoxShadow(
-                      color: baseColor.withOpacity(0.2 * shimmer),
+                      color: baseColor.withValues(alpha: 0.2 * shimmer),
                       blurRadius: 4,
                       spreadRadius: 0.5,
                     )
@@ -82,3 +82,4 @@ class _TierProgressBarState extends State<TierProgressBar>
     );
   }
 }
+

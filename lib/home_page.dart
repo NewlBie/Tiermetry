@@ -3,13 +3,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Assuming all pages are in the /lib/pages or /lib/tabs directory
-// and your custom nav bar is in /lib/widgets
-import 'arena_page.dart';
-import 'events_marketplace_tab.dart';
-import 'home_tab.dart';
-import 'apple_bottom_nav_bar.dart'; // Ensure this path is correct
-import 'profile_page.dart';
+// Pages
+import 'package:tiermetry/pages/arena_page.dart';
+import 'package:tiermetry/pages/profile_page.dart';
+import 'package:tiermetry/pages/transactions_page.dart';
+import 'package:tiermetry/pages/bookings_page.dart';
+
+// Tabs
+import 'package:tiermetry/tabs/home_tab.dart';
+import 'package:tiermetry/tabs/events_marketplace_tab.dart';
+
+// Components
+import 'apple_bottom_nav_bar.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -20,13 +25,13 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   int _selectedIndex = 0;
-  bool _menuOpened = false;
-  bool _hasNotification = true;
+  final bool _hasNotification = true;
 
   late final AnimationController _menuAnimationController;
 
-  // ✨ 1. Define the list of navigation bar items
   final List<AppleBottomNavBarItem> navItems = const [
     AppleBottomNavBarItem(icon: Icons.home_rounded),
     AppleBottomNavBarItem(icon: Icons.sports_esports_rounded),
@@ -34,13 +39,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     AppleBottomNavBarItem(icon: Icons.person_rounded),
   ];
 
-  // The list of pages for the IndexedStack
-  // This is now clean and uses the backend-ready pages
   final List<Widget> _pages = const [
-    HomeTab(),
+    HomeTab(userName: "Neal"),
     ArenaPage(),
     EventsMarketplaceTab(),
-    ProfilePage(), // No more hardcoded data!
+    ProfilePage(),
   ];
 
   @override
@@ -61,16 +64,22 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // A solid background is better for performance
+      key: _scaffoldKey,
+      drawer: _buildSideDrawer(),
+      onDrawerChanged: (isOpened) {
+        if (isOpened) {
+          _menuAnimationController.forward();
+        } else {
+          _menuAnimationController.reverse();
+        }
+      },
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Instantly switch tabs using IndexedStack
           IndexedStack(
             index: _selectedIndex,
             children: _pages,
           ),
-
-          // Apple-Style AppBar with animated title
           Positioned(
             top: 0,
             left: 0,
@@ -88,14 +97,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.white.withOpacity(0.12),
-                            Colors.white.withOpacity(0.03),
+                            Colors.white.withValues(alpha: 0.12),
+                            Colors.white.withValues(alpha: 0.03),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -123,10 +132,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           ),
                           GestureDetector(
                             onTap: () {
-                              setState(() => _menuOpened = !_menuOpened);
-                              _menuOpened
-                                  ? _menuAnimationController.forward()
-                                  : _menuAnimationController.reverse();
+                              _scaffoldKey.currentState?.openDrawer();
                             },
                             child: Stack(
                               clipBehavior: Clip.none,
@@ -148,7 +154,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                         color: Colors.redAccent,
                                         shape: BoxShape.circle,
                                         boxShadow: [
-                                          BoxShadow(color: Colors.red.withOpacity(0.4), blurRadius: 4)
+                                          BoxShadow(color: Colors.red.withValues(alpha: 0.4), blurRadius: 4)
                                         ],
                                       ),
                                     ),
@@ -164,8 +170,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-
-          // Bottom NavBar
           Positioned(
             left: 0,
             right: 0,
@@ -178,7 +182,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   HapticFeedback.lightImpact();
                   setState(() => _selectedIndex = index);
                 },
-                // ✨ 2. Pass the 'navItems' list to the widget
                 items: navItems,
               ),
             ),
@@ -189,7 +192,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildAppBarTitle(int index) {
-    // This widget provides the animated title based on the selected tab
     switch (index) {
       case 0:
         return Image.asset('assets/logo.png', key: const ValueKey('logo'), height: 34);
@@ -202,5 +204,127 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       default:
         return const SizedBox.shrink();
     }
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String text,
+    Color? color,
+    VoidCallback? onTap,
+  }) {
+    final itemColor = color ?? Colors.white;
+    return ListTile(
+      leading: Icon(icon, color: itemColor.withValues(alpha: 0.8)),
+      title: Text(
+        text,
+        style: GoogleFonts.plusJakartaSans(
+          color: itemColor,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+
+  Widget _buildSideDrawer() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topRight: Radius.circular(24),
+        bottomRight: Radius.circular(24),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.75,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withValues(alpha: 0.12),
+                Colors.white.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border(
+              right: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+          ),
+          child: Drawer(
+            elevation: 0,
+            backgroundColor: Colors.transparent,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              children: <Widget>[
+                SizedBox(
+                  height: 140,
+                  child: DrawerHeader(
+                    decoration: const BoxDecoration(border: Border(bottom: BorderSide.none)),
+                    child: Row(
+                      children: [
+                        const CircleAvatar(
+                          radius: 30,
+                          backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=a042581f4e29026704d'),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Neal',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '@neal_adams',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildDrawerItem(icon: Icons.settings_outlined, text: 'Settings', onTap: () => Navigator.pop(context)),
+                _buildDrawerItem(icon: Icons.notifications_outlined, text: 'Notifications', onTap: () => Navigator.pop(context)),
+                _buildDrawerItem(
+                  icon: Icons.receipt_long_rounded,
+                  text: 'My Transactions',
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsPage()));
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.bookmark_added_outlined,
+                  text: 'My Bookings',
+                  onTap: () {
+                    Navigator.pop(context); // Close the drawer
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const BookingsPage()));
+                  },
+                ),
+                _buildDrawerItem(icon: Icons.help_outline, text: 'Help & Support', onTap: () => Navigator.pop(context)),
+                _buildDrawerItem(icon: Icons.info_outline, text: 'About', onTap: () => Navigator.pop(context)),
+                const Divider(color: Colors.white24, indent: 16, endIndent: 16, height: 30),
+                _buildDrawerItem(
+                  icon: Icons.logout_rounded,
+                  text: 'Logout',
+                  color: Colors.redAccent,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

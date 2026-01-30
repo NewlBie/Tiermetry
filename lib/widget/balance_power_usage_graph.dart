@@ -43,7 +43,7 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 20,
             offset: const Offset(0, 12),
           ),
@@ -107,8 +107,8 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            TiermetryColors.gradientStart.withOpacity(0.3),
-                            TiermetryColors.gradientEnd.withOpacity(0.1),
+                            TiermetryColors.gradientStart.withValues(alpha: 0.3),
+                            TiermetryColors.gradientEnd.withValues(alpha: 0.1),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -147,10 +147,10 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
             margin: const EdgeInsets.symmetric(horizontal: 6),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? TiermetryColors.primary.withOpacity(0.15) : Colors.transparent,
+              color: isSelected ? TiermetryColors.primary.withValues(alpha: 0.15) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? TiermetryColors.primary : TiermetryColors.textSecondary.withOpacity(0.3),
+                color: isSelected ? TiermetryColors.primary : TiermetryColors.textSecondary.withValues(alpha: 0.3),
                 width: 1.2,
               ),
             ),

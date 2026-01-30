@@ -65,8 +65,8 @@ class AppleBottomNavBar extends StatelessWidget {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Colors.black.withOpacity(0.45),
-      Colors.black.withOpacity(0.3),
+      Colors.black.withValues(alpha: 0.45),
+      Colors.black.withValues(alpha: 0.3),
     ],
   );
 
@@ -81,17 +81,17 @@ class AppleBottomNavBar extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: backgroundGradient ?? _defaultGradient,
             borderRadius: borderRadius,
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             boxShadow: [
               // Outer shadow for depth
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
               // Inner highlight for glass effect
               BoxShadow(
-                color: Colors.white.withOpacity(0.02),
+                color: Colors.white.withValues(alpha: 0.02),
                 blurRadius: 1,
                 spreadRadius: 0.5,
               ),
@@ -117,7 +117,7 @@ class AppleBottomNavBar extends StatelessWidget {
         curve: animationCurve,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withOpacity(0.08) : Colors.transparent,
+          color: isSelected ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -149,7 +149,7 @@ class AppleBottomNavBar extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Colors.cyanAccent.withOpacity(0.4),
+            color: Colors.cyanAccent.withValues(alpha: 0.4),
             blurRadius: 20,
             spreadRadius: 1,
           ),

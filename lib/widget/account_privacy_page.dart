@@ -34,6 +34,7 @@ class _AccountPrivacyPageState extends State<AccountPrivacyPage> {
   void _saveChanges() async {
     setState(() => _saving = true);
     await Future.delayed(const Duration(seconds: 1)); // mock saving
+    if (!mounted) return;
     setState(() => _saving = false);
 
     ScaffoldMessenger.of(context).showSnackBar(

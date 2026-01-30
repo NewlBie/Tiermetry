@@ -42,7 +42,7 @@ class ProfileSettingsSection extends StatelessWidget {
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.035),
+            color: Colors.white.withValues(alpha: 0.035),
             borderRadius: BorderRadius.circular(18),
           ),
           child: ListTile(
@@ -73,3 +73,4 @@ class ProfileSettingsSection extends StatelessWidget {
     );
   }
 }
+

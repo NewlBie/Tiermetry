@@ -96,7 +96,7 @@ class _EventCarouselState extends State<EventCarousel> {
           height: 8.0,
           width: isActive ? 24.0 : 8.0,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.white.withOpacity(0.4),
+            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
           ),
         );
@@ -121,7 +121,7 @@ class _EventCard extends StatelessWidget {
               child: Image.asset(
                 event.image,
                 fit: BoxFit.cover,
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 colorBlendMode: BlendMode.darken,
               ),
             ),
@@ -133,7 +133,7 @@ class _EventCard extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.black, Colors.black.withOpacity(0)],
+                    colors: [Colors.black, Colors.black.withValues(alpha: 0)],
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                   ),
@@ -153,7 +153,7 @@ class _EventCard extends StatelessWidget {
                     Text(
                       '${event.date} • ${event.location}',
                       style: GoogleFonts.urbanist(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),
                     ),
