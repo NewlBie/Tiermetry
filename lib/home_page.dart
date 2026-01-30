@@ -33,7 +33,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late final AnimationController _menuAnimationController;
 
   final List<AppleBottomNavBarItem> navItems = const [
-    AppleBottomNavBarItem(icon: Icons.home_rounded),
+    AppleBottomNavBarItem(icon: Icons.home_filled),
     AppleBottomNavBarItem(icon: Icons.sports_esports_rounded),
     AppleBottomNavBarItem(icon: Icons.explore_rounded),
     AppleBottomNavBarItem(icon: Icons.person_rounded),

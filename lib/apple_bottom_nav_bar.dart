@@ -1,138 +1,186 @@
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-/// A model class for the navigation bar items.
-class AppleBottomNavBarItem {
-  /// The icon to be displayed.
-  final IconData icon;
+/// ---------------------------------------------------------------------------
+/// MODEL
+/// ---------------------------------------------------------------------------
 
-  const AppleBottomNavBarItem({
-    required this.icon,
-  });
+class AppleBottomNavBarItem {
+  final IconData icon;
+  const AppleBottomNavBarItem({required this.icon});
 }
 
-/// A sleek, animated bottom navigation bar with a frosted glass effect,
-/// inspired by iOS.
-class AppleBottomNavBar extends StatelessWidget {
-  /// The list of items to display in the navigation bar.
+/// ---------------------------------------------------------------------------
+/// NAV BAR
+/// ---------------------------------------------------------------------------
+
+class AppleBottomNavBar extends StatefulWidget {
   final List<AppleBottomNavBarItem> items;
-
-  /// The index of the currently selected item.
   final int currentIndex;
-
-  /// The callback that is called when an item is tapped.
-  final Function(int) onTap;
-
-  /// The background color of the navigation bar.
-  ///
-  /// Defaults to a semi-transparent black gradient.
-  final Gradient? backgroundGradient;
-
-  /// The color of the selected item's icon and indicator.
-  final Color selectedItemColor;
-
-  /// The color of the unselected items' icons.
-  final Color unselectedItemColor;
-
-  /// The border radius of the navigation bar.
-  final BorderRadius borderRadius;
-
-  /// The duration of the selection animation.
-  final Duration animationDuration;
-
-  /// The curve of the selection animation.
-  final Curve animationCurve;
-
-  /// The size of the icons.
-  final double iconSize;
+  final ValueChanged<int> onTap;
 
   const AppleBottomNavBar({
     super.key,
     required this.items,
     required this.currentIndex,
     required this.onTap,
-    this.selectedItemColor = Colors.white,
-    this.unselectedItemColor = Colors.white70,
-    this.iconSize = 26.0,
-    this.borderRadius = const BorderRadius.all(Radius.circular(28)),
-    this.animationDuration = const Duration(milliseconds: 350),
-    this.animationCurve = Curves.easeOut,
-    this.backgroundGradient,
   });
 
-  // Default gradient if none is provided.
-  Gradient get _defaultGradient => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Colors.black.withValues(alpha: 0.45),
-      Colors.black.withValues(alpha: 0.3),
-    ],
-  );
+  @override
+  State<AppleBottomNavBar> createState() => _AppleBottomNavBarState();
+}
+
+class _AppleBottomNavBarState extends State<AppleBottomNavBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late double _fromIndex;
+  late double _toIndex;
+
+  static const Color _accentColor = Color(0xFF8B7CFF); // Purple accent
+
+  @override
+  void initState() {
+    super.initState();
+    _fromIndex = widget.currentIndex.toDouble();
+    _toIndex = widget.currentIndex.toDouble();
+
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    )..value = 1.0;
+  }
+
+  @override
+  void didUpdateWidget(covariant AppleBottomNavBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentIndex != widget.currentIndex) {
+      _fromIndex = _toIndex;
+      _toIndex = widget.currentIndex.toDouble();
+      _controller.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+    return RepaintBoundary(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          height: 74,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            gradient: backgroundGradient ?? _defaultGradient,
-            borderRadius: borderRadius,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            boxShadow: [
-              // Outer shadow for depth
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 24,
-                offset: const Offset(0, 10),
-              ),
-              // Inner highlight for glass effect
-              BoxShadow(
-                color: Colors.white.withValues(alpha: 0.02),
-                blurRadius: 1,
-                spreadRadius: 0.5,
-              ),
-            ],
+            color: const Color(0xFF0E0E11),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.06),
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(items.length, (index) {
-              final isSelected = index == currentIndex;
-              return _buildNavItem(items[index], isSelected, index);
-            }),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (_, __) {
+              final double t =
+              Curves.easeOutCubic.transform(_controller.value);
+
+              final double activeIndex =
+              lerpDouble(_fromIndex, _toIndex, t)!;
+
+              return CustomPaint(
+                painter: _DotMatrixPainter(),
+                foregroundPainter: _EnergyFieldPainter(
+                  itemCount: widget.items.length,
+                  position: activeIndex,
+                  accent: _accentColor,
+                  progress: t,
+                ),
+                child: Row(
+                  children: List.generate(
+                    widget.items.length,
+                        (i) => Expanded(
+                      child: _NavItem(
+                        icon: widget.items[i].icon,
+                        index: i,
+                        activeIndex: activeIndex,
+                        progress: t,
+                        accent: _accentColor,
+                        onTap: () => widget.onTap(i),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem(AppleBottomNavBarItem item, bool isSelected, int index) {
+/// ---------------------------------------------------------------------------
+/// NAV ITEM (ICON + LIFE RIPPLE)
+/// ---------------------------------------------------------------------------
+
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final int index;
+  final double activeIndex;
+  final double progress;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.index,
+    required this.activeIndex,
+    required this.progress,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final double distance = (index - activeIndex).abs();
+    final double influence = max(0.0, 1.0 - distance);
+
+    final double life =
+    Curves.easeOutBack.transform(progress.clamp(0.0, 1.0));
+
     return GestureDetector(
-      onTap: () => onTap(index),
-      child: AnimatedContainer(
-        duration: animationDuration,
-        curve: animationCurve,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white.withValues(alpha: 0.08) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Center(
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            _buildIcon(item, isSelected),
-            AnimatedContainer(
-              duration: animationDuration,
-              curve: animationCurve,
-              height: 4,
-              width: isSelected ? 12 : 0,
-              margin: const EdgeInsets.only(top: 6),
-              decoration: BoxDecoration(
-                color: selectedItemColor,
-                borderRadius: BorderRadius.circular(10),
+            // Revival ripple
+            CustomPaint(
+              painter: _RevivalRipplePainter(
+                progress: life * influence,
+                color: accent,
+              ),
+              size: const Size(48, 48),
+            ),
+
+            // Icon
+            Transform.translate(
+              offset: Offset(0, -4 * influence * life),
+              child: Transform.scale(
+                scale: 1.0 + 0.22 * influence * life,
+                child: Icon(
+                  icon,
+                  size: 26,
+                  color: Color.lerp(
+                    Colors.white54,
+                    accent,
+                    influence,
+                  ),
+                ),
               ),
             ),
           ],
@@ -140,32 +188,128 @@ class AppleBottomNavBar extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget _buildIcon(AppleBottomNavBarItem item, bool isSelected) {
-    return Container(
-      // Add a decorative shadow for the selected icon for a "glow" effect.
-      decoration: isSelected
-          ? BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.cyanAccent.withValues(alpha: 0.4),
-            blurRadius: 20,
-            spreadRadius: 1,
-          ),
+/// ---------------------------------------------------------------------------
+/// ENERGY FIELD (BACKGROUND SLIDER)
+/// ---------------------------------------------------------------------------
+
+class _EnergyFieldPainter extends CustomPainter {
+  final int itemCount;
+  final double position;
+  final Color accent;
+  final double progress;
+
+  _EnergyFieldPainter({
+    required this.itemCount,
+    required this.position,
+    required this.accent,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double slotWidth = size.width / itemCount;
+    final double centerX =
+        (slotWidth * position) + (slotWidth / 2.0);
+
+    final double intensity =
+    lerpDouble(0.10, 0.18, progress)!;
+
+    final Rect fieldRect = Rect.fromLTWH(
+      centerX - slotWidth / 2,
+      10,
+      slotWidth,
+      size.height - 20,
+    );
+
+    final Paint paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          accent.withValues(alpha: intensity),
+          Colors.transparent,
         ],
-      )
-          : null,
-      child: AnimatedScale(
-        scale: isSelected ? 1.2 : 1.0,
-        duration: animationDuration,
-        curve: Curves.easeOutBack,
-        child: Icon(
-          item.icon,
-          color: isSelected ? selectedItemColor : unselectedItemColor,
-          size: iconSize,
-        ),
+      ).createShader(fieldRect);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        fieldRect,
+        const Radius.circular(22),
       ),
+      paint,
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _EnergyFieldPainter oldDelegate) {
+    return oldDelegate.position != position ||
+        oldDelegate.progress != progress;
+  }
+}
+
+/// ---------------------------------------------------------------------------
+/// REVIVAL RIPPLE (ICON LIFE EFFECT)
+/// ---------------------------------------------------------------------------
+
+class _RevivalRipplePainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _RevivalRipplePainter({
+    required this.progress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+
+    final double radius = lerpDouble(6, 24, progress)!;
+    final double alpha = (1 - progress) * 0.25;
+
+    final Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = color.withValues(alpha: alpha);
+
+    canvas.drawCircle(
+      size.center(Offset.zero),
+      radius,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _RevivalRipplePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+/// ---------------------------------------------------------------------------
+/// DOT MATRIX (NOTHING OS TEXTURE)
+/// ---------------------------------------------------------------------------
+
+class _DotMatrixPainter extends CustomPainter {
+  static final Paint _paint = Paint()
+    ..color = Colors.white.withValues(alpha: 0.025);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double gap = 10;
+
+    for (double x = 0; x < size.width; x += gap) {
+      for (double y = 0; y < size.height; y += gap) {
+        canvas.drawCircle(
+          Offset(x, y),
+          0.6,
+          _paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
