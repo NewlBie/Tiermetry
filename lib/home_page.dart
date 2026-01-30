@@ -14,7 +14,8 @@ import 'package:tiermetry/tabs/home_tab.dart';
 import 'package:tiermetry/tabs/events_marketplace_tab.dart';
 
 // Components
-import 'apple_bottom_nav_bar.dart';
+import 'components/navigation/blur_bottom_nav_bar.dart';
+import 'components/common/home_app_bar.dart';
 
 
 class HomePage extends StatefulWidget {
@@ -32,11 +33,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   late final AnimationController _menuAnimationController;
 
-  final List<AppleBottomNavBarItem> navItems = const [
-    AppleBottomNavBarItem(icon: Icons.home_filled),
-    AppleBottomNavBarItem(icon: Icons.sports_esports_rounded),
-    AppleBottomNavBarItem(icon: Icons.explore_rounded),
-    AppleBottomNavBarItem(icon: Icons.person_rounded),
+  final List<BlurBottomNavBarItem> navItems = const [
+    BlurBottomNavBarItem(icon: Icons.home_filled, label: 'Home'),
+    BlurBottomNavBarItem(icon: Icons.sports_esports_rounded, label: 'Arenas'),
+    BlurBottomNavBarItem(icon: Icons.explore_rounded, label: 'Explore'),
+    BlurBottomNavBarItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
   final List<Widget> _pages = const [
@@ -84,90 +85,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             top: 0,
             left: 0,
             right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 10, left: 16, right: 16),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withValues(alpha: 0.12),
-                            Colors.white.withValues(alpha: 0.03),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          SizedBox(
-                            height: 34,
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 450),
-                              switchInCurve: Curves.easeOut,
-                              switchOutCurve: Curves.easeIn,
-                              transitionBuilder: (child, animation) {
-                                final offsetAnimation = Tween<Offset>(
-                                  begin: const Offset(0, 0.5),
-                                  end: Offset.zero,
-                                ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOut));
-                                return ClipRect(
-                                  child: SlideTransition(
-                                    position: offsetAnimation,
-                                    child: FadeTransition(opacity: animation, child: child),
-                                  ),
-                                );
-                              },
-                              child: _buildAppBarTitle(_selectedIndex),
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              _scaffoldKey.currentState?.openDrawer();
-                            },
-                            child: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                AnimatedIcon(
-                                  icon: AnimatedIcons.menu_close,
-                                  progress: _menuAnimationController,
-                                  color: Colors.white,
-                                  size: 28,
-                                ),
-                                if (_hasNotification)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: Colors.redAccent,
-                                        shape: BoxShape.circle,
-                                        boxShadow: [
-                                          BoxShadow(color: Colors.red.withValues(alpha: 0.4), blurRadius: 4)
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            child: HomeAppBar(
+              selectedIndex: _selectedIndex,
+              hasNotification: _hasNotification,
+              menuAnimation: _menuAnimationController,
+              onMenuPressed: () {
+                _scaffoldKey.currentState?.openDrawer();
+              },
             ),
           ),
           Positioned(
@@ -176,7 +100,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             bottom: 24,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: AppleBottomNavBar(
+              child: BlurBottomNavBar(
                 currentIndex: _selectedIndex,
                 onTap: (index) {
                   HapticFeedback.lightImpact();
@@ -191,20 +115,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return Image.asset('assets/logo.png', key: const ValueKey('logo'), height: 34);
-      case 1:
-        return Text('Arenas', key: const ValueKey('arenas'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
-      case 2:
-        return Text('Events', key: const ValueKey('events'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
-      case 3:
-        return Text('Profile', key: const ValueKey('profile'), style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600));
-      default:
-        return const SizedBox.shrink();
-    }
-  }
 
   Widget _buildDrawerItem({
     required IconData icon,
