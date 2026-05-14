@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local analysis/scratch artifacts (keep the repo root clean)
+analysis*.txt
+analyze*.txt
+*analysis*.txt
+*analysis*.log
+*output*.txt
+current_errors.txt
+build_output.txt
+temp_analysis.txt
