@@ -1,16 +1,27 @@
-# tiermetry
+# Tiermetry
 
-A new Flutter project.
+Tiermetry is a Flutter app for discovering activities/arenas and booking experiences.
 
-## Getting Started
+## Prereqs
 
-This project is a starting point for a Flutter application.
+- Flutter SDK (Dart 3.x)
+- Xcode (for iOS builds) or Android Studio (for Android builds)
 
-A few resources to get you started if this is your first Flutter project:
+## Run
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Project Structure
+
+- `lib/core/`: app-wide infrastructure (theme, widgets, service locator, services)
+- `lib/features/`: vertical features (arena, home, profile, etc.)
+- `assets/`: images and SVGs
+
+The app currently uses a mock API implementation: `MockApiService` in `lib/core/services/`.
+
+## CI
+
+GitHub Actions runs Flutter formatting checks, `flutter analyze`, and `flutter test` on pull requests.

@@ -49,6 +49,9 @@ dependencies:
   shimmer: ^3.0.0
   sensors_plus: ^5.0.1
   flutter_animate: ^4.5.0
+  circulito: ^1.0.3
+  flutter_refresh_rate_control: ^0.0.3
+  line_icons: ^2.0.3
 
 dev_dependencies:
   flutter_test:
@@ -77,19 +80,20 @@ flutter:
   assets:
     - assets/logo.png
     - assets/menu.png
-    - assets/skills.png
     - assets/Seller.png
     - assets/Hackathon.jpg
     - assets/score.png
     - assets/skill.png
     - assets/time.png
-    - assets/arena color.png
+    - assets/arena_color.png
     - assets/arena1.jpeg
     - assets/verified.svg
     - assets/card_yellow.jpg
     - assets/pc_card.png
     - assets/kart_arena.png
     - assets/ticket_cut.svg
+    - assets/sticks/
+    - assets/images/
 
 
 flutter_launcher_icons:
