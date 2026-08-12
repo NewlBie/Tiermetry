@@ -12,12 +12,12 @@ class PaymentEntity {
 
   PaymentEntity({
     required this.id,
-    this.bookingId,
-    this.holdId,
     required this.amount,
     required this.status,
-    this.method,
     required this.createdAt,
     required this.updatedAt,
+    this.bookingId,
+    this.holdId,
+    this.method,
   });
 }

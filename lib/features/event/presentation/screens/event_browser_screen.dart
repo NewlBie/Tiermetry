@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
@@ -87,7 +88,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> with RefreshRat
         final haystack =
             [
               event.title,
-              event.subtitle,
+              event.description ?? '',
               event.location,
               event.cost,
               ...event.tags,
@@ -104,7 +105,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> with RefreshRat
 
         return matchesQuery && matchesCategory;
       }).toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
   }
 
   void _openEvent(EventEntity event) {
@@ -556,13 +557,26 @@ class _EventResultTile extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Hero(
-                tag: event.image,
-                child: Image.asset(
-                  event.image,
-                  width: 82,
-                  height: 82,
-                  fit: BoxFit.cover,
-                ),
+                tag: event.id,
+                child: event.image != null && !event.image!.startsWith('assets/')
+                  ? Image.network(
+                      event.image!,
+                      width: 82,
+                      height: 82,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 82,
+                        height: 82,
+                        color: TiermetryColors.surfaceUnderlay,
+                        child: const Icon(Icons.broken_image, color: Colors.white24),
+                      ),
+                    )
+                  : Image.asset(
+                      event.image ?? 'assets/Hackathon.jpg',
+                      width: 82,
+                      height: 82,
+                      fit: BoxFit.cover,
+                    ),
               ),
             ),
             const SizedBox(width: TiermetrySpacing.md),
@@ -582,7 +596,7 @@ class _EventResultTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${event.date} - ${event.location}',
+                    '${DateFormat('MMM d').format(event.startTime)} - ${event.location}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.caption(
@@ -644,7 +658,19 @@ class _FeaturedEventCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset(event.image, fit: BoxFit.cover),
+                    event.image != null && !event.image!.startsWith('assets/')
+                      ? Image.network(
+                          event.image!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: TiermetryColors.surfaceUnderlay,
+                            child: const Icon(Icons.broken_image, color: Colors.white24),
+                          ),
+                        )
+                      : Image.asset(
+                          event.image ?? 'assets/Hackathon.jpg',
+                          fit: BoxFit.cover,
+                        ),
                     Positioned(
                       top: 10,
                       left: 10,
@@ -667,7 +693,7 @@ class _FeaturedEventCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${event.date} - ${event.time}',
+              '${DateFormat('MMM d').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.startTime)}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TiermetryTypography.caption(

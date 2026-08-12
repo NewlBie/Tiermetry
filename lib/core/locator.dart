@@ -14,16 +14,15 @@ import '../features/auth/presentation/controllers/auth_ctrl.dart';
 import '../features/booking/data/repositories/booking_repo_impl.dart';
 import '../features/booking/domain/repositories/booking_repo.dart';
 import '../features/booking/presentation/controllers/booking_ctrl.dart';
+import '../features/event/data/repositories/event_repo_impl.dart';
+import '../features/event/domain/repositories/event_repo.dart';
+import '../features/event/presentation/controllers/event_ctrl.dart';
+import '../features/home/presentation/controllers/trending_activity_ctrl.dart';
 import '../features/payment/data/datasources/development_payment_provider.dart';
 import '../features/payment/data/repositories/payment_repo_impl.dart';
 import '../features/payment/domain/repositories/payment_provider.dart';
 import '../features/payment/domain/repositories/payment_repo.dart';
 import '../features/payment/presentation/controllers/payment_ctrl.dart';
-import '../features/event/data/datasources/event_source.dart';
-import '../features/event/data/repositories/event_repo_impl.dart';
-import '../features/event/domain/repositories/event_repo.dart';
-import '../features/event/presentation/controllers/event_ctrl.dart';
-import '../features/home/presentation/controllers/trending_activity_ctrl.dart';
 import '../features/profile/data/datasources/profile_source.dart';
 import '../features/profile/data/repositories/profile_repo_impl.dart';
 import '../features/profile/domain/repositories/profile_repo.dart';
@@ -42,7 +41,7 @@ class Locator {
 
   // Repos
   late final ArenaRepo arenaRepo = ArenaRepoImpl(supabase);
-  late final EventRepo eventRepo = EventRepoImpl(EventSourceImpl());
+  late final EventRepo eventRepo = EventRepoImpl(supabase);
   late final ProfileRepo profileRepo = ProfileRepoImpl(ProfileSourceImpl());
   late final BookingRepo bookingRepo = BookingRepoImpl(supabase);
   late final SkillRepo skillRepo = SkillRepoImpl(SkillSourceImpl());

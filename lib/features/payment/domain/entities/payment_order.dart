@@ -7,9 +7,9 @@ class PaymentOrder {
 
   PaymentOrder({
     required this.orderId,
+    required this.amount,
     this.sessionToken,
     this.paymentUrl,
-    required this.amount,
     this.currency = 'INR',
   });
 }

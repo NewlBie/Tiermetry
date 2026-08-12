@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-// Updated to ReservationHoldEntity
-import '../../domain/entities/booking_entity.dart';
 import 'package:tiermetry/features/booking/domain/entities/reservation_hold_entity.dart';
+
+import '../../domain/entities/booking_entity.dart';
 import '../../domain/repositories/booking_repo.dart';
 
 class BookingCtrl extends ChangeNotifier {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
@@ -22,11 +24,27 @@ class EventCard extends StatelessWidget {
       padding: EdgeInsets.zero,
       child: Stack(
         children: [
-          Image.asset(
-            event.image,
-            height: 240,
-            width: double.infinity,
-            fit: BoxFit.cover,
+          Hero(
+            tag: event.id,
+            child: event.image != null && !event.image!.startsWith('assets/')
+              ? Image.network(
+                  event.image!,
+                  height: 240,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 240,
+                    width: double.infinity,
+                    color: TiermetryColors.surfaceUnderlay,
+                    child: const Icon(Icons.broken_image, color: Colors.white24),
+                  ),
+                )
+              : Image.asset(
+                  event.image ?? 'assets/Hackathon.jpg',
+                  height: 240,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
           ),
           Container(
             height: 240,
@@ -53,7 +71,7 @@ class EventCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       AppPill(
-                        text: event.time,
+                        text: DateFormat('hh:mm a').format(event.startTime),
                         color: Colors.white.withValues(alpha: 0.2),
                         textColor: Colors.white,
                       ),
@@ -87,7 +105,7 @@ class EventCard extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   Text(
-                    event.subtitle,
+                    event.location,
                     style: TiermetryTypography.bodySmall(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.85),
@@ -121,7 +139,7 @@ class EventCard extends StatelessWidget {
                       shadows: const [],
                       child: Center(
                         child: Text(
-                          'Add to calendar',
+                          'View Details',
                           style: TiermetryTypography.action(
                             color: Colors.black,
                             fontWeight: FontWeight.w600,

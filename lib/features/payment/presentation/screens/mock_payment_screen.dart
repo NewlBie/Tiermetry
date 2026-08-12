@@ -23,8 +23,8 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
     setState(() => _isProcessing = true);
     
     // Simulate provider callback
-    final provider = locator.paymentProvider as DevelopmentPaymentProvider;
-    provider.simulatePaymentResult(widget.order.orderId, status);
+    (locator.paymentProvider as DevelopmentPaymentProvider)
+        .simulatePaymentResult(widget.order.orderId, status);
     
     // Wait for the simulated callback to "propagate"
     await Future<void>.delayed(const Duration(seconds: 1));

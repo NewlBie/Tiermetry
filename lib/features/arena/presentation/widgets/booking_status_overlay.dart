@@ -80,10 +80,10 @@ class _BookingStatusOverlayState extends State<BookingStatusOverlay> {
   }
 
   String _formatDuration(Duration d) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(d.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(d.inSeconds.remainder(60));
-    return "$twoDigitMinutes:$twoDigitSeconds";
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final twoDigitMinutes = twoDigits(d.inMinutes.remainder(60));
+    final twoDigitSeconds = twoDigits(d.inSeconds.remainder(60));
+    return '$twoDigitMinutes:$twoDigitSeconds';
   }
 
   @override

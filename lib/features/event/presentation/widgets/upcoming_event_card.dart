@@ -1,12 +1,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/event_entity.dart';
+import '../screens/event_details_screen.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   final EventEntity event;
@@ -40,7 +42,14 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: () => HapticFeedback.lightImpact(),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => EventDetailsScreen(event: widget.event),
+            ),
+          );
+        },
         child: AppSurface(
           borderRadius: TiermetryRadii.xl,
           border: Border.all(
@@ -60,7 +69,22 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(widget.event.image, fit: BoxFit.cover),
+                      Hero(
+                        tag: widget.event.id,
+                        child: widget.event.image != null && !widget.event.image!.startsWith('assets/')
+                          ? Image.network(
+                              widget.event.image!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: TiermetryColors.surfaceUnderlay,
+                                child: const Icon(Icons.broken_image, color: Colors.white24),
+                              ),
+                            )
+                          : Image.asset(
+                              widget.event.image ?? 'assets/Hackathon.jpg',
+                              fit: BoxFit.cover,
+                            ),
+                      ),
                       // Top gradient just for top badges clarity if image is bright
                       Positioned(
                         top: 0,
@@ -205,7 +229,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              '${widget.event.date} • ${widget.event.time}',
+                              '${DateFormat('MMM d').format(widget.event.startTime)} • ${DateFormat('hh:mm a').format(widget.event.startTime)}',
                               style: TiermetryTypography.caption(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,

@@ -5,35 +5,50 @@
 class EventEntity {
   final String id;
   final String title;
-  final String subtitle;
-  final String image;
-  final String date;
-  final String time;
-  final String location;
+  final String? description;
+  final String? image;
+  final String? venueId;
+  final DateTime startTime;
+  final DateTime endTime;
+  final DateTime registrationStart;
+  final DateTime registrationEnd;
+  final int? maxParticipants;
+  final String registrationType;
+  final String status;
   final String cost;
+  final String location;
   final int points;
-  final int enrollments;
-  final DateTime dateTime;
-  final String desc;
   final List<String> tags;
   final List<EventPerkEntity> perks;
+  final int enrollments;
 
   EventEntity({
     required this.id,
     required this.title,
-    required this.subtitle,
-    required this.image,
-    required this.date,
-    required this.time,
-    required this.location,
+    required this.startTime,
+    required this.endTime,
+    required this.registrationStart,
+    required this.registrationEnd,
+    required this.registrationType,
+    required this.status,
     required this.cost,
-    required this.points,
-    required this.enrollments,
-    required this.dateTime,
-    required this.desc,
-    required this.tags,
-    required this.perks,
+    required this.location,
+    this.description,
+    this.image,
+    this.venueId,
+    this.maxParticipants,
+    this.points = 0,
+    this.tags = const [],
+    this.perks = const [],
+    this.enrollments = 0,
   });
+
+  bool get isRegistrationOpen {
+    final now = DateTime.now();
+    return now.isAfter(registrationStart) && now.isBefore(registrationEnd);
+  }
+
+  bool get isFull => maxParticipants != null && enrollments >= maxParticipants!;
 }
 
 class EventPerkEntity {

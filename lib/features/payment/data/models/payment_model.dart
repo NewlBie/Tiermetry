@@ -4,13 +4,13 @@ import '../../domain/entities/payment_status.dart';
 class PaymentModel extends PaymentEntity {
   PaymentModel({
     required super.id,
-    super.bookingId,
-    super.holdId,
     required super.amount,
     required super.status,
-    super.method,
     required super.createdAt,
     required super.updatedAt,
+    super.bookingId,
+    super.holdId,
+    super.method,
   });
 
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
