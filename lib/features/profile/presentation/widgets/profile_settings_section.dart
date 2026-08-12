@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/theme/typography.dart';
 
 import '../screens/account_privacy_screen.dart';
 import '../screens/help_and_support_screen.dart';
@@ -52,7 +51,7 @@ class ProfileSettingsSection extends StatelessWidget {
             leading: Icon(item['icon'] as IconData, color: Colors.white70, size: 22),
             title: Text(
               item['title'] as String,
-              style: GoogleFonts.inter(
+              style: TiermetryTypography.bodySmall(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w500,
                 color: Colors.white,
@@ -66,7 +65,7 @@ class ProfileSettingsSection extends StatelessWidget {
               if (onItemTap != null) onItemTap!(title);
 
               if (route != null) {
-                Navigator.of(context).push(CupertinoPageRoute<void>(
+                Navigator.of(context).push(MaterialPageRoute<void>(
                   builder: (_) => route,
                 ));
               }
@@ -77,4 +76,3 @@ class ProfileSettingsSection extends StatelessWidget {
     );
   }
 }
-

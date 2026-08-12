@@ -118,7 +118,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
   @override
   void didUpdateWidget(covariant _ProfileContentView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.profile.wallet.balance != widget.profile.wallet.balance) {
+    if (oldWidget.profile.tiergies != widget.profile.tiergies) {
       _startBalanceAnimation();
     }
   }
@@ -143,7 +143,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
     const frameDuration = Duration(milliseconds: 33);
     const totalDuration = Duration(milliseconds: 500);
     const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final target = widget.profile.wallet.balance;
+    final target = widget.profile.tiergies.toInt().toString();
     final startedAt = DateTime.now();
 
     _balanceTimer?.cancel();
@@ -183,7 +183,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
     final animatedWallet = profile.wallet.copyWith(
       balance:
           _animatedBalanceText.isEmpty
-              ? profile.wallet.balance
+              ? profile.tiergies.toInt().toString()
               : _animatedBalanceText,
     );
 
@@ -216,7 +216,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
               actions: [
                 _QuickAction(
                   title: 'Wallet',
-                  subtitle: '${profile.wallet.balance} pts',
+                  subtitle: '${profile.tiergies.toInt()} pts',
                   icon: Icons.account_balance_wallet_rounded,
                   onTap: () => _openRoute(const TransactionsScreen()),
                 ),
@@ -331,7 +331,7 @@ class _ProfileHeaderCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _ProfileAvatar(
-                imagePath: profile.image,
+                imagePath: profile.image ?? '',
                 selectedImage: selectedImage,
                 onTap: onImageTap,
               ),
@@ -393,10 +393,11 @@ class _ProfileHeaderCard extends StatelessWidget {
                           label: profile.level,
                           isPrimary: true,
                         ),
-                        _MetaPill(
-                          icon: Icons.cake_outlined,
-                          label: '${profile.age}',
-                        ),
+                        if (profile.age != null)
+                          _MetaPill(
+                            icon: Icons.cake_outlined,
+                            label: '${profile.age}',
+                          ),
                       ],
                     ),
                   ],
@@ -413,7 +414,7 @@ class _ProfileHeaderCard extends StatelessWidget {
               const SizedBox(width: TiermetrySpacing.sm),
               Expanded(
                 child: _ProfileStat(
-                  value: profile.wallet.balance,
+                  value: profile.tiergies.toInt().toString(),
                   label: 'Tiergies',
                 ),
               ),
@@ -484,9 +485,9 @@ class _ProfileAvatar extends StatelessWidget {
                 color: TiermetryColors.accentNeonGreen,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.camera_alt_rounded,
-                color: Colors.black.withAlpha(220),
+                color: Colors.black,
                 size: 15,
               ),
             ),

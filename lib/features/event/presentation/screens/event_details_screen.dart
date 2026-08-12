@@ -233,16 +233,19 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              _perkTile(Icons.emoji_events, 'Certificate'),
-                              _perkTile(Icons.fastfood, 'Snacks'),
-                              _perkTile(Icons.wifi, 'Free Wi-Fi'),
-                              _perkTile(Icons.people_alt_outlined, 'Networking'),
-                            ],
-                          ),
+                          event.perks.isEmpty
+                              ? Text(
+                                  'No specific perks listed for this event.',
+                                  style: TiermetryTypography.bodySmall(color: TiermetryColors.textSecondary),
+                                )
+                              : Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  children: event.perks.map((perk) => _perkTile(
+                                    _getIconData(perk.icon), 
+                                    perk.name,
+                                  )).toList(),
+                                ),
                           const SizedBox(height: 24),
 
                           Text(
@@ -412,6 +415,20 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
         ],
       ),
     );
+  }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'fastfood': return Icons.fastfood;
+      case 'stars': return Icons.stars;
+      case 'emoji_events': return Icons.emoji_events;
+      case 'verified_user': return Icons.verified_user;
+      case 'chair': return Icons.chair;
+      case 'people': return Icons.people;
+      case 'wifi': return Icons.wifi;
+      case 'notifications': return Icons.notifications;
+      default: return Icons.star_border_rounded;
+    }
   }
 }
 

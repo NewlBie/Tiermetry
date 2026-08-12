@@ -10,6 +10,9 @@ class EventCtrl extends ChangeNotifier {
   List<EventEntity> _events = [];
   List<EventEntity> get events => _events;
 
+  List<EventEntity> _myRegistrations = [];
+  List<EventEntity> get myRegistrations => _myRegistrations;
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
@@ -21,6 +24,20 @@ class EventCtrl extends ChangeNotifier {
       _events = await repo.getEvents();
     } catch (e) {
       debugPrint('Error loading events: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMyRegistrations() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _myRegistrations = await repo.getMyRegistrations();
+    } catch (e) {
+      debugPrint('Error loading registrations: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

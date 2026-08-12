@@ -31,4 +31,33 @@ class ProfileCtrl extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> updateProfile({
+    String? name,
+    String? location,
+    int? age,
+    String? image,
+  }) async {
+    if (_profile == null) return;
+    
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final updated = _profile!.copyWith(
+        name: name,
+        location: location,
+        age: age,
+        image: image,
+      );
+      await repo.updateProfile(updated);
+      _profile = updated;
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }

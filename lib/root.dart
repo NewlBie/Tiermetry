@@ -12,6 +12,7 @@ import 'package:tiermetry/core/widgets/top_bar.dart';
 import 'features/arena/presentation/screens/arena_screen.dart';
 import 'features/booking/presentation/screens/booking_screen.dart';
 import 'features/event/presentation/screens/event_browser_screen.dart';
+import 'features/event/presentation/screens/my_events_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/account_privacy_screen.dart';
 import 'features/profile/presentation/screens/help_and_support_screen.dart';
@@ -99,12 +100,26 @@ class _RootState extends State<Root> with TickerProviderStateMixin, RefreshRateM
       DrawerItem(
         icon: Icons.bookmark_added_outlined,
         text: 'My Bookings',
-        subtitle: 'Arena and event reservations',
+        subtitle: 'Arena reservations',
         onTap: () {
           Navigator.pop(context);
           Navigator.push(
             context,
             MaterialPageRoute<void>(builder: (context) => const BookingScreen()),
+          );
+        },
+      ),
+      DrawerItem(
+        icon: Icons.confirmation_number_outlined,
+        text: 'My Events',
+        subtitle: 'Tickets and registrations',
+        onTap: () {
+          Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute<void>(
+              builder: (context) => const MyEventsScreen(),
+            ),
           );
         },
       ),

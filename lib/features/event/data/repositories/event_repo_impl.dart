@@ -53,6 +53,38 @@ class EventRepoImpl implements EventRepo {
   }
 
   @override
+  Future<List<EventEntity>> getMyRegistrations() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    // Fetch registrations joined with event details and venue info
+    final response = await _supabase
+        .from('event_registrations')
+        .select('*, events(*, venues(name, short_address), enrollments:event_registrations(count))')
+        .eq('user_id', userId)
+        .order('registered_at', ascending: false);
+
+    return (response as List).map((reg) {
+      final eventJson = reg['events'] as Map<String, dynamic>;
+      
+      // Flatten the enrollment count inside the nested event
+      final enrollments = (eventJson['enrollments'] as List).isNotEmpty 
+          ? (eventJson['enrollments'][0]['count'] as int) 
+          : 0;
+      eventJson['enrollments'] = enrollments;
+
+      // Extract location from venue if available
+      if (eventJson['venues'] != null) {
+        eventJson['location'] = eventJson['venues']['short_address'] ?? eventJson['venues']['name'];
+      } else {
+        eventJson['location'] = 'Online';
+      }
+
+      return EventModel.fromJson(eventJson);
+    }).toList();
+  }
+
+  @override
   Future<bool> isRegistered(String eventId) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return false;

@@ -23,7 +23,6 @@ import '../features/payment/data/repositories/payment_repo_impl.dart';
 import '../features/payment/domain/repositories/payment_provider.dart';
 import '../features/payment/domain/repositories/payment_repo.dart';
 import '../features/payment/presentation/controllers/payment_ctrl.dart';
-import '../features/profile/data/datasources/profile_source.dart';
 import '../features/profile/data/repositories/profile_repo_impl.dart';
 import '../features/profile/domain/repositories/profile_repo.dart';
 import '../features/profile/presentation/controllers/profile_ctrl.dart';
@@ -42,7 +41,7 @@ class Locator {
   // Repos
   late final ArenaRepo arenaRepo = ArenaRepoImpl(supabase);
   late final EventRepo eventRepo = EventRepoImpl(supabase);
-  late final ProfileRepo profileRepo = ProfileRepoImpl(ProfileSourceImpl());
+  late final ProfileRepo profileRepo = ProfileRepoImpl(supabase);
   late final BookingRepo bookingRepo = BookingRepoImpl(supabase);
   late final SkillRepo skillRepo = SkillRepoImpl(SkillSourceImpl());
   late final AuthRepo authRepo = AuthRepoImpl(supabase);

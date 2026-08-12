@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/typography.dart';
 
 class AccountPrivacyScreen extends StatefulWidget {
   const AccountPrivacyScreen({super.key});
@@ -13,13 +15,33 @@ class AccountPrivacyScreen extends StatefulWidget {
 }
 
 class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with RefreshRateMixin {
-  final TextEditingController _nameController = TextEditingController(text: 'Neal Biju');
-  final TextEditingController _usernameController = TextEditingController(text: 'nealvakkachan');
-  final TextEditingController _emailController = TextEditingController(text: 'neal@example.com');
-  final TextEditingController _phoneController = TextEditingController(text: '+91 9876543210');
+  final _profileCtrl = locator.profileCtrl;
+  late final TextEditingController _nameController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _ageController;
 
   bool _saving = false;
   File? _profileImage;
+
+  @override
+  void initState() {
+    super.initState();
+    final p = _profileCtrl.profile;
+    _nameController = TextEditingController(text: p?.name ?? '');
+    _locationController = TextEditingController(text: p?.location ?? '');
+    _emailController = TextEditingController(text: p?.email ?? '');
+    _ageController = TextEditingController(text: p?.age?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _locationController.dispose();
+    _emailController.dispose();
+    _ageController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -33,22 +55,42 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
   }
 
   void _saveChanges() async {
-    setState(() => _saving = true);
-    await Future<void>.delayed(const Duration(seconds: 1)); // mock saving
-    if (!mounted) return;
-    setState(() => _saving = false);
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Name cannot be empty')),
+      );
+      return;
+    }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Changes saved successfully')),
-    );
+    setState(() => _saving = true);
+    try {
+      await _profileCtrl.updateProfile(
+        name: _nameController.text.trim(),
+        location: _locationController.text.trim(),
+        age: int.tryParse(_ageController.text.trim()),
+        // image: _profileImage?.path, // Avatar upload would go here
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, {TextInputType? type}) {
+  Widget _buildInputField(String label, TextEditingController controller, {TextInputType? type, bool enabled = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: GoogleFonts.inter(
+            style: TiermetryTypography.bodySmall(
               fontSize: 13,
               fontWeight: FontWeight.w500,
               color: Colors.white60,
@@ -57,10 +99,11 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
         TextField(
           controller: controller,
           keyboardType: type,
-          style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+          enabled: enabled,
+          style: TiermetryTypography.bodySmall(color: enabled ? Colors.white : Colors.white38, fontSize: 14),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white10,
+            fillColor: TiermetryColors.surfaceElement,
             contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -74,6 +117,14 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
   }
 
   Widget _buildProfileImage() {
+    final p = _profileCtrl.profile;
+    ImageProvider? imageProvider;
+    if (_profileImage != null) {
+      imageProvider = FileImage(_profileImage!);
+    } else if (p?.image != null && p!.image!.isNotEmpty) {
+      imageProvider = NetworkImage(p.image!);
+    }
+
     return Center(
       child: GestureDetector(
         onTap: _pickImage,
@@ -82,10 +133,9 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
           children: [
             CircleAvatar(
               radius: 45,
-              backgroundColor: Colors.white10,
-              backgroundImage: _profileImage != null
-                  ? FileImage(_profileImage!)
-                  : const AssetImage('assets/placeholder.png') as ImageProvider,
+              backgroundColor: TiermetryColors.surfaceElement,
+              backgroundImage: imageProvider,
+              child: imageProvider == null ? const Icon(Icons.person, size: 40, color: Colors.white24) : null,
             ),
             Positioned(
               bottom: 4,
@@ -108,63 +158,64 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    return Scaffold(
       backgroundColor: Colors.black,
-      navigationBar: CupertinoNavigationBar(
+      appBar: AppBar(
         backgroundColor: Colors.transparent,
-        middle: Text('Account & Privacy',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+        elevation: 0,
+        title: Text('Account & Privacy',
+            style: TiermetryTypography.title(
+              fontSize: 18,
               color: Colors.white,
             )),
-        trailing: GestureDetector(
-          onTap: _saving ? null : _saveChanges,
-          child: _saving
-              ? const CupertinoActivityIndicator()
-              : Text('Save',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              )),
-        ),
-        border: null,
-      ),
-      child: SafeArea(
-        child: Material(
-          color: Colors.black, // keep your background color
-          child: CupertinoScrollbar(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildProfileImage(),
-                  const SizedBox(height: 30),
-                  _buildInputField('Name', _nameController),
-                  _buildInputField('Username', _usernameController),
-                  _buildInputField('Email', _emailController, type: TextInputType.emailAddress),
-                  _buildInputField('Phone', _phoneController, type: TextInputType.phone),
-                  const SizedBox(height: 10),
-                  const Divider(color: Colors.white12),
-                  const SizedBox(height: 10),
-                  Text('Privacy',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      )),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Your account is private by design. No public profile setting is required.',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white54,
-                    ),
-                  ),
-                ],
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: GestureDetector(
+                onTap: _saving ? null : _saveChanges,
+                child: _saving
+                    ? const CupertinoActivityIndicator()
+                    : Text('Save',
+                    style: TiermetryTypography.action(
+                      color: TiermetryColors.accentNeonGreen,
+                      fontWeight: FontWeight.w600,
+                    )),
               ),
             ),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileImage(),
+              const SizedBox(height: 30),
+              _buildInputField('Name', _nameController),
+              _buildInputField('Location', _locationController),
+              _buildInputField('Age', _ageController, type: TextInputType.number),
+              _buildInputField('Email (Read-only)', _emailController, enabled: false),
+              const SizedBox(height: 10),
+              const Divider(color: Colors.white12),
+              const SizedBox(height: 10),
+              Text('Privacy',
+                  style: TiermetryTypography.title(
+                    fontSize: 16,
+                    color: Colors.white,
+                  )),
+              const SizedBox(height: 10),
+              Text(
+                'Your account is private by design. No public profile setting is required.',
+                style: TiermetryTypography.bodySmall(
+                  fontSize: 13,
+                  color: Colors.white54,
+                ),
+              ),
+            ],
           ),
         ),
       ),

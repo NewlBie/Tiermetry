@@ -1,24 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
-
-// A simple data model for a transaction
-class Transaction {
-  final String title;
-  final String type; // e.g., "Payment", "Refund", "Subscription"
-  final double amount;
-  final DateTime date;
-  final IconData icon;
-
-  Transaction({
-    required this.title,
-    required this.type,
-    required this.amount,
-    required this.date,
-    required this.icon,
-  });
-}
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/features/payment/domain/entities/payment_entity.dart';
+import 'package:tiermetry/features/payment/domain/entities/payment_status.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -28,14 +16,46 @@ class TransactionsScreen extends StatefulWidget {
 }
 
 class _TransactionsScreenState extends State<TransactionsScreen> with RefreshRateMixin {
-  // Mock data for the transaction list
-  static final List<Transaction> _transactions = [
-    Transaction(title: 'Monthly Subscription', type: 'Subscription', amount: -9.99, date: DateTime(2025, 8, 25), icon: Icons.star_rounded),
-    Transaction(title: 'Ticket Purchase: Event Name', type: 'Payment', amount: -45.50, date: DateTime(2025, 8, 20), icon: Icons.local_activity_rounded),
-    Transaction(title: 'Refund for cancelled event', type: 'Refund', amount: 25.00, date: DateTime(2025, 8, 18), icon: Icons.refresh_rounded),
-    Transaction(title: 'Arena Booking Fee', type: 'Payment', amount: -150.00, date: DateTime(2025, 8, 12), icon: Icons.sports_esports_rounded),
-    Transaction(title: 'Marketplace Sale', type: 'Deposit', amount: 75.00, date: DateTime(2025, 8, 5), icon: Icons.storefront_rounded),
-  ];
+  bool _isLoading = true;
+  List<PaymentEntity> _payments = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() => _isLoading = true);
+    try {
+      final userId = locator.supabase.auth.currentUser?.id;
+      if (userId != null) {
+        final response = await locator.supabase
+            .from('payments')
+            .select()
+            .order('created_at', ascending: false);
+        
+        if (mounted) {
+          setState(() {
+            _payments = (response as List).map((json) => PaymentEntity(
+              id: json['id'] as String,
+              amount: (json['amount'] as num).toDouble(),
+              status: PaymentStatus.values.firstWhere((e) => e.name == json['status']),
+              createdAt: DateTime.parse(json['created_at'] as String),
+              updatedAt: DateTime.parse(json['updated_at'] as String),
+              bookingId: json['booking_id'] as String?,
+              holdId: json['hold_id'] as String?,
+              method: json['method'] as String?,
+            )).toList();
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading transactions: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,9 +75,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> with RefreshRat
                   centerTitle: true,
                   title: Text(
                     'My Transactions',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: TiermetryTypography.title(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -66,23 +85,27 @@ class _TransactionsScreenState extends State<TransactionsScreen> with RefreshRat
           ),
           SliverPadding(
             padding: const EdgeInsets.all(16.0),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final transaction = _transactions[index];
-                  return _buildTransactionItem(context, transaction);
-                },
-                childCount: _transactions.length,
-              ),
-            ),
+            sliver: _isLoading 
+              ? const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator(color: TiermetryColors.accentNeonGreen)))
+              : _payments.isEmpty
+                ? const SliverToBoxAdapter(child: Center(child: Text('No transactions yet.', style: TextStyle(color: Colors.white38))))
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final payment = _payments[index];
+                        return _buildTransactionItem(context, payment);
+                      },
+                      childCount: _payments.length,
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(BuildContext context, Transaction transaction) {
-    final isCredit = transaction.amount > 0;
+  Widget _buildTransactionItem(BuildContext context, PaymentEntity payment) {
+    final isSuccess = payment.status == PaymentStatus.paid;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -92,27 +115,30 @@ class _TransactionsScreenState extends State<TransactionsScreen> with RefreshRat
       ),
       child: Row(
         children: [
-          Icon(transaction.icon, color: Colors.white70),
+          Icon(
+            payment.bookingId != null ? Icons.sports_esports_rounded : Icons.local_activity_rounded, 
+            color: isSuccess ? TiermetryColors.accentNeonGreen : Colors.white38
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  transaction.title,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                  payment.bookingId != null ? 'Arena Booking' : 'Event Ticket',
+                  style: TiermetryTypography.title(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 Text(
-                  transaction.type,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 14),
+                  '${DateFormat('MMM d, yyyy').format(payment.createdAt)} • ${payment.status.name.toUpperCase()}',
+                  style: TiermetryTypography.bodySmall(color: Colors.white54, fontSize: 13),
                 ),
               ],
             ),
           ),
           Text(
-            "${isCredit ? '+' : ''}\$${transaction.amount.toStringAsFixed(2)}",
-            style: GoogleFonts.plusJakartaSans(
-              color: isCredit ? Colors.greenAccent : Colors.white,
+            '₹${payment.amount.toInt()}',
+            style: TiermetryTypography.title(
+              color: isSuccess ? Colors.white : Colors.white38,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

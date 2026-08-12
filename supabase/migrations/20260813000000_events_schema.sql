@@ -1,118 +1,129 @@
+-- Migration 20260813000000: Implement Events and Event Registrations
+-- This migration creates the core Events schema and a secure registration RPC.
+
 -- 1. Create events table
-create table public.events (
-  id uuid default gen_random_uuid() primary key,
-  title text not null,
+CREATE TABLE IF NOT EXISTS public.events (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  title text NOT NULL,
   description text,
   image text,
-  venue_id uuid references public.venues(id) on delete set null,
-  start_time timestamp with time zone not null,
-  end_time timestamp with time zone not null,
-  registration_start timestamp with time zone not null,
-  registration_end timestamp with time zone not null,
+  venue_id uuid REFERENCES public.venues(id) ON DELETE SET NULL,
+  start_time timestamp with time zone NOT NULL,
+  end_time timestamp with time zone NOT NULL,
+  registration_start timestamp with time zone NOT NULL,
+  registration_end timestamp with time zone NOT NULL,
   max_participants integer,
-  registration_type text default 'individual' check (registration_type in ('individual', 'team')),
-  status text default 'draft' check (status in ('draft', 'published', 'cancelled', 'completed')),
-  cost text default 'Free',
-  points integer default 0,
-  tags text[] default '{}',
-  perks jsonb default '[]',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  registration_type text DEFAULT 'individual' CHECK (registration_type IN ('individual', 'team')),
+  status text DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'cancelled', 'completed')),
+  cost text DEFAULT 'Free',
+  points integer DEFAULT 0,
+  tags text[] DEFAULT '{}',
+  perks jsonb DEFAULT '[]',
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 2. Create event_registrations table
-create table public.event_registrations (
-  id uuid default gen_random_uuid() primary key,
-  event_id uuid references public.events(id) on delete cascade not null,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  status text default 'registered' check (status in ('registered', 'attended', 'cancelled')),
-  registered_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  unique(event_id, user_id) -- Prevent duplicate registration
+CREATE TABLE IF NOT EXISTS public.event_registrations (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  event_id uuid REFERENCES public.events(id) ON DELETE CASCADE NOT NULL,
+  user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE NOT NULL,
+  status text DEFAULT 'registered' CHECK (status IN ('registered', 'attended', 'cancelled')),
+  registered_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(event_id, user_id) -- Prevent duplicate registration
 );
 
 -- 3. Enable RLS
-alter table public.events enable row level security;
-alter table public.event_registrations enable row level security;
+ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.event_registrations ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS Policies
-create policy "Anyone can view published events"
-  on public.events for select
-  using (status = 'published');
+-- Events are public if published
+DROP POLICY IF EXISTS "Anyone can view published events" ON public.events;
+CREATE POLICY "Anyone can view published events"
+  ON public.events FOR SELECT
+  USING (status = 'published');
 
-create policy "Users can view their own registrations"
-  on public.event_registrations for select
-  using (auth.uid() = user_id);
+-- Registrations are private to the user
+DROP POLICY IF EXISTS "Users can view their own registrations" ON public.event_registrations;
+CREATE POLICY "Users can view their own registrations"
+  ON public.event_registrations FOR SELECT
+  USING (auth.uid() = user_id);
 
 -- 5. Secure Event Registration RPC
-create or replace function public.register_for_event(p_event_id uuid)
-returns uuid as $$
-declare
+-- Hardened for Tiermetry architecture: uses locking and server-side validation.
+CREATE OR REPLACE FUNCTION public.register_for_event(p_event_id uuid)
+RETURNS uuid AS $$
+DECLARE
   v_event record;
   v_registration_id uuid;
   v_current_enrollments integer;
-begin
-  -- 1. Authentication
-  if auth.uid() is null then
-    raise exception 'Not authenticated';
-  end if;
+BEGIN
+  -- 1. Authentication Check
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
 
-  -- 2. Lock event and check status/eligibility
-  select * into v_event
-  from public.events
-  where id = p_event_id
-  for update;
+  -- 2. Lock event row to prevent capacity race conditions
+  SELECT * INTO v_event
+  FROM public.events
+  WHERE id = p_event_id
+  FOR UPDATE;
 
-  if v_event is null then
-    raise exception 'Event not found';
-  end if;
+  -- 3. Integrity Checks
+  IF v_event IS NULL THEN
+    RAISE EXCEPTION 'Event not found';
+  END IF;
 
-  if v_event.status != 'published' then
-    raise exception 'Registration is not available for this event';
-  end if;
+  IF v_event.status != 'published' THEN
+    RAISE EXCEPTION 'Registration is not available for this event';
+  END IF;
 
-  -- 3. Check registration window
-  if now() < v_event.registration_start then
-    raise exception 'Registration has not opened yet';
-  end if;
+  -- 4. Registration Window Validation
+  IF now() < v_event.registration_start THEN
+    RAISE EXCEPTION 'Registration has not opened yet';
+  END IF;
 
-  if now() > v_event.registration_end then
-    raise exception 'Registration has closed';
-  end if;
+  IF now() > v_event.registration_end THEN
+    RAISE EXCEPTION 'Registration has closed';
+  END IF;
 
-  -- 4. Check capacity
-  if v_event.max_participants is not null then
-    select count(*) into v_current_enrollments
-    from public.event_registrations
-    where event_id = p_event_id
-      and status = 'registered';
+  -- 5. Capacity Validation
+  IF v_event.max_participants IS NOT NULL THEN
+    SELECT count(*) INTO v_current_enrollments
+    FROM public.event_registrations
+    WHERE event_id = p_event_id
+      AND status = 'registered';
 
-    if v_current_enrollments >= v_event.max_participants then
-      raise exception 'Event is full';
-    end if;
-  end if;
+    IF v_current_enrollments >= v_event.max_participants THEN
+      RAISE EXCEPTION 'Event is full';
+    END IF;
+  END IF;
 
-  -- 5. Check for duplicate registration
-  if exists (
-    select 1 from public.event_registrations
-    where event_id = p_event_id
-      and user_id = auth.uid()
-  ) then
-    raise exception 'You are already registered for this event';
-  end if;
+  -- 6. Duplicate Prevention
+  IF EXISTS (
+    SELECT 1 FROM public.event_registrations
+    WHERE event_id = p_event_id
+      AND user_id = auth.uid()
+  ) THEN
+    RAISE EXCEPTION 'You are already registered for this event';
+  END IF;
 
-  -- 6. Create registration
-  insert into public.event_registrations (event_id, user_id)
-  values (p_event_id, auth.uid())
-  returning id into v_registration_id;
+  -- 7. Atomic Insert
+  INSERT INTO public.event_registrations (event_id, user_id)
+  VALUES (p_event_id, auth.uid())
+  RETURNING id INTO v_registration_id;
 
-  return v_registration_id;
-end;
-$$ language plpgsql security definer set search_path = public;
+  RETURN v_registration_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- 6. Permissions
-revoke all on function public.register_for_event(uuid) from public;
-grant execute on function public.register_for_event(uuid) to authenticated;
+-- 6. Permissions Hardening
+REVOKE ALL ON FUNCTION public.register_for_event(uuid) FROM public;
+GRANT EXECUTE ON FUNCTION public.register_for_event(uuid) TO authenticated;
 
--- 7. Add index for performance
-create index idx_event_registrations_event_id on public.event_registrations(event_id);
-create index idx_event_registrations_user_id on public.event_registrations(user_id);
+-- 7. Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_event_registrations_event_id ON public.event_registrations(event_id);
+CREATE INDEX IF NOT EXISTS idx_event_registrations_user_id ON public.event_registrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_events_status ON public.events(status);
+CREATE INDEX IF NOT EXISTS idx_events_start_time ON public.events(start_time);
