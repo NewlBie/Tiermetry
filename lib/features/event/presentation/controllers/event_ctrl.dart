@@ -20,7 +20,7 @@ class EventCtrl extends ChangeNotifier {
     try {
       _events = await repo.getUpcomingEvents();
     } catch (e) {
-      debugPrint("Error loading events: $e");
+      debugPrint('Error loading events: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

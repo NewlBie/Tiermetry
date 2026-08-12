@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 
 /// A fun, premium greeting widget that rotates through Gen-Z and multilingual
@@ -17,14 +18,14 @@ class AdventureGreeting extends StatefulWidget {
 class _AdventureGreetingState extends State<AdventureGreeting> {
   static const List<String> greetings = [
     "What's good tonight?",
-    "The city's alive",
-    "Let's get it going",
-    "Tap in somewhere",
-    "Full scene tonight",
-    "Aaj ka scene?",
-    "Scene set hai",
-    "Dale, let's play",
-    "Órale, pull up tonight",
+    'The city\'s alive',
+    'Let\'s get it going',
+    'Tap in somewhere',
+    'Full scene tonight',
+    'Aaj ka scene?',
+    'Scene set hai',
+    'Dale, let\'s play',
+    'Órale, pull up tonight',
   ];
 
   late String currentGreeting;
@@ -33,9 +34,11 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
   @override
   void initState() {
     super.initState();
-    // Set a random greeting at startup
-    _setRandomGreeting();
-    // Start the rotation timer (5 minutes = 300 seconds)
+    // Initialize with a random greeting
+    final random = DateTime.now().microsecond % greetings.length;
+    currentGreeting = greetings[random];
+
+    // Start the rotation timer (5 minutes)
     _rotationTimer = Timer.periodic(
       const Duration(minutes: 5),
       (_) => _setRandomGreeting(),
@@ -62,7 +65,6 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Main greeting
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -70,11 +72,10 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
             currentGreeting,
             style: TiermetryTypography.display(
               color: Colors.white,
-              fontSize: 32,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TiermetrySpacing.sm),
         Text(
           '${widget.userName}, pick your scene — we’ll handle the rest.',
           style: TiermetryTypography.caption(

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 // Entities
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 
 // Widgets
@@ -15,13 +15,13 @@ class SkillBrowserScreen extends StatefulWidget {
   State<SkillBrowserScreen> createState() => _SkillBrowserScreenState();
 }
 
-class _SkillBrowserScreenState extends State<SkillBrowserScreen> {
+class _SkillBrowserScreenState extends State<SkillBrowserScreen> with RefreshRateMixin {
   final _skillCtrl = locator.skillCtrl;
 
-  String query = "";
-  String selectedFilter = "All";
+  String query = '';
+  String selectedFilter = 'All';
 
-  final filters = ["All", "Beginner", "Intermediate", "Advanced", "Free"];
+  final filters = ['All', 'Beginner', 'Intermediate', 'Advanced', 'Free'];
 
   @override
   void initState() {
@@ -38,7 +38,7 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen> {
         elevation: 0,
         centerTitle: true,
         title: Text(
-          "Explore Skills",
+          'Explore Skills',
           style: GoogleFonts.plusJakartaSans(
             fontSize: 22,
             fontWeight: FontWeight.w600,
@@ -60,12 +60,12 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen> {
               child: TextField(
                 onChanged: (val) => setState(() => query = val),
                 style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Search amazing skills',
-                  hintStyle: const TextStyle(color: Colors.white38),
-                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  hintStyle: TextStyle(color: Colors.white38),
+                  prefixIcon: Icon(Icons.search, color: Colors.white),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  contentPadding: EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
             ),
@@ -126,20 +126,20 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen> {
                   }
                   if (_skillCtrl.skills.isEmpty) {
                     return const Center(
-                      child: Text("Could not load skills.", style: TextStyle(color: Colors.white38)),
+                      child: Text('Could not load skills.', style: TextStyle(color: Colors.white38)),
                     );
                   }
 
                   // Apply local search and filter to the fetched data
                   final filtered = _skillCtrl.skills.where((skill) {
                     final matchesQuery = query.isEmpty || skill.title.toLowerCase().contains(query.toLowerCase());
-                    final matchesFilter = selectedFilter == "All" || skill.level == selectedFilter || (selectedFilter == "Free" && skill.price == "Free");
+                    final matchesFilter = selectedFilter == 'All' || skill.level == selectedFilter || (selectedFilter == 'Free' && skill.price == 'Free');
                     return matchesQuery && matchesFilter;
                   }).toList();
 
                   if (filtered.isEmpty) {
                     return const Center(
-                      child: Text("No matching skills found.", style: TextStyle(color: Colors.white38)),
+                      child: Text('No matching skills found.', style: TextStyle(color: Colors.white38)),
                     );
                   }
 

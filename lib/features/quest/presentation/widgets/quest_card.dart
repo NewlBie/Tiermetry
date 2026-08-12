@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/theme/typography.dart';
 
 class QuestCard extends StatelessWidget {
   final String title;
@@ -10,11 +10,11 @@ class QuestCard extends StatelessWidget {
   final VoidCallback? onActionTap;
 
   const QuestCard({
-    super.key,
-    required this.title,
-    required this.backgroundColor,
-    this.rating = 4,
     required this.illustrationEmoji,
+    required this.backgroundColor,
+    required this.title,
+    super.key,
+    this.rating = 4,
     this.hasActionButton = false,
     this.onActionTap,
   });
@@ -68,7 +68,7 @@ class QuestCard extends StatelessWidget {
                     title,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TiermetryTypography.title(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       letterSpacing: -1.0,

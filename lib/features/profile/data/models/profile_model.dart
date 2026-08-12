@@ -19,20 +19,20 @@ class ProfileModel extends ProfileEntity {
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
     return ProfileModel(
-      name: json['userName'] ?? '',
-      level: json['userLevel'] ?? '',
-      location: json['userLocation'] ?? '',
-      joinedDate: json['userJoinedDate'] ?? '',
-      age: json['userAge'] ?? 0,
-      image: json['userImage'] ?? '',
-      tierName: json['currentTierName'] ?? '',
+      name: json['userName'] as String? ?? '',
+      level: json['userLevel'] as String? ?? '',
+      location: json['userLocation'] as String? ?? '',
+      joinedDate: json['userJoinedDate'] as String? ?? '',
+      age: json['userAge'] as int? ?? 0,
+      image: json['userImage'] as String? ?? '',
+      tierName: json['currentTierName'] as String? ?? '',
       tierProgress: (json['currentTierProgress'] as num?)?.toDouble() ?? 0.0,
-      openedBadges: json['openedBadges'] ?? 0,
-      totalBadges: json['totalBadges'] ?? 0,
+      openedBadges: json['openedBadges'] as int? ?? 0,
+      totalBadges: json['totalBadges'] as int? ?? 0,
       badges: (json['badges'] as List? ?? [])
-          .map((b) => BadgeModel.fromJson(b))
+          .map((dynamic b) => BadgeModel.fromJson(b as Map<String, dynamic>))
           .toList(),
-      wallet: WalletModel.fromJson(json['wallet'] ?? {}),
+      wallet: WalletModel.fromJson(json['wallet'] as Map<String, dynamic>? ?? {}),
     );
   }
 }
@@ -42,8 +42,8 @@ class BadgeModel extends BadgeEntity {
 
   factory BadgeModel.fromJson(Map<String, dynamic> json) {
     return BadgeModel(
-      title: json['title'] ?? '',
-      color: json['color'] != null ? Color(json['color']) : Colors.grey,
+      title: json['title'] as String? ?? '',
+      color: json['color'] != null ? Color(json['color'] as int) : Colors.grey,
     );
   }
 }
@@ -58,10 +58,10 @@ class WalletModel extends WalletEntity {
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
     return WalletModel(
-      balance: json['balance'] ?? '',
-      earned: json['earned'] ?? '',
-      spent: json['spent'] ?? '',
-      txns: json['txns'] ?? '',
+      balance: json['balance'] as String? ?? '',
+      earned: json['earned'] as String? ?? '',
+      spent: json['spent'] as String? ?? '',
+      txns: json['txns'] as String? ?? '',
     );
   }
 }

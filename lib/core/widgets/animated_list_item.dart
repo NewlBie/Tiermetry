@@ -67,7 +67,7 @@ class _AnimatedListItemState extends State<AnimatedListItem>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _offsetAnimation,
-        child: widget.child,
+        child: RepaintBoundary(child: widget.child),
       ),
     );
   }

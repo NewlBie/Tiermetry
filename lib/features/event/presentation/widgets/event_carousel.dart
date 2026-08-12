@@ -1,9 +1,11 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 import '../../domain/entities/event_entity.dart';
-import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 class EventCarousel extends StatefulWidget {
   final List<EventEntity> events;
@@ -53,7 +55,7 @@ class _EventCarouselState extends State<EventCarousel> {
         height: 200,
         child: Center(
           child: Text(
-            "No featured events right now.",
+            'No featured events right now.',
             style: TextStyle(color: Colors.white38),
           ),
         ),
@@ -90,7 +92,7 @@ class _EventCarouselState extends State<EventCarousel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.events.length, (index) {
-        bool isActive = index == _currentPage;
+        final bool isActive = index == _currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -114,8 +116,9 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+      child: AppSurface(
+        borderRadius: 20,
+        padding: EdgeInsets.zero,
         child: Stack(
           children: [
             Positioned.fill(
@@ -144,7 +147,7 @@ class _EventCard extends StatelessWidget {
                   children: [
                     Text(
                       event.title,
-                      style: GoogleFonts.plusJakartaSans(
+                      style: TiermetryTypography.titleSmall(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -153,7 +156,7 @@ class _EventCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${event.date} • ${event.location}',
-                      style: GoogleFonts.urbanist(
+                      style: TiermetryTypography.bodySmall(
                         color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),

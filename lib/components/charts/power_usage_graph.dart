@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:tiermetry/core/theme/colors.dart';
+import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/app_typography.dart';
+import 'package:tiermetry/core/theme/colors.dart';
 
 class BalancePowerUsageGraph extends StatefulWidget {
   final int overallEfficiency;
   final int avgWhPerMi;
 
   const BalancePowerUsageGraph({
-    super.key,
     required this.overallEfficiency,
     required this.avgWhPerMi,
+    super.key,
   });
 
   @override
@@ -24,13 +24,34 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
 
   final List<List<FlSpot>> datasets = [
     [
-      FlSpot(0, 0.1), FlSpot(1, 0.4), FlSpot(2, 0.6), FlSpot(3, 0.4), FlSpot(4, 0.8), FlSpot(5, 0.6), FlSpot(6, 0.9), FlSpot(7, 0.2),
+      const FlSpot(0, 0.1),
+      const FlSpot(1, 0.4),
+      const FlSpot(2, 0.6),
+      const FlSpot(3, 0.4),
+      const FlSpot(4, 0.8),
+      const FlSpot(5, 0.6),
+      const FlSpot(6, 0.9),
+      const FlSpot(7, 0.2),
     ],
     [
-      FlSpot(0, 0.3), FlSpot(1, 0.6), FlSpot(2, 0.5), FlSpot(3, 0.7), FlSpot(4, 0.9), FlSpot(5, 0.4), FlSpot(6, 0.8), FlSpot(7, 0.5),
+      const FlSpot(0, 0.3),
+      const FlSpot(1, 0.6),
+      const FlSpot(2, 0.5),
+      const FlSpot(3, 0.7),
+      const FlSpot(4, 0.9),
+      const FlSpot(5, 0.4),
+      const FlSpot(6, 0.8),
+      const FlSpot(7, 0.5),
     ],
     [
-      FlSpot(0, 0.5), FlSpot(1, 0.7), FlSpot(2, 0.9), FlSpot(3, 0.6), FlSpot(4, 0.85), FlSpot(5, 0.5), FlSpot(6, 0.95), FlSpot(7, 0.4),
+      const FlSpot(0, 0.5),
+      const FlSpot(1, 0.7),
+      const FlSpot(2, 0.9),
+      const FlSpot(3, 0.6),
+      const FlSpot(4, 0.85),
+      const FlSpot(5, 0.5),
+      const FlSpot(6, 0.95),
+      const FlSpot(7, 0.4),
     ],
   ];
 
@@ -56,8 +77,11 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text("${widget.overallEfficiency}% Efficiency", style: AppTypography.md),
-              Text("${widget.avgWhPerMi} wh/mi avg.", style: AppTypography.sm),
+              Text(
+                '${widget.overallEfficiency}% Efficiency',
+                style: AppTypography.md,
+              ),
+              Text('${widget.avgWhPerMi} wh/mi avg.', style: AppTypography.sm),
             ],
           ),
           const SizedBox(height: 12),
@@ -70,18 +94,24 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
               child: LineChart(
                 key: ValueKey<int>(selectedTab),
                 LineChartData(
-                  gridData: FlGridData(show: false),
+                  gridData: const FlGridData(show: false),
                   titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
                         interval: 3,
                         getTitlesWidget: (value, meta) {
-                          if (value == 0) return _bottomText("11:18");
-                          if (value == 7) return _bottomText("15:48");
+                          if (value == 0) return _bottomText('11:18');
+                          if (value == 7) return _bottomText('15:48');
                           return const SizedBox.shrink();
                         },
                       ),
@@ -102,7 +132,7 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
                       ),
                       barWidth: 3,
                       isStrokeCapRound: true,
-                      dotData: FlDotData(show: false),
+                      dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
                         gradient: LinearGradient(
@@ -122,7 +152,7 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
           ),
           const SizedBox(height: 8),
           Center(
-            child: Text("Balanced Life Progress", style: AppTypography.subtitle),
+            child: Text('Balanced Life Progress', style: AppTypography.subtitle),
           ),
         ],
       ),
@@ -147,17 +177,26 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
             margin: const EdgeInsets.symmetric(horizontal: 6),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected ? TiermetryColors.primary.withValues(alpha: 0.15) : Colors.transparent,
+              color:
+                  isSelected
+                      ? TiermetryColors.primary.withValues(alpha: 0.15)
+                      : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected ? TiermetryColors.primary : TiermetryColors.textSecondary.withValues(alpha: 0.3),
+                color:
+                    isSelected
+                        ? TiermetryColors.primary
+                        : TiermetryColors.textSecondary.withValues(alpha: 0.3),
                 width: 1.2,
               ),
             ),
             child: Text(
               tabs[index],
               style: AppTypography.sm.copyWith(
-                color: isSelected ? TiermetryColors.primary : TiermetryColors.textSecondary,
+                color:
+                    isSelected
+                        ? TiermetryColors.primary
+                        : TiermetryColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),

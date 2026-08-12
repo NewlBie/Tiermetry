@@ -5,7 +5,7 @@ import 'package:tiermetry/features/profile/domain/entities/profile_entity.dart';
 class MockApiService implements ApiService {
   @override
   Future<WalletEntity> getWalletData() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future<void>.delayed(const Duration(seconds: 2));
     return WalletEntity(
       balance: r'$1,250.75',
       earned: '350.20',
@@ -16,7 +16,7 @@ class MockApiService implements ApiService {
 
   @override
   Future<List<TrendingActivity>> getTrendingActivities() async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future<void>.delayed(const Duration(seconds: 1));
     return [
       TrendingActivity(
         id: '1',
@@ -49,4 +49,3 @@ class MockApiService implements ApiService {
     ];
   }
 }
-

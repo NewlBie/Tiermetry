@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
+import 'package:tiermetry/core/widgets/app_pill.dart';
+import 'package:tiermetry/core/widgets/app_search_hero.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/section_header.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
 
@@ -23,7 +28,7 @@ class ArenaScreen extends StatefulWidget {
   State<ArenaScreen> createState() => _ArenaScreenState();
 }
 
-class _ArenaScreenState extends State<ArenaScreen> {
+class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
   final _arenaCtrl = locator.arenaCtrl;
   final _searchController = TextEditingController();
   late final ScrollController _scrollCtrl;
@@ -64,8 +69,9 @@ class _ArenaScreenState extends State<ArenaScreen> {
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -101,13 +107,13 @@ class _ArenaScreenState extends State<ArenaScreen> {
   void _openAllArenas() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AllArenasScreen()),
+      MaterialPageRoute<void>(builder: (_) => const AllArenasScreen()),
     );
   }
 
   void _openArena(ArenaEntity arena) {
     Navigator.of(context).push(
-      PageRouteBuilder(
+      PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, anim, _) => ArenaDetailsScreen(arena: arena),
         transitionsBuilder:
@@ -145,8 +151,9 @@ class _ArenaScreenState extends State<ArenaScreen> {
                 child: RepaintBoundary(
                   child: Padding(
                     padding: TiermetrySpacing.pagePadding,
-                    child: _SearchHero(
+                    child: AppSearchHero(
                       controller: _searchController,
+                      hintText: 'Search gaming cafes, turfs, paintball...',
                       onClear: _query.isEmpty ? null : _searchController.clear,
                     ),
                   ),
@@ -177,7 +184,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
               padding: TiermetrySpacing.pagePadding,
               child: Text(
                 'Browse by activity',
-                style: TiermetryTypography.title(color: Colors.white),
+                style: TiermetryTypography.title(color: TiermetryColors.white),
               ),
             ),
             const SizedBox(height: TiermetrySpacing.headerToContent),
@@ -187,7 +194,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
                 clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(
+                padding: const EdgeInsets.only(
                   left: TiermetrySpacing.listInset,
                   right: TiermetrySpacing.listInset,
                   top: 4,
@@ -222,7 +229,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
         if (_arenaCtrl.isLoading) {
           return const SliverToBoxAdapter(
             child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: CircularProgressIndicator(color: TiermetryColors.white),
             ),
           );
         }
@@ -251,7 +258,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
                   ),
                   const SizedBox(height: TiermetrySpacing.headerToContent),
                   places.isEmpty
-                      ? const _EmptyState(message: 'No matching places found.')
+                      ? const AppEmptyState(message: 'No matching places found.')
                       : Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: Column(
@@ -289,7 +296,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
                   ),
                   const SizedBox(height: TiermetrySpacing.headerToContent),
                   featured.isEmpty
-                      ? const _EmptyState(message: 'No top picks found.')
+                      ? const AppEmptyState(message: 'No top picks found.')
                       : SizedBox(
                         height: 286,
                         child: ListView.separated(
@@ -325,7 +332,7 @@ class _ArenaScreenState extends State<ArenaScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
+            const Padding(
               padding: TiermetrySpacing.pagePadding,
               child: SectionHeader(title: 'Offers and spotlights'),
             ),
@@ -353,52 +360,6 @@ class _ArenaScreenState extends State<ArenaScreen> {
   }
 }
 
-class _SearchHero extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback? onClear;
-
-  const _SearchHero({required this.controller, required this.onClear});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _SearchField(controller: controller)),
-          if (onClear != null) ...[
-            const SizedBox(width: TiermetrySpacing.sm),
-            GestureDetector(
-              onTap: onClear,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.surfaceElement,
-                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                ),
-                child: const Icon(Icons.close_rounded, color: Colors.white70),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _ActivityCapsule extends StatelessWidget {
   final _ActivityChoice choice;
   final bool isSelected;
@@ -416,28 +377,19 @@ class _ActivityCapsule extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
+      child: AppSurface(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutBack,
         width: 105,
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border:
-              isSelected
-                  ? Border.all(color: primaryColor, width: 1.5)
-                  : Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    width: 1,
-                  ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: TiermetryRadii.lg,
+        border:
+            isSelected
+                ? Border.all(color: primaryColor, width: 1.5)
+                : Border.all(
+                  color: TiermetryColors.cardBorder,
+                  width: 1,
+                ),
+        shadows: TiermetryShadows.capsule,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -446,7 +398,7 @@ class _ActivityCapsule extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 color: primaryColor,
-                borderRadius: BorderRadius.circular(isSelected ? 28 : 20),
+                borderRadius: BorderRadius.circular(isSelected ? 28 : TiermetryRadii.md),
                 boxShadow: [
                   BoxShadow(
                     color: primaryColor.withValues(
@@ -459,11 +411,11 @@ class _ActivityCapsule extends StatelessWidget {
               ),
               child: Icon(
                 choice.icon,
-                color: Colors.black.withAlpha(220),
+                color: TiermetryColors.black.withAlpha(220),
                 size: 25,
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: TiermetrySpacing.sm),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
@@ -471,8 +423,8 @@ class _ActivityCapsule extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TiermetryTypography.caption(
+                  color: TiermetryColors.white,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   height: 1.2,
@@ -493,26 +445,16 @@ class _SponsoredVenueTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       width: 300,
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
+      borderRadius: TiermetryRadii.lg,
+      shadows: TiermetryShadows.highEmphasis,
       child: Row(
         children: [
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(TiermetrySpacing.md),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
               child: Image.asset(
                 data.image,
                 width: 116,
@@ -523,18 +465,18 @@ class _SponsoredVenueTile extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 16, 14, 16),
+              padding: const EdgeInsets.fromLTRB(0, TiermetrySpacing.lg, 14, TiermetrySpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _TinyPill(text: data.label),
+                  AppPill(text: data.label),
                   const Spacer(),
                   Text(
                     data.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
-                      color: Colors.white,
+                      color: TiermetryColors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                     ),
@@ -545,59 +487,12 @@ class _SponsoredVenueTile extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.caption(
-                      color: Colors.white.withValues(alpha: 0.58),
+                      color: TiermetryColors.white.withValues(alpha: 0.58),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ).copyWith(height: 1.3),
                   ),
                 ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-
-  const _SearchField({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            color: Colors.white.withValues(alpha: 0.58),
-          ),
-          const SizedBox(width: TiermetrySpacing.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: TiermetryTypography.caption(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              cursorColor: TiermetryColors.accentNeonGreen,
-              decoration: InputDecoration(
-                hintText: 'Search gaming cafes, turfs, paintball...',
-                hintStyle: TiermetryTypography.caption(
-                  color: Colors.white.withValues(alpha: 0.38),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                border: InputBorder.none,
               ),
             ),
           ),
@@ -617,20 +512,10 @@ class _VenueResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AppSurface(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: TiermetryRadii.lg,
+        shadows: TiermetryShadows.venueTile,
         child: Row(
           children: [
             ClipRRect(
@@ -655,7 +540,7 @@ class _VenueResultTile extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TiermetryTypography.title(
-                            color: Colors.white,
+                            color: TiermetryColors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
                           ),
@@ -670,7 +555,7 @@ class _VenueResultTile extends StatelessWidget {
                       Text(
                         arena.rating.toStringAsFixed(1),
                         style: TiermetryTypography.caption(
-                          color: Colors.white,
+                          color: TiermetryColors.white,
                           fontSize: 11.5,
                           fontWeight: FontWeight.w800,
                         ),
@@ -683,7 +568,7 @@ class _VenueResultTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.caption(
-                      color: Colors.white.withValues(alpha: 0.52),
+                      color: TiermetryColors.white.withValues(alpha: 0.52),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -691,12 +576,12 @@ class _VenueResultTile extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      _TinyPill(text: arena.isOpen ? 'Open now' : 'Closed'),
+                      AppPill(text: arena.isOpen ? 'Open now' : 'Closed'),
                       const SizedBox(width: TiermetrySpacing.sm),
                       Text(
                         '${arena.distance} km',
                         style: TiermetryTypography.caption(
-                          color: Colors.white.withValues(alpha: 0.58),
+                          color: TiermetryColors.white.withValues(alpha: 0.58),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -704,7 +589,7 @@ class _VenueResultTile extends StatelessWidget {
                       const Spacer(),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: TiermetryColors.white.withValues(alpha: 0.35),
                       ),
                     ],
                   ),
@@ -712,63 +597,6 @@ class _VenueResultTile extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TinyPill extends StatelessWidget {
-  final String text;
-
-  const _TinyPill({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.pill),
-      ),
-      child: Text(
-        text,
-        style: TiermetryTypography.caption(
-          color: Colors.white.withValues(alpha: 0.74),
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-
-  const _EmptyState({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: TiermetrySpacing.pagePadding,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(TiermetrySpacing.lg),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TiermetryTypography.caption(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
         ),
       ),
     );

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/features/home/domain/entities/trending_activity.dart';
 
 class TrendingActivitiesSection extends StatefulWidget {
   final List<TrendingActivity> activities;
   final bool isLoading;
-  final Function(String)? onActivitySelected;
+  final void Function(String)? onActivitySelected;
 
   const TrendingActivitiesSection({
     required this.activities,
@@ -78,7 +80,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
       child: ListView.builder(
         clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: TiermetrySpacing.listInset,
           right: TiermetrySpacing.listInset,
           top: 4,
@@ -101,7 +103,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
       child: ListView.builder(
         clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.only(
+        padding: const EdgeInsets.only(
           left: TiermetrySpacing.listInset,
           right: TiermetrySpacing.listInset,
           top: 4,
@@ -111,12 +113,13 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
         itemBuilder:
             (_, __) => Padding(
               padding: const EdgeInsets.only(right: TiermetrySpacing.lg),
-              child: Container(
+              child: AppSurface(
                 width: 100,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  color: Colors.white.withValues(alpha: 0.06),
-                ),
+                borderRadius: TiermetryRadii.lg,
+                color: Colors.white.withValues(alpha: 0.06),
+                border: Border.all(color: Colors.transparent),
+                shadows: const [],
+                child: const SizedBox.shrink(),
               ),
             ),
       ),
@@ -125,63 +128,62 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
 
   Widget _buildCapsuleCard(TrendingActivity activity, int index) {
     final isSelected = _activities[index].isSelected;
-    final primaryColor = TiermetryColors.accentNeonGreen;
+    const primaryColor = TiermetryColors.accentNeonGreen;
 
     return GestureDetector(
       onTap: () => _toggleActivity(index),
-      child: AnimatedContainer(
+      child: AppSurface(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutBack,
             width: 105,
-            decoration: BoxDecoration(
-              color: TiermetryColors.surface,
-              borderRadius: BorderRadius.circular(24),
-              border:
-                  isSelected
-                      ? Border.all(color: primaryColor, width: 1.5)
-                      : Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        width: 1,
-                      ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Icon Container
-                MaterialMorphingShape(
-                  isSelected: isSelected,
-                  color: primaryColor,
-                  child: Icon(
-                    _getActivityIcon(activity.icon),
-                    color: Colors.black.withAlpha(220),
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 0),
-                  child: Text(
-                    activity.name,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
+            borderRadius: TiermetryRadii.lg,
+            border:
+                isSelected
+                    ? Border.all(color: primaryColor, width: 1.5)
+                    : Border.all(
+                      color: TiermetryColors.cardBorder,
+                      width: 1,
                     ),
-                    overflow: TextOverflow.ellipsis,
+            shadows: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+            child: RepaintBoundary(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Icon Container
+                  MaterialMorphingShape(
+                    isSelected: isSelected,
+                    color: primaryColor,
+                    child: Icon(
+                      _getActivityIcon(activity.icon),
+                      color: Colors.black.withAlpha(220),
+                      size: 26,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  // Text
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: Text(
+                      activity.name,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
           )
           .animate()
@@ -223,28 +225,28 @@ class _MaterialMorphingShapeState extends State<MaterialMorphingShape>
     // The iconic distinct Google Material morphing shapes
     final squircle = BorderRadius.circular(20);
     // Diagonal Leaf
-    final leaf = const BorderRadius.only(
+    const leaf = BorderRadius.only(
       topLeft: Radius.circular(29),
       topRight: Radius.circular(10),
       bottomLeft: Radius.circular(10),
       bottomRight: Radius.circular(29),
     );
     // Off-center Organic Blob
-    final blob = const BorderRadius.only(
+    const blob = BorderRadius.only(
       topLeft: Radius.circular(12),
       topRight: Radius.circular(29),
       bottomLeft: Radius.circular(26),
       bottomRight: Radius.circular(12),
     );
     // Classic Teardrop
-    final tearDrop = const BorderRadius.only(
+    const tearDrop = BorderRadius.only(
       topLeft: Radius.circular(29),
       topRight: Radius.circular(29),
       bottomLeft: Radius.circular(10),
       bottomRight: Radius.circular(29),
     );
     // Inverted Diagonal Leaf
-    final invLeaf = const BorderRadius.only(
+    const invLeaf = BorderRadius.only(
       topLeft: Radius.circular(10),
       topRight: Radius.circular(29),
       bottomLeft: Radius.circular(29),

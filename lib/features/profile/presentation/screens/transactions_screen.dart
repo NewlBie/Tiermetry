@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 
 // A simple data model for a transaction
 class Transaction {
@@ -19,16 +20,21 @@ class Transaction {
   });
 }
 
-class TransactionsScreen extends StatelessWidget {
+class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
+  @override
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends State<TransactionsScreen> with RefreshRateMixin {
   // Mock data for the transaction list
   static final List<Transaction> _transactions = [
-    Transaction(title: "Monthly Subscription", type: "Subscription", amount: -9.99, date: DateTime(2025, 8, 25), icon: Icons.star_rounded),
-    Transaction(title: "Ticket Purchase: Event Name", type: "Payment", amount: -45.50, date: DateTime(2025, 8, 20), icon: Icons.local_activity_rounded),
-    Transaction(title: "Refund for cancelled event", type: "Refund", amount: 25.00, date: DateTime(2025, 8, 18), icon: Icons.refresh_rounded),
-    Transaction(title: "Arena Booking Fee", type: "Payment", amount: -150.00, date: DateTime(2025, 8, 12), icon: Icons.sports_esports_rounded),
-    Transaction(title: "Marketplace Sale", type: "Deposit", amount: 75.00, date: DateTime(2025, 8, 5), icon: Icons.storefront_rounded),
+    Transaction(title: 'Monthly Subscription', type: 'Subscription', amount: -9.99, date: DateTime(2025, 8, 25), icon: Icons.star_rounded),
+    Transaction(title: 'Ticket Purchase: Event Name', type: 'Payment', amount: -45.50, date: DateTime(2025, 8, 20), icon: Icons.local_activity_rounded),
+    Transaction(title: 'Refund for cancelled event', type: 'Refund', amount: 25.00, date: DateTime(2025, 8, 18), icon: Icons.refresh_rounded),
+    Transaction(title: 'Arena Booking Fee', type: 'Payment', amount: -150.00, date: DateTime(2025, 8, 12), icon: Icons.sports_esports_rounded),
+    Transaction(title: 'Marketplace Sale', type: 'Deposit', amount: 75.00, date: DateTime(2025, 8, 5), icon: Icons.storefront_rounded),
   ];
 
   @override

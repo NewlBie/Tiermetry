@@ -25,7 +25,7 @@ class ProfileCtrl extends ChangeNotifier {
       _profile = await repo.getProfileData();
     } catch (e) {
       _errorMessage = 'Unable to load profile. Please try again.';
-      debugPrint("Error loading profile: $e");
+      debugPrint('Error loading profile: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

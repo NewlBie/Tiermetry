@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../domain/entities/event_entity.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import '../../domain/entities/event_entity.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   final EventEntity event;
@@ -38,23 +41,13 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
     return RepaintBoundary(
       child: GestureDetector(
         onTap: () => HapticFeedback.lightImpact(),
-        child: Container(
-          // Split Inset Card Styling
-          decoration: BoxDecoration(
-            color: TiermetryColors.surface,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-            ],
+        child: AppSurface(
+          borderRadius: TiermetryRadii.xl,
+          border: Border.all(
+            color: TiermetryColors.cardBorderEmphasis,
+            width: 1.5,
           ),
+          shadows: TiermetryShadows.upcomingEvent,
           padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,11 +129,10 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "Live soon",
-                                style: GoogleFonts.urbanist(
+                                'Live soon',
+                                style: TiermetryTypography.label(
                                   fontSize: 11,
                                   letterSpacing: 0.3,
-                                  fontWeight: FontWeight.w800,
                                   color: Colors.white,
                                 ),
                               ),
@@ -182,14 +174,12 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Title
                       Text(
                         widget.event.title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.bricolageGrotesque(
+                        style: TiermetryTypography.titleSmall(
                           fontSize: 18,
-                          fontWeight: FontWeight.w800,
                           height: 1.15,
                           color: Colors.white,
                         ),
@@ -215,8 +205,8 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              "${widget.event.date} • ${widget.event.time}",
-                              style: GoogleFonts.urbanist(
+                              '${widget.event.date} • ${widget.event.time}',
+                              style: TiermetryTypography.caption(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white70,
@@ -247,9 +237,8 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               widget.event.location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.urbanist(
+                              style: TiermetryTypography.caption(
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
                                 color: Colors.white60,
                               ),
                             ),

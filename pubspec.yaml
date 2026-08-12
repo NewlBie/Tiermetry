@@ -52,6 +52,7 @@ dependencies:
   circulito: ^1.0.3
   flutter_refresh_rate_control: ^0.0.3
   line_icons: ^2.0.3
+  supabase_flutter: ^2.16.0
 
 dev_dependencies:
   flutter_test:

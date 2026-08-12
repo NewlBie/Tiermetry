@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/features/quests/presentation/widgets/quest_card.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/features/quest/presentation/widgets/quest_card.dart';
 
-class QuestsScreen extends StatelessWidget {
+class QuestsScreen extends StatefulWidget {
   const QuestsScreen({super.key});
 
+  @override
+  State<QuestsScreen> createState() => _QuestsScreenState();
+}
+
+class _QuestsScreenState extends State<QuestsScreen> with RefreshRateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -22,8 +28,8 @@ class QuestsScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Choose\nyour quests",
-                    style: GoogleFonts.inter(
+                    'Choose\nyour quests',
+                    style: TiermetryTypography.display(
                       fontSize: 42,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -48,9 +54,9 @@ class QuestsScreen extends StatelessWidget {
             ),
 
             // Staggered Grid Content
-            Expanded(
+            const Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
                     IntrinsicHeight(
@@ -58,39 +64,39 @@ class QuestsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // Left Tall Column
-                          const Expanded(
+                          Expanded(
                             flex: 10,
                             child: QuestCard(
-                              title: "Help Steve solve the mystery",
+                              title: 'Help Steve solve the mystery',
                               backgroundColor: Color(0xFF5C80FF),
                               rating: 4,
-                              illustrationEmoji: "👾",
+                              illustrationEmoji: '👾',
                               hasActionButton: true,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           // Right Two Stacked Column
                           Expanded(
                             flex: 11,
                             child: Column(
                               children: [
-                                const Expanded(
+                                Expanded(
                                   flex: 5,
                                   child: QuestCard(
-                                    title: "Weasley is afraid of something",
+                                    title: 'Weasley is afraid of something',
                                     backgroundColor: Color(0xFFF460D6),
                                     rating: 3,
-                                    illustrationEmoji: "👹",
+                                    illustrationEmoji: '👹',
                                   ),
                                 ),
-                                const SizedBox(height: 12),
-                                const Expanded(
+                                SizedBox(height: 12),
+                                Expanded(
                                   flex: 6, // Slightly taller proportionally
                                   child: QuestCard(
-                                    title: "Bully at school",
+                                    title: 'Bully at school',
                                     backgroundColor: Color(0xFFA2CC5B),
                                     rating: 4,
-                                    illustrationEmoji: "🧟",
+                                    illustrationEmoji: '🧟',
                                   ),
                                 ),
                               ],
@@ -99,19 +105,19 @@ class QuestsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     // Bottom Wide Card
-                    const SizedBox(
+                    SizedBox(
                       height: 180,
                       width: double.infinity,
                       child: QuestCard(
-                        title: "What happened to Stanley?",
+                        title: 'What happened to Stanley?',
                         backgroundColor: Color(0xFF43555D),
                         rating: 3,
-                        illustrationEmoji: "🧌",
+                        illustrationEmoji: '🧌',
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    SizedBox(height: 48),
                   ],
                 ),
               ),

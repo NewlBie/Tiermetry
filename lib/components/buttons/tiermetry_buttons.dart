@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
 
 /// Primary filled button with white background and black text
 /// Used for main CTAs like "Get Premium", "Book Now", "Enroll"
@@ -32,14 +34,14 @@ class TiermetryPrimaryButton extends StatelessWidget {
         padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.white, Colors.white.withValues(alpha: 0.9)],
+            colors: [TiermetryColors.white, TiermetryColors.white.withValues(alpha: 0.9)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(100),
+          borderRadius: BorderRadius.circular(TiermetryRadii.pill),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
+              color: TiermetryColors.black.withValues(alpha: 0.15),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -52,14 +54,14 @@ class TiermetryPrimaryButton extends StatelessWidget {
             Text(
               text,
               style: GoogleFonts.urbanist(
-                color: Colors.black,
+                color: TiermetryColors.black,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
             if (trailingIcon != null) ...[
               const SizedBox(width: 6),
-              Icon(trailingIcon, size: 16, color: Colors.black),
+              Icon(trailingIcon, size: 16, color: TiermetryColors.black),
             ],
           ],
         ),
@@ -97,22 +99,22 @@ class TiermetryGlassButton extends StatelessWidget {
         width: width,
         padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          color: TiermetryColors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+          border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.1)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (leadingIcon != null) ...[
-              Icon(leadingIcon, size: 16, color: Colors.white70),
+              Icon(leadingIcon, size: 16, color: TiermetryColors.white.withValues(alpha: 0.7)),
               const SizedBox(width: 6),
             ],
             Text(
               text,
               style: GoogleFonts.urbanist(
-                color: Colors.white,
+                color: TiermetryColors.white,
                 fontWeight: FontWeight.w500,
                 fontSize: 13,
               ),
@@ -152,13 +154,13 @@ class TiermetryPillButton extends StatelessWidget {
       child: Container(
         padding: padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: backgroundColor ?? Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: backgroundColor ?? TiermetryColors.white,
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
         ),
         child: Text(
           text,
           style: GoogleFonts.urbanist(
-            color: textColor ?? Colors.black,
+            color: textColor ?? TiermetryColors.black,
             fontWeight: FontWeight.w600,
             fontSize: 12,
           ),
@@ -186,7 +188,7 @@ class TiermetryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accentColor = selectedColor ?? Colors.white;
+    final accentColor = selectedColor ?? TiermetryColors.white;
     
     return GestureDetector(
       onTap: () {
@@ -197,10 +199,10 @@ class TiermetryChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? accentColor : TiermetryColors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(TiermetryRadii.sm),
           border: Border.all(
-            color: isSelected ? Colors.transparent : Colors.white.withValues(alpha: 0.1),
+            color: isSelected ? Colors.transparent : TiermetryColors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -208,7 +210,7 @@ class TiermetryChip extends StatelessWidget {
           style: GoogleFonts.urbanist(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.black : Colors.white70,
+            color: isSelected ? TiermetryColors.black : TiermetryColors.white.withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -235,13 +237,13 @@ class TiermetryBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.black,
-        borderRadius: BorderRadius.circular(12),
+        color: backgroundColor ?? TiermetryColors.black,
+        borderRadius: BorderRadius.circular(TiermetryRadii.sm),
       ),
       child: Text(
         text,
         style: GoogleFonts.urbanist(
-          color: textColor ?? Colors.white,
+          color: textColor ?? TiermetryColors.white,
           fontSize: 10.5,
           fontWeight: FontWeight.w500,
         ),

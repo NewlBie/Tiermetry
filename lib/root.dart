@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
-
-// Features
-import 'features/arena/presentation/screens/arena_screen.dart';
-import 'features/event/presentation/screens/event_browser_screen.dart';
-import 'features/profile/presentation/screens/profile_screen.dart';
-import 'features/booking/presentation/screens/booking_screen.dart';
-import 'features/home/presentation/screens/home_screen.dart';
+import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
-
-// Tabs
-// HomeTab import removed because it was moved to HomeScreen
-import 'features/profile/presentation/screens/account_privacy_screen.dart';
-import 'features/profile/presentation/screens/help_and_support_screen.dart';
-import 'features/profile/presentation/screens/legal_policies_screen.dart';
-import 'features/profile/presentation/screens/transactions_screen.dart';
-
-// Components
 import 'package:tiermetry/core/widgets/bottom_nav.dart';
 import 'package:tiermetry/core/widgets/drawer.dart';
 import 'package:tiermetry/core/widgets/top_bar.dart';
+
+import 'features/arena/presentation/screens/arena_screen.dart';
+import 'features/booking/presentation/screens/booking_screen.dart';
+import 'features/event/presentation/screens/event_browser_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
+import 'features/profile/presentation/screens/account_privacy_screen.dart';
+import 'features/profile/presentation/screens/help_and_support_screen.dart';
+import 'features/profile/presentation/screens/legal_policies_screen.dart';
+import 'features/profile/presentation/screens/profile_screen.dart';
+import 'features/profile/presentation/screens/transactions_screen.dart';
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -27,8 +26,9 @@ class Root extends StatefulWidget {
   State<Root> createState() => _RootState();
 }
 
-class _RootState extends State<Root> with TickerProviderStateMixin {
+class _RootState extends State<Root> with TickerProviderStateMixin, RefreshRateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _authCtrl = locator.authCtrl;
 
   int _selectedIndex = 0;
   final bool _hasNotification = true;
@@ -42,12 +42,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
     BottomNavItem(icon: Icons.person_rounded, label: 'Profile'),
   ];
 
-  final List<Widget> _pages = const [
-    HomeScreen(userName: "Neal"),
-    ArenaScreen(),
-    EventBrowserScreen(),
-    ProfileScreen(),
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
@@ -56,6 +51,13 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    _pages = [
+      HomeScreen(userName: _authCtrl.user?.name ?? 'Gamer'),
+      const ArenaScreen(),
+      const EventBrowserScreen(),
+      const ProfileScreen(),
+    ];
   }
 
   @override
@@ -74,7 +76,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           Navigator.pop(context);
           Navigator.push(
             context,
-            MaterialPageRoute(
+            MaterialPageRoute<void>(
               builder: (context) => const AccountPrivacyScreen(),
             ),
           );
@@ -88,7 +90,9 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           Navigator.pop(context);
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
+            MaterialPageRoute<void>(
+              builder: (context) => const TransactionsScreen(),
+            ),
           );
         },
       ),
@@ -100,7 +104,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           Navigator.pop(context);
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const BookingScreen()),
+            MaterialPageRoute<void>(builder: (context) => const BookingScreen()),
           );
         },
       ),
@@ -112,7 +116,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           Navigator.pop(context);
           Navigator.push(
             context,
-            MaterialPageRoute(
+            MaterialPageRoute<void>(
               builder: (context) => const HelpAndSupportScreen(),
             ),
           );
@@ -126,7 +130,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           Navigator.pop(context);
           Navigator.push(
             context,
-            MaterialPageRoute(
+            MaterialPageRoute<void>(
               builder: (context) => const LegalPoliciesScreen(),
             ),
           );
@@ -152,9 +156,9 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF151515),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            color: TiermetryColors.surface,
+            borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+            border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.08)),
           ),
           child: SafeArea(
             top: false,
@@ -164,13 +168,13 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
               children: [
                 Text(
                   'Log out?',
-                  style: TiermetryTypography.title(color: Colors.white),
+                  style: TiermetryTypography.title(color: TiermetryColors.white),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: TiermetrySpacing.sm),
                 Text(
                   'You can sign back in anytime.',
                   style: TiermetryTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: TiermetryColors.white.withValues(alpha: 0.62),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -186,7 +190,10 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
                     ),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _authCtrl.signOut();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
@@ -214,7 +221,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
             Text(
               'TIERMETRY',
               style: TiermetryTypography.title(
-                color: Colors.white,
+                color: TiermetryColors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.5,
@@ -223,7 +230,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
             Text(
               'JUST KNOCK IT OUT',
               style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.62),
+                color: TiermetryColors.white.withValues(alpha: 0.62),
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.9,
@@ -235,19 +242,19 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
         return Text(
           'Arenas',
           key: const ValueKey('arenas'),
-          style: TiermetryTypography.title(color: Colors.white),
+          style: TiermetryTypography.title(color: TiermetryColors.white),
         );
       case 2:
         return Text(
           'Events',
           key: const ValueKey('events'),
-          style: TiermetryTypography.title(color: Colors.white),
+          style: TiermetryTypography.title(color: TiermetryColors.white),
         );
       case 3:
         return Text(
           'Profile',
           key: const ValueKey('profile'),
-          style: TiermetryTypography.title(color: Colors.white),
+          style: TiermetryTypography.title(color: TiermetryColors.white),
         );
       default:
         return const SizedBox.shrink();
@@ -259,8 +266,8 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
     return Scaffold(
       key: _scaffoldKey,
       drawer: AppDrawer(
-        userName: 'Neal Adams',
-        userHandle: '@neal_adams',
+        userName: _authCtrl.user?.name ?? 'Gamer',
+        userHandle: '@${(_authCtrl.user?.name ?? 'gamer').toLowerCase().replaceAll(' ', '_')}',
         userAvatarAsset: 'assets/Seller.png',
         items: _buildDrawerItems(),
       ),
@@ -271,7 +278,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           _menuAnimationController.reverse();
         }
       },
-      backgroundColor: Colors.black,
+      backgroundColor: TiermetryColors.black,
       body: Stack(
         children: [
           IndexedStack(index: _selectedIndex, children: _pages),
@@ -291,7 +298,7 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
             right: 0,
             bottom: 16,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
               child: BottomNav(
                 currentIndex: _selectedIndex,
                 onTap: (index) {

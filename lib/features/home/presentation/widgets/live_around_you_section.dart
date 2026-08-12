@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
 
 /// ---------------------------------------------------------------------------
 /// "LIVE AROUND YOU" - horizontally scrollable activity cards
@@ -44,12 +48,12 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
   void _updateFadeOpacity() {
     if (_maxScroll == 0) return;
 
-    double offset = _scrollController.offset;
-    double remaining = _maxScroll - offset;
+    final double offset = _scrollController.offset;
+    final double remaining = _maxScroll - offset;
 
     // Simple linear fade: 0-50px fade range
-    double leftOp = (offset / 50).clamp(0, 1);
-    double rightOp = (remaining / 50).clamp(0, 1);
+    final double leftOp = (offset / 50).clamp(0, 1);
+    final double rightOp = (remaining / 50).clamp(0, 1);
 
     if (mounted &&
         ((_leftFadeOpacity - leftOp).abs() > 0.03 ||
@@ -163,32 +167,12 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
                 itemCount: _activities.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 14),
                 itemBuilder: (context, index) {
-                  return _LiveActivityCard(activity: _activities[index]);
+                  return RepaintBoundary(
+                    child: _LiveActivityCard(activity: _activities[index]),
+                  );
                 },
               ),
-              // RIGHT FADE (scroll indicator)
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: 28,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          Colors.transparent,
-                          TiermetryColors.background.withValues(
-                            alpha: _rightFadeOpacity * 0.3,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              ScrollFadeOverlay(opacity: _rightFadeOpacity),
             ],
           ),
         ),
@@ -239,23 +223,10 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       width: 240,
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.06),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
+      borderRadius: TiermetryRadii.lg,
+      shadows: TiermetryShadows.liveActivity,
       child: Column(
         children: [
           // --- Image Section (65%) ---
@@ -332,8 +303,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                                     padding: const EdgeInsets.only(left: 4),
                                     child: Text(
                                       'Currently',
-                                      style: TextStyle(
-                                        fontSize: 10,
+                                      style: TiermetryTypography.label(
                                         color: Colors.white.withValues(
                                           alpha: 0.6,
                                         ),
@@ -387,7 +357,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.local_fire_department_rounded,
                               size: 10,
                               color: TiermetryColors.accentNeonGreen,
@@ -395,8 +365,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                             const SizedBox(width: 4),
                             Text(
                               '${widget.activity.playersPlaying} active',
-                              style: TextStyle(
-                                fontSize: 10,
+                              style: TiermetryTypography.label(
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
@@ -417,12 +386,6 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              decoration: BoxDecoration(
-                color: TiermetryColors.surface,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(24),
-                ),
-              ),
               child: _buildCardContent(),
             ),
           ),
@@ -469,8 +432,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
+          style: TiermetryTypography.caption(
             fontWeight: FontWeight.w500,
             color: Colors.white.withValues(alpha: 0.5),
           ),
@@ -548,8 +510,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(
-            fontSize: 11,
+          style: TiermetryTypography.caption(
             fontWeight: FontWeight.w500,
             color: Colors.white.withValues(alpha: 0.7),
           ),

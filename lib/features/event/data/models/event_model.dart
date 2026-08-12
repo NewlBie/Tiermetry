@@ -20,21 +20,21 @@ class EventModel extends EventEntity {
 
   factory EventModel.fromJson(Map<String, dynamic> json) {
     return EventModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      subtitle: json['subtitle'] ?? '',
-      image: json['image'] ?? '',
-      date: json['date'] ?? '',
-      time: json['time'] ?? '',
-      location: json['location'] ?? '',
-      cost: json['cost'] ?? '',
-      points: json['points'] ?? 0,
-      enrollments: json['enrollments'] ?? 0,
-      dateTime: DateTime.parse(json['dateTime']),
-      desc: json['desc'] ?? '',
-      tags: List<String>.from(json['tags'] ?? []),
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      image: json['image'] as String? ?? '',
+      date: json['date'] as String? ?? '',
+      time: json['time'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      cost: json['cost'] as String? ?? '',
+      points: json['points'] as int? ?? 0,
+      enrollments: json['enrollments'] as int? ?? 0,
+      dateTime: DateTime.parse(json['dateTime'] as String? ?? DateTime.now().toIso8601String()),
+      desc: json['desc'] as String? ?? '',
+      tags: List<String>.from(json['tags'] as List? ?? []),
       perks: (json['perks'] as List? ?? [])
-          .map((p) => EventPerkModel.fromJson(p))
+          .map((dynamic p) => EventPerkModel.fromJson(p as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -45,8 +45,8 @@ class EventPerkModel extends EventPerkEntity {
 
   factory EventPerkModel.fromJson(Map<String, dynamic> json) {
     return EventPerkModel(
-      name: json['name'] ?? '',
-      icon: json['icon'] ?? '',
+      name: json['name'] as String? ?? '',
+      icon: json['icon'] as String? ?? '',
     );
   }
 }

@@ -44,6 +44,12 @@ class TiermetryColors {
   static const borderSubtle = Color(0xFF212121); // matches surface element
   static const textMuted = Color(0xFF8E8E93); // subtle secondary text
 
+  // Semantic Surface Tokens
+  static Color get cardBorder => white.withValues(alpha: 0.06);
+  static Color get cardBorderEmphasis => white.withValues(alpha: 0.08);
+  static Color get shadowColor => black.withValues(alpha: 0.28);
+  static Color get shadowColorEmphasis => black.withValues(alpha: 0.35);
+
   // Glow
   static const glow = Color(0xFFB388FF); // For softness if needed
 }

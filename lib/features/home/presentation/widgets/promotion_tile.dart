@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 
 /// A premium promotion tile with accelerometer-driven parallax floating stickers,
 /// shake detection, and idle idle animations.
@@ -35,7 +38,7 @@ class _PromotionTileState extends State<PromotionTile>
 
   // Shake detection
   double _lastMagnitude = 0;
-  StreamSubscription? _accelSub;
+  StreamSubscription<AccelerometerEvent>? _accelSub;
 
   // Shake animation
   late final AnimationController _shakeCtrl;
@@ -131,27 +134,13 @@ class _PromotionTileState extends State<PromotionTile>
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: 16 / 7,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-        child: Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: TiermetryColors.surface,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.06),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 28,
-                offset: const Offset(0, 16),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // --- Floating sticker layer -------------------------
+      child: AppSurface(
+        width: double.infinity,
+        borderRadius: TiermetryRadii.md,
+        shadows: TiermetryShadows.highEmphasis,
+        child: Stack(
+          children: [
+            // --- Floating sticker layer -------------------------
               // RepaintBoundary isolates repaints from the rest of the UI.
               // Single LayoutBuilder -> one constraints pass for all 6 stickers.
               // Listenable.merge -> one rebuild trigger for tilt + shake + idle.
@@ -235,10 +224,7 @@ class _PromotionTileState extends State<PromotionTile>
 
               // --- Foreground content -----------------------------
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
+                padding: TiermetrySpacing.pagePadding, // 20px padding matches grid gap vibe
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -246,14 +232,13 @@ class _PromotionTileState extends State<PromotionTile>
                     Flexible(
                       child: Text(
                         'Unlock Premium Access',
-                        style: TiermetryTypography.title(
+                        style: TiermetryTypography.titleSmall(
                           color: Colors.white,
                           fontSize: 19,
-                          fontWeight: FontWeight.w800,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: TiermetrySpacing.xs),
                     Flexible(
                       child: Text(
                         'Get exclusive access to premium events, priority bookings, and special perks',
@@ -267,14 +252,19 @@ class _PromotionTileState extends State<PromotionTile>
                         ).copyWith(height: 1.35),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: TiermetrySpacing.md),
                     GestureDetector(
                       onTap: () {
-                        // TODO: Navigate to upgrade screen
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Premium upgrade coming soon!'),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
+                          horizontal: TiermetrySpacing.lg,
                           vertical: 10,
                         ),
                         decoration: BoxDecoration(
@@ -302,11 +292,9 @@ class _PromotionTileState extends State<PromotionTile>
                           children: [
                             Text(
                               'Upgrade Now',
-                              style: TiermetryTypography.caption(
+                              style: TiermetryTypography.action(
                                 color: Colors.white,
-                                fontSize: 13.5,
                                 fontWeight: FontWeight.w900,
-                                letterSpacing: 0.4,
                               ),
                             ),
                           ],
@@ -319,7 +307,6 @@ class _PromotionTileState extends State<PromotionTile>
             ],
           ),
         ),
-      ),
     );
   }
 }

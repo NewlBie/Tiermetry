@@ -1,9 +1,12 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../domain/entities/arena_entity.dart'; // For ArenaActivity enum
+import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+
+import '../../domain/entities/arena_entity.dart'; // For ArenaActivity enum
 
 // Copy of default constants used in the filter sheet
 const double _defaultDistance = 10.0;
@@ -18,12 +21,10 @@ class FilterSheet extends StatefulWidget {
   final String initialSortBy;
 
   const FilterSheet({
-    super.key,
+    required this.initialTime, required this.initialSortBy, super.key,
     this.initialDistance,
     this.initialPrice,
-    required this.initialTime,
     this.initialType,
-    required this.initialSortBy,
   });
 
   @override
@@ -75,39 +76,49 @@ class _FilterSheetState extends State<FilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        padding: const EdgeInsets.only(top: 12, left: 20, right: 20, bottom: 20),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.85),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: ListView(
-                physics: const BouncingScrollPhysics(),
-                children: [
-                  _filterTitle("Distance (km)"),
-                  _distanceSlider(),
-                  _filterTitle("Price"),
-                  _priceTiers(),
-                  _filterTitle("Time"),
-                  _timeOptions(),
-                  _filterTitle("Type"),
-                  _typeChips(),
-                  _filterTitle("Sort By"),
-                  _sortOptions(),
-                ],
-              ),
+    return AppSurface(
+      borderRadius: 0,
+      color: Colors.transparent,
+      border: Border.all(color: Colors.transparent),
+      shadows: const [],
+      clipBehavior: Clip.antiAlias,
+      child: BackdropFilter(
+        filter: TiermetryBlur.filter(TiermetryBlur.sm),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          padding:
+              const EdgeInsets.only(top: 12, left: 20, right: 20, bottom: 20),
+          decoration: BoxDecoration(
+            color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.85),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(TiermetryRadii.xl),
             ),
-            const SizedBox(height: 20),
-            _buildActionButtons(),
-          ],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    _filterTitle('Distance (km)'),
+                    _distanceSlider(),
+                    _filterTitle('Price'),
+                    _priceTiers(),
+                    _filterTitle('Time'),
+                    _timeOptions(),
+                    _filterTitle('Type'),
+                    _typeChips(),
+                    _filterTitle('Sort By'),
+                    _sortOptions(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildActionButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -126,11 +137,11 @@ class _FilterSheetState extends State<FilterSheet> {
         ),
         const SizedBox(height: 16),
         Text(
-          "Filter & Sort",
-          style: GoogleFonts.urbanist(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white),
+          'Filter & Sort',
+          style: TiermetryTypography.title(
+            fontSize: 20,
+            color: Colors.white,
+          ),
         ),
       ],
     );
@@ -142,8 +153,8 @@ class _FilterSheetState extends State<FilterSheet> {
         Expanded(
           child: TextButton(
             onPressed: _resetToDefaults,
-            child: Text(
-              "Reset",
+            child: const Text(
+              'Reset',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -165,7 +176,7 @@ class _FilterSheetState extends State<FilterSheet> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text("Apply Filters", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text('Apply Filters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
         ),
       ],
@@ -176,9 +187,8 @@ class _FilterSheetState extends State<FilterSheet> {
     padding: const EdgeInsets.only(top: 24, bottom: 12),
     child: Text(
       text,
-      style: GoogleFonts.urbanist(
+      style: TiermetryTypography.titleSmall(
         fontSize: 16,
-        fontWeight: FontWeight.bold,
         color: Colors.white,
       ),
     ),

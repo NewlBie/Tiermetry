@@ -1,25 +1,40 @@
+import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/cupertino.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
+import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import '../../domain/entities/arena_details_entity.dart';
 
 class BookingSheet extends StatefulWidget {
-  final List<String> selectedDevices;
+  final String venueId;
+  final String serviceId;
+  final List<String> initialSelectedUnitIds;
   final Color accentColor;
   final void Function({
     required int duration,
-    required TimeOfDay startTime,
+    required DateTime startDateTime,
     required int players,
     required List<String> addOns,
+    required List<String> serviceUnitIds,
+    required double totalAmount,
   }) onConfirm;
 
   const BookingSheet({
-    super.key,
-    required this.selectedDevices,
+    required this.venueId,
+    required this.serviceId,
+    required this.initialSelectedUnitIds,
     required this.accentColor,
     required this.onConfirm,
+    super.key,
   });
 
   @override
@@ -34,10 +49,66 @@ class _BookingSheetState extends State<BookingSheet> {
   bool _isProcessing = false;
   int _selectedDateIndex = 0; // 0: Today, 1: Tomorrow
 
-  final List<String> _dates = ["Today", "Tomorrow", "Next Day"];
+  final List<String> _dates = ['Today', 'Tomorrow', 'Next Day'];
+  
+  List<ArenaDevice> _availableUnits = [];
+  final Set<String> _selectedUnitIds = {};
+  bool _isLoadingAvailability = false;
+  String? _availabilityError;
 
-  double get baseRate => 120;
-  double get totalCost => (baseRate * widget.selectedDevices.length * _duration) + (_addOns.length * 30 * _duration);
+  @override
+  void initState() {
+    super.initState();
+    _selectedUnitIds.addAll(widget.initialSelectedUnitIds);
+    _loadAvailability().ignore();
+  }
+
+  double get baseRate {
+    if (_availableUnits.isEmpty) return 120;
+    return _availableUnits.first.price.toDouble();
+  }
+  
+  double get totalCost => (baseRate * _selectedUnitIds.length * _duration) + (_addOns.length * 30 * _duration);
+
+  DateTime get _startDateTime {
+    final now = DateTime.now();
+    final date = now.add(Duration(days: _selectedDateIndex));
+    return DateTime(date.year, date.month, date.day, _startTime.hour, _startTime.minute);
+  }
+
+  Future<void> _loadAvailability() async {
+    setState(() {
+      _isLoadingAvailability = true;
+      _availabilityError = null;
+    });
+
+    try {
+      final start = _startDateTime;
+      final end = start.add(Duration(hours: _duration));
+      
+      final units = await locator.arenaCtrl.loadAvailableUnits(
+        serviceId: widget.serviceId,
+        startTime: start,
+        endTime: end,
+      );
+
+      if (mounted) {
+        setState(() {
+          _availableUnits = units;
+          // Keep only units that are still available
+          _selectedUnitIds.retainWhere((id) => units.any((u) => u.id == id));
+          _isLoadingAvailability = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _availabilityError = 'Failed to load availability.';
+          _isLoadingAvailability = false;
+        });
+      }
+    }
+  }
 
   void _pickStartTime() async {
     final picked = await showTimePicker(
@@ -48,7 +119,7 @@ class _BookingSheetState extends State<BookingSheet> {
           data: ThemeData.dark().copyWith(
             colorScheme: ColorScheme.dark(
               primary: widget.accentColor,
-              onPrimary: Colors.white,
+              onPrimary: TiermetryColors.white,
               surface: TiermetryColors.surfaceUnderlay,
             ),
           ),
@@ -56,56 +127,67 @@ class _BookingSheetState extends State<BookingSheet> {
         );
       }
     );
-    if (picked != null) setState(() => _startTime = picked);
+    if (picked != null) {
+      setState(() => _startTime = picked);
+      _loadAvailability().ignore();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final endTime = TimeOfDay(hour: (_startTime.hour + _duration) % 24, minute: _startTime.minute);
+    return AppSurface(
+      borderRadius: 0,
+      color: Colors.transparent,
+      border: Border.all(color: Colors.transparent),
+      shadows: const [],
+      clipBehavior: Clip.antiAlias,
+      child: BackdropFilter(
+        filter: TiermetryBlur.filter(TiermetryBlur.md),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.9,
+          decoration: BoxDecoration(
+            color: TiermetryColors.background.withValues(alpha: 0.95),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(TiermetryRadii.xl),
+            ),
+            border:
+                Border.all(color: TiermetryColors.white.withValues(alpha: 0.1), width: 1),
+          ),
+          child: Column(
+            children: [
+              _buildHandle(),
+              _buildHeader(context),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionHeader('DATE & TIME SLOT'),
+                      _buildDateSelector(),
+                      const SizedBox(height: 16),
+                      _buildTimeAndDurationPicker(context),
+                      const SizedBox(height: 32),
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-      child: Container(
-        height: MediaQuery.of(context).size.height * 0.9,
-        decoration: BoxDecoration(
-          color: TiermetryColors.background.withValues(alpha: 0.95),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1),
-        ),
-        child: Column(
-          children: [
-            _buildHandle(),
-            _buildHeader(context),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionHeader("SELECTED RIGS"),
-                    _buildRigSelection(),
-                    const SizedBox(height: 28),
-                    
-                    _buildSectionHeader("DATE & TIME SLOT"),
-                    _buildDateSelector(),
-                    const SizedBox(height: 16),
-                    _buildTimeAndDurationPicker(context, endTime),
-                    const SizedBox(height: 32),
-
-                    _buildSectionHeader("PLAYERS"),
-                    _buildPlayerCounter(),
-                    const SizedBox(height: 32),
-
-                    _buildSectionHeader("PREMIUM ADD-ONS"),
-                    _buildAddonsGrid(),
-                    const SizedBox(height: 100), // Space for footer
-                  ],
+                      _buildSectionHeader('AVAILABLE RIGS'),
+                      _buildRigSelection(),
+                      const SizedBox(height: 32),
+  
+                      _buildSectionHeader('PLAYERS'),
+                      _buildPlayerCounter(),
+                      const SizedBox(height: 32),
+  
+                      _buildSectionHeader('PREMIUM ADD-ONS'),
+                      _buildAddonsGrid(),
+                      const SizedBox(height: 100), // Space for footer
+                    ],
+                  ),
                 ),
               ),
-            ),
-            _buildFooter(context),
-          ],
+              _buildFooter(context),
+            ],
+          ),
         ),
       ).animate().moveY(begin: 300, end: 0, duration: 400.ms, curve: Curves.easeOutCirc),
     );
@@ -115,22 +197,28 @@ class _BookingSheetState extends State<BookingSheet> {
     return Container(
       width: 40,
       height: 4,
-      margin: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: TiermetrySpacing.md),
+      decoration: BoxDecoration(color: TiermetryColors.white.withValues(alpha: 0.24), borderRadius: BorderRadius.circular(10)),
     );
   }
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(24.0).copyWith(top: 0),
+      padding: const EdgeInsets.all(TiermetrySpacing.xl).copyWith(top: 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("Reservation", style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(
+            'Reservation',
+            style: TiermetryTypography.title(
+              fontSize: 24,
+              color: TiermetryColors.white,
+            ),
+          ),
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close_rounded, color: Colors.white54),
-            style: IconButton.styleFrom(backgroundColor: Colors.white10),
+            icon: Icon(Icons.close_rounded, color: TiermetryColors.white.withValues(alpha: 0.54)),
+            style: IconButton.styleFrom(backgroundColor: TiermetryColors.white.withValues(alpha: 0.1)),
           ),
         ],
       ),
@@ -140,31 +228,69 @@ class _BookingSheetState extends State<BookingSheet> {
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Text(title, style: GoogleFonts.inter(color: widget.accentColor, fontSize: 12, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
+      child: Text(
+        title,
+        style: TiermetryTypography.label(
+          color: widget.accentColor,
+          fontSize: 12,
+          letterSpacing: 1.2,
+        ),
+      ),
     );
   }
 
   Widget _buildRigSelection() {
+    if (_isLoadingAvailability) {
+      return const Center(child: CupertinoActivityIndicator(color: TiermetryColors.white));
+    }
+    if (_availabilityError != null) {
+      return Text(_availabilityError!, style: const TextStyle(color: Colors.redAccent));
+    }
+    if (_availableUnits.isEmpty) {
+      return Text('No rigs available for this slot.', style: TextStyle(color: TiermetryColors.white.withValues(alpha: 0.6)));
+    }
+
     return SizedBox(
       height: 60,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: widget.selectedDevices.length,
+        itemCount: _availableUnits.length,
         itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(right: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white10),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.computer_rounded, size: 18, color: Colors.white60),
-                const SizedBox(width: 10),
-                Text(widget.selectedDevices[index], style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w500)),
-              ],
+          final unit = _availableUnits[index];
+          final isSelected = _selectedUnitIds.contains(unit.id);
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isSelected) {
+                  _selectedUnitIds.remove(unit.id);
+                } else {
+                  _selectedUnitIds.add(unit.id);
+                }
+              });
+            },
+            child: AppSurface(
+              borderRadius: TiermetryRadii.sm,
+              color: isSelected ? widget.accentColor.withValues(alpha: 0.2) : TiermetryColors.white.withValues(alpha: 0.05),
+              border: Border.all(color: isSelected ? widget.accentColor : TiermetryColors.white.withValues(alpha: 0.1)),
+              shadows: const [],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.computer_rounded,
+                    size: 18,
+                    color: isSelected ? TiermetryColors.white : TiermetryColors.white.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    unit.name,
+                    style: TiermetryTypography.bodySmall(
+                      color: TiermetryColors.white,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -175,22 +301,33 @@ class _BookingSheetState extends State<BookingSheet> {
   Widget _buildDateSelector() {
     return Row(
       children: List.generate(_dates.length, (index) {
-        bool isSelected = _selectedDateIndex == index;
+        final bool isSelected = _selectedDateIndex == index;
         return Expanded(
           child: GestureDetector(
-            onTap: () => setState(() => _selectedDateIndex = index),
-            child: Container(
-              margin: EdgeInsets.only(right: index == _dates.length - 1 ? 0 : 8),
+            onTap: () {
+              setState(() => _selectedDateIndex = index);
+              _loadAvailability();
+            },
+            child: AppSurface(
+              borderRadius: TiermetryRadii.sm,
+              color:
+                  isSelected
+                      ? widget.accentColor.withValues(alpha: 0.15)
+                      : Colors.transparent,
+              border:
+                  Border.all(
+                    color: isSelected ? widget.accentColor : TiermetryColors.white.withValues(alpha: 0.1),
+                  ),
+              shadows: const [],
               padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: isSelected ? widget.accentColor.withValues(alpha: 0.15) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isSelected ? widget.accentColor : Colors.white10),
-              ),
               child: Center(
                 child: Text(
                   _dates[index],
-                  style: GoogleFonts.inter(color: isSelected ? Colors.white : Colors.white60, fontSize: 13, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400),
+                  style: TiermetryTypography.bodySmall(
+                    color: isSelected ? TiermetryColors.white : TiermetryColors.white.withValues(alpha: 0.6),
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
                 ),
               ),
             ),
@@ -200,22 +337,37 @@ class _BookingSheetState extends State<BookingSheet> {
     );
   }
 
-  Widget _buildTimeAndDurationPicker(BuildContext context, TimeOfDay endTime) {
+  Widget _buildTimeAndDurationPicker(BuildContext context) {
     return Row(
       children: [
         Expanded(
           flex: 2,
           child: GestureDetector(
             onTap: _pickStartTime,
-            child: Container(
+            child: AppSurface(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: TiermetryColors.surfaceUnderlay, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)),
+              color: TiermetryColors.surfaceUnderlay,
+              borderRadius: TiermetryRadii.sm,
+              border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.1)),
+              shadows: const [],
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("START AT", style: GoogleFonts.inter(fontSize: 10, color: Colors.white38, fontWeight: FontWeight.bold)),
+                  Text(
+                    'START AT',
+                    style: TiermetryTypography.label(
+                      fontSize: 10,
+                      color: TiermetryColors.white.withValues(alpha: 0.38),
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(_startTime.format(context), style: GoogleFonts.inter(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    _startTime.format(context),
+                    style: TiermetryTypography.title(
+                      color: TiermetryColors.white,
+                      fontSize: 18,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -224,20 +376,41 @@ class _BookingSheetState extends State<BookingSheet> {
         const SizedBox(width: 12),
         Expanded(
           flex: 3,
-          child: Container(
+          child: AppSurface(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: TiermetryColors.surfaceUnderlay, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white10)),
+            color: TiermetryColors.surfaceUnderlay,
+            borderRadius: TiermetryRadii.sm,
+            border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.1)),
+            shadows: const [],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("DURATION", style: GoogleFonts.inter(fontSize: 10, color: Colors.white38, fontWeight: FontWeight.bold)),
+                Text(
+                  'DURATION',
+                  style: TiermetryTypography.label(
+                    fontSize: 10,
+                    color: TiermetryColors.white.withValues(alpha: 0.38),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 CupertinoSlidingSegmentedControl<int>(
                   groupValue: _duration,
-                  onValueChanged: (val) => setState(() => _duration = val ?? 1),
+                  onValueChanged: (val) {
+                    setState(() => _duration = val ?? 1);
+                    _loadAvailability();
+                  },
                   thumbColor: widget.accentColor,
-                  backgroundColor: Colors.black26,
-                  children: { for(var i = 1; i <= 4; i++) i: Text("${i}h", style: GoogleFonts.inter(color: Colors.white, fontSize: 13)) },
+                  backgroundColor: TiermetryColors.black.withValues(alpha: 0.26),
+                  children: {
+                    for (var i = 1; i <= 4; i++)
+                      i: Text(
+                        '${i}h',
+                        style: TiermetryTypography.bodySmall(
+                          color: TiermetryColors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                  },
                 ),
               ],
             ),
@@ -248,21 +421,43 @@ class _BookingSheetState extends State<BookingSheet> {
   }
 
   Widget _buildPlayerCounter() {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: TiermetryColors.surfaceUnderlay, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+      color: TiermetryColors.surfaceUnderlay,
+      borderRadius: TiermetryRadii.md,
+      border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.1)),
+      shadows: const [],
       child: Row(
         children: [
-          const Icon(Icons.group_rounded, color: Colors.white54),
+          Icon(Icons.group_rounded, color: TiermetryColors.white.withValues(alpha: 0.54)),
           const SizedBox(width: 16),
-          Text("Total Players", style: GoogleFonts.inter(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+          Text(
+            'Total Players',
+            style: TiermetryTypography.bodySmall(
+              color: TiermetryColors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const Spacer(),
-          _counterButton(Icons.remove_rounded, () => setState(() => _players = (_players - 1).clamp(1, 8))),
+          _counterButton(
+            Icons.remove_rounded,
+            () => setState(() => _players = (_players - 1).clamp(1, 8)),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Text("$_players", style: GoogleFonts.inter(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            child: Text(
+              '$_players',
+              style: TiermetryTypography.title(
+                color: TiermetryColors.white,
+                fontSize: 20,
+              ),
+            ),
           ),
-          _counterButton(Icons.add_rounded, () => setState(() => _players = (_players + 1).clamp(1, 8))),
+          _counterButton(
+            Icons.add_rounded,
+            () => setState(() => _players = (_players + 1).clamp(1, 8)),
+          ),
         ],
       ),
     );
@@ -271,10 +466,13 @@ class _BookingSheetState extends State<BookingSheet> {
   Widget _counterButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(10)),
-        child: Icon(icon, color: Colors.white, size: 20),
+      child: AppSurface(
+        padding: const EdgeInsets.all(TiermetrySpacing.sm),
+        color: TiermetryColors.white.withValues(alpha: 0.1),
+        borderRadius: 10,
+        border: Border.all(color: Colors.transparent),
+        shadows: const [],
+        child: Icon(icon, color: TiermetryColors.white, size: 20),
       ),
     );
   }
@@ -293,23 +491,47 @@ class _BookingSheetState extends State<BookingSheet> {
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 1),
       itemBuilder: (context, index) {
         final addon = addons[index];
-        final isSelected = _addOns.contains(addon['label']);
+        final label = addon['label'] as String;
+        final price = addon['price'] as String;
+        final isSelected = _addOns.contains(label);
         return GestureDetector(
-          onTap: () => setState(() => isSelected ? _addOns.remove(addon['label']) : _addOns.add(addon['label'])),
-          child: AnimatedContainer(
+          onTap:
+              () => setState(
+                () => isSelected ? _addOns.remove(label) : _addOns.add(label),
+              ),
+          child: AppSurface(
             duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              color: isSelected ? widget.accentColor.withValues(alpha: 0.15) : TiermetryColors.surfaceUnderlay,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: isSelected ? widget.accentColor : Colors.white10, width: 1.5),
-            ),
+            color:
+                isSelected
+                    ? widget.accentColor.withValues(alpha: 0.15)
+                    : TiermetryColors.surfaceUnderlay,
+            borderRadius: TiermetryRadii.sm,
+            border:
+                Border.all(
+                  color: isSelected ? widget.accentColor : TiermetryColors.white.withValues(alpha: 0.1),
+                  width: 1.5,
+                ),
+            shadows: const [],
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(addon['label'].split(' ')[0], style: const TextStyle(fontSize: 24)),
+                Text(label.split(' ')[0], style: const TextStyle(fontSize: 24)),
                 const SizedBox(height: 8),
-                Text(addon['label'].split(' ')[1], style: GoogleFonts.inter(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w600)),
-                Text(addon['price'], style: GoogleFonts.inter(fontSize: 10, color: Colors.white38)),
+                Text(
+                  label.split(' ')[1],
+                  style: TiermetryTypography.bodySmall(
+                    fontSize: 11,
+                    color: TiermetryColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  price,
+                  style: TiermetryTypography.label(
+                    fontSize: 10,
+                    color: TiermetryColors.white.withValues(alpha: 0.38),
+                  ),
+                ),
               ],
             ),
           ),
@@ -325,8 +547,8 @@ class _BookingSheetState extends State<BookingSheet> {
         child: Container(
           padding: const EdgeInsets.all(24).copyWith(bottom: MediaQuery.of(context).padding.bottom + 16),
           decoration: BoxDecoration(
-            color: Colors.black45,
-            border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.1))),
+            color: TiermetryColors.black.withValues(alpha: 0.45),
+            border: Border(top: BorderSide(color: TiermetryColors.white.withValues(alpha: 0.1))),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -337,13 +559,33 @@ class _BookingSheetState extends State<BookingSheet> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("TOTAL PRICE", style: GoogleFonts.inter(fontSize: 10, color: Colors.white38, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      Text(
+                        'TOTAL PRICE',
+                        style: TiermetryTypography.label(
+                          fontSize: 10,
+                          color: TiermetryColors.white.withValues(alpha: 0.38),
+                          letterSpacing: 1,
+                        ),
+                      ),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text("₹", style: GoogleFonts.inter(fontSize: 16, color: widget.accentColor, fontWeight: FontWeight.bold)),
-                          Text("${totalCost.toInt()}", style: GoogleFonts.inter(fontSize: 28, color: Colors.white, fontWeight: FontWeight.w800)),
+                          Text(
+                            '₹',
+                            style: TiermetryTypography.title(
+                              fontSize: 16,
+                              color: widget.accentColor,
+                            ),
+                          ),
+                          Text(
+                            '${totalCost.toInt()}',
+                            style: TiermetryTypography.title(
+                              fontSize: 28,
+                              color: TiermetryColors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -352,16 +594,38 @@ class _BookingSheetState extends State<BookingSheet> {
                     width: 180,
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
-                      onPressed: _isProcessing ? null : () async {
-                        setState(() => _isProcessing = true);
-                        await Future.delayed(const Duration(milliseconds: 1800));
-                        if (mounted) widget.onConfirm(duration: _duration, startTime: _startTime, players: _players, addOns: _addOns.toList());
-                      },
+                      onPressed:
+                          _isProcessing || _selectedUnitIds.isEmpty || _isLoadingAvailability
+                              ? null
+                              : () async {
+                                setState(() => _isProcessing = true);
+                                try {
+                                  widget.onConfirm(
+                                    duration: _duration,
+                                    startDateTime: _startDateTime,
+                                    players: _players,
+                                    addOns: _addOns.toList(),
+                                    serviceUnitIds: _selectedUnitIds.toList(),
+                                    totalAmount: totalCost,
+                                  );
+                                } finally {
+                                  if (mounted) setState(() => _isProcessing = false);
+                                }
+                              },
                       color: widget.accentColor,
-                      borderRadius: BorderRadius.circular(16),
-                      child: _isProcessing 
-                        ? const CupertinoActivityIndicator(color: Colors.white)
-                        : Text("Confirm & Pay", style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+                      borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+                      child:
+                          _isProcessing
+                              ? const CupertinoActivityIndicator(
+                                color: TiermetryColors.white,
+                              )
+                              : Text(
+                                'Confirm & Pay',
+                                style: TiermetryTypography.action(
+                                  color: TiermetryColors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
                     ),
                   ),
                 ],

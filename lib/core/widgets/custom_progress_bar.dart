@@ -1,11 +1,12 @@
-import 'package:flutter/material.dart';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 
 class TierProgressBar extends StatefulWidget {
   final double progress;
 
-  const TierProgressBar({super.key, required this.progress});
+  const TierProgressBar({required this.progress, super.key});
 
   @override
   State<TierProgressBar> createState() => _TierProgressBarState();

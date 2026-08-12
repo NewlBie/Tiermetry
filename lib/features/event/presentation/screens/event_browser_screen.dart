@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
+import 'package:tiermetry/core/widgets/app_pill.dart';
+import 'package:tiermetry/core/widgets/app_search_hero.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/section_header.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
@@ -20,7 +24,7 @@ class EventBrowserScreen extends StatefulWidget {
   State<EventBrowserScreen> createState() => _EventBrowserScreenState();
 }
 
-class _EventBrowserScreenState extends State<EventBrowserScreen> {
+class _EventBrowserScreenState extends State<EventBrowserScreen> with RefreshRateMixin {
   final _eventCtrl = locator.eventCtrl;
   final _searchController = TextEditingController();
   late final ScrollController _scrollCtrl;
@@ -67,8 +71,9 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -104,7 +109,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
 
   void _openEvent(EventEntity event) {
     Navigator.of(context).push(
-      PageRouteBuilder(
+      PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, anim, _) => EventDetailsScreen(event: event),
         transitionsBuilder:
@@ -142,8 +147,9 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
                 child: RepaintBoundary(
                   child: Padding(
                     padding: TiermetrySpacing.pagePadding,
-                    child: _SearchHero(
+                    child: AppSearchHero(
                       controller: _searchController,
+                      hintText: 'Search events, deals, rewards...',
                       onClear: _query.isEmpty ? null : _searchController.clear,
                     ),
                   ),
@@ -175,7 +181,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
               padding: TiermetrySpacing.pagePadding,
               child: Text(
                 'Browse explore',
-                style: TiermetryTypography.title(color: Colors.white),
+                style: TiermetryTypography.title(color: TiermetryColors.white),
               ),
             ),
             const SizedBox(height: TiermetrySpacing.headerToContent),
@@ -185,7 +191,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
                 clipBehavior: Clip.none,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(
+                padding: const EdgeInsets.only(
                   left: TiermetrySpacing.listInset,
                   right: TiermetrySpacing.listInset,
                   top: 4,
@@ -215,11 +221,11 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
   }
 
   Widget _buildRewardsSection() {
-    return SliverToBoxAdapter(
+    return const SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Padding(
           padding: TiermetrySpacing.pagePadding,
-          child: const _RewardsCard(),
+          child: _RewardsCard(),
         ),
       ),
     );
@@ -234,7 +240,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
             child: Padding(
               padding: EdgeInsets.only(top: TiermetrySpacing.sectionGap),
               child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: CircularProgressIndicator(color: TiermetryColors.white),
               ),
             ),
           );
@@ -262,7 +268,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
                   ),
                   const SizedBox(height: TiermetrySpacing.headerToContent),
                   matches.isEmpty
-                      ? const _EmptyState(message: 'No matching events found.')
+                      ? const AppEmptyState(message: 'No matching events found.')
                       : Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: Column(
@@ -291,13 +297,15 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Padding(
+                  const Padding(
                     padding: TiermetrySpacing.pagePadding,
                     child: SectionHeader(title: 'Featured events'),
                   ),
                   const SizedBox(height: TiermetrySpacing.headerToContent),
                   featured.isEmpty
-                      ? const _EmptyState(message: 'No featured events found.')
+                      ? const AppEmptyState(
+                        message: 'No featured events found.',
+                      )
                       : SizedBox(
                         height: 236,
                         child: ListView.separated(
@@ -336,7 +344,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: TiermetrySpacing.sectionGap),
-            Padding(
+            const Padding(
               padding: TiermetrySpacing.pagePadding,
               child: SectionHeader(title: 'Deals and sponsored'),
             ),
@@ -378,7 +386,7 @@ class _ExploreGreeting extends StatelessWidget {
           child: Text(
             'Explore the scene',
             style: TiermetryTypography.display(
-              color: Colors.white,
+              color: TiermetryColors.white,
               fontSize: 32,
             ),
           ),
@@ -387,106 +395,13 @@ class _ExploreGreeting extends StatelessWidget {
         Text(
           'Events, deals, sponsored drops, and rewards in one place.',
           style: TiermetryTypography.caption(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: TiermetryColors.white.withValues(alpha: 0.62),
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SearchHero extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback? onClear;
-
-  const _SearchHero({required this.controller, required this.onClear});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _SearchField(controller: controller)),
-          if (onClear != null) ...[
-            const SizedBox(width: TiermetrySpacing.sm),
-            GestureDetector(
-              onTap: onClear,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.surfaceElement,
-                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                ),
-                child: const Icon(Icons.close_rounded, color: Colors.white70),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-
-  const _SearchField({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            color: Colors.white.withValues(alpha: 0.58),
-          ),
-          const SizedBox(width: TiermetrySpacing.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: TiermetryTypography.caption(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              cursorColor: TiermetryColors.accentNeonGreen,
-              decoration: InputDecoration(
-                hintText: 'Search events, deals, rewards...',
-                hintStyle: TiermetryTypography.caption(
-                  color: Colors.white.withValues(alpha: 0.38),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -508,28 +423,19 @@ class _ExploreCapsule extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
+      child: AppSurface(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOutBack,
         width: 105,
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border:
-              isSelected
-                  ? Border.all(color: primaryColor, width: 1.5)
-                  : Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    width: 1,
-                  ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: 24,
+        border:
+            isSelected
+                ? Border.all(color: primaryColor, width: 1.5)
+                : Border.all(
+                  color: TiermetryColors.cardBorder,
+                  width: 1,
+                ),
+        shadows: TiermetryShadows.capsule,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -580,20 +486,9 @@ class _RewardsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
+      shadows: TiermetryShadows.highEmphasis,
       child: Row(
         children: [
           Container(
@@ -608,7 +503,7 @@ class _RewardsCard extends StatelessWidget {
               ),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.stars_rounded, color: Colors.white),
+            child: const Icon(Icons.stars_rounded, color: TiermetryColors.white),
           ),
           const SizedBox(width: TiermetrySpacing.md),
           Expanded(
@@ -618,7 +513,7 @@ class _RewardsCard extends StatelessWidget {
                 Text(
                   '240 points available',
                   style: TiermetryTypography.title(
-                    color: Colors.white,
+                    color: TiermetryColors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -627,7 +522,7 @@ class _RewardsCard extends StatelessWidget {
                 Text(
                   'Redeem on tickets, passes, and partner deals.',
                   style: TiermetryTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: TiermetryColors.white.withValues(alpha: 0.62),
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                   ),
@@ -635,7 +530,7 @@ class _RewardsCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+          const Icon(Icons.chevron_right_rounded, color: TiermetryColors.white),
         ],
       ),
     );
@@ -652,20 +547,10 @@ class _EventResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AppSurface(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: 24,
+        shadows: TiermetryShadows.venueTile, // Shared logic for horizontal tiles
         child: Row(
           children: [
             ClipRRect(
@@ -690,7 +575,7 @@ class _EventResultTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
-                      color: Colors.white,
+                      color: TiermetryColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -701,7 +586,7 @@ class _EventResultTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.caption(
-                      color: Colors.white.withValues(alpha: 0.52),
+                      color: TiermetryColors.white.withValues(alpha: 0.52),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -709,12 +594,12 @@ class _EventResultTile extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      _TinyPill(text: event.cost),
+                      AppPill(text: event.cost),
                       const SizedBox(width: TiermetrySpacing.sm),
                       Text(
                         '${event.points} pts',
                         style: TiermetryTypography.caption(
-                          color: Colors.white.withValues(alpha: 0.58),
+                          color: TiermetryColors.white.withValues(alpha: 0.58),
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                         ),
@@ -722,7 +607,7 @@ class _EventResultTile extends StatelessWidget {
                       const Spacer(),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: TiermetryColors.white.withValues(alpha: 0.35),
                       ),
                     ],
                   ),
@@ -746,20 +631,10 @@ class _FeaturedEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AppSurface(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
+        borderRadius: 28,
+        shadows: TiermetryShadows.liveActivity, // Use same shadow as Home horizontal cards
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -773,7 +648,7 @@ class _FeaturedEventCard extends StatelessWidget {
                     Positioned(
                       top: 10,
                       left: 10,
-                      child: _TinyPill(text: '${event.points} pts'),
+                      child: AppPill(text: '${event.points} pts'),
                     ),
                   ],
                 ),
@@ -785,7 +660,7 @@ class _FeaturedEventCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TiermetryTypography.title(
-                color: Colors.white,
+                color: TiermetryColors.white,
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
@@ -796,7 +671,7 @@ class _FeaturedEventCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.58),
+                color: TiermetryColors.white.withValues(alpha: 0.58),
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
               ),
@@ -815,37 +690,27 @@ class _DealCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       width: 260,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
+      borderRadius: 24,
+      shadows: TiermetryShadows.highEmphasis,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
+              AppSurface(
                 width: 42,
                 height: 42,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.accentNeonGreen,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(data.icon, color: Colors.black.withAlpha(220)),
+                color: TiermetryColors.accentNeonGreen,
+                borderRadius: 16,
+                border: Border.all(color: Colors.transparent),
+                shadows: const [],
+                child: Icon(data.icon, color: TiermetryColors.black.withAlpha(220)),
               ),
               const Spacer(),
-              _TinyPill(text: data.label),
+              AppPill(text: data.label),
             ],
           ),
           const Spacer(),
@@ -854,7 +719,7 @@ class _DealCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TiermetryTypography.title(
-              color: Colors.white,
+              color: TiermetryColors.white,
               fontSize: 17,
               fontWeight: FontWeight.w800,
             ),
@@ -865,69 +730,12 @@ class _DealCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TiermetryTypography.caption(
-              color: Colors.white.withValues(alpha: 0.58),
+              color: TiermetryColors.white.withValues(alpha: 0.58),
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
             ).copyWith(height: 1.3),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TinyPill extends StatelessWidget {
-  final String text;
-
-  const _TinyPill({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.pill),
-      ),
-      child: Text(
-        text,
-        style: TiermetryTypography.caption(
-          color: Colors.white.withValues(alpha: 0.74),
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-
-  const _EmptyState({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: TiermetrySpacing.pagePadding,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(TiermetrySpacing.lg),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TiermetryTypography.caption(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
       ),
     );
   }

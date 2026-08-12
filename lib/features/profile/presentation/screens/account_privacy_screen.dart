@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 
 class AccountPrivacyScreen extends StatefulWidget {
   const AccountPrivacyScreen({super.key});
@@ -11,11 +12,11 @@ class AccountPrivacyScreen extends StatefulWidget {
   State<AccountPrivacyScreen> createState() => _AccountPrivacyScreenState();
 }
 
-class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
-  final TextEditingController _nameController = TextEditingController(text: "Neal Biju");
-  final TextEditingController _usernameController = TextEditingController(text: "nealvakkachan");
-  final TextEditingController _emailController = TextEditingController(text: "neal@example.com");
-  final TextEditingController _phoneController = TextEditingController(text: "+91 9876543210");
+class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with RefreshRateMixin {
+  final TextEditingController _nameController = TextEditingController(text: 'Neal Biju');
+  final TextEditingController _usernameController = TextEditingController(text: 'nealvakkachan');
+  final TextEditingController _emailController = TextEditingController(text: 'neal@example.com');
+  final TextEditingController _phoneController = TextEditingController(text: '+91 9876543210');
 
   bool _saving = false;
   File? _profileImage;
@@ -33,12 +34,12 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
 
   void _saveChanges() async {
     setState(() => _saving = true);
-    await Future.delayed(const Duration(seconds: 1)); // mock saving
+    await Future<void>.delayed(const Duration(seconds: 1)); // mock saving
     if (!mounted) return;
     setState(() => _saving = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Changes saved successfully")),
+      const SnackBar(content: Text('Changes saved successfully')),
     );
   }
 
@@ -111,7 +112,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text("Account & Privacy",
+        middle: Text('Account & Privacy',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -121,7 +122,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
           onTap: _saving ? null : _saveChanges,
           child: _saving
               ? const CupertinoActivityIndicator()
-              : Text("Save",
+              : Text('Save',
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
@@ -140,14 +141,14 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
                 children: [
                   _buildProfileImage(),
                   const SizedBox(height: 30),
-                  _buildInputField("Name", _nameController),
-                  _buildInputField("Username", _usernameController),
-                  _buildInputField("Email", _emailController, type: TextInputType.emailAddress),
-                  _buildInputField("Phone", _phoneController, type: TextInputType.phone),
+                  _buildInputField('Name', _nameController),
+                  _buildInputField('Username', _usernameController),
+                  _buildInputField('Email', _emailController, type: TextInputType.emailAddress),
+                  _buildInputField('Phone', _phoneController, type: TextInputType.phone),
                   const SizedBox(height: 10),
-                  Divider(color: Colors.white12),
+                  const Divider(color: Colors.white12),
                   const SizedBox(height: 10),
-                  Text("Privacy",
+                  Text('Privacy',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -155,7 +156,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> {
                       )),
                   const SizedBox(height: 10),
                   Text(
-                    "Your account is private by design. No public profile setting is required.",
+                    'Your account is private by design. No public profile setting is required.',
                     style: GoogleFonts.inter(
                       fontSize: 13,
                       color: Colors.white54,

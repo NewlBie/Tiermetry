@@ -15,11 +15,8 @@ class TopBar extends StatelessWidget {
   final VoidCallback onMenuTap;
 
   const TopBar({
-    super.key,
-    required this.title,
+    required this.title, required this.hasNotification, required this.onMenuTap, super.key,
     this.menuAnimationProgress,
-    required this.hasNotification,
-    required this.onMenuTap,
   });
 
   @override
@@ -34,9 +31,11 @@ class TopBar extends StatelessWidget {
     final glass =
         FeatureFlags.disableBlur
             ? surface
-            : BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: surface,
+            : RepaintBoundary(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: surface,
+              ),
             );
 
     return Column(
@@ -156,7 +155,12 @@ class _TopBarSurface extends StatelessWidget {
                 ),
                 _TopBarButton(
                   onTap: () {
-                    // TODO: implement notifications
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Notifications coming soon!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   },
                   child: Stack(
                     clipBehavior: Clip.none,

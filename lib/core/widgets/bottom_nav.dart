@@ -21,10 +21,7 @@ class BottomNav extends StatefulWidget {
   final Color accentColor;
 
   const BottomNav({
-    super.key,
-    required this.items,
-    required this.currentIndex,
-    required this.onTap,
+    required this.items, required this.currentIndex, required this.onTap, super.key,
     this.accentColor = TiermetryColors.accentNeonGreen,
   });
 
@@ -142,9 +139,11 @@ class _BottomNavState extends State<BottomNav>
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: surface,
+      child: RepaintBoundary(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: surface,
+        ),
       ),
     );
   }
@@ -264,26 +263,26 @@ class _NavSurfacePainter extends CustomPainter {
       height: size.height * 1.5,
     );
 
-    canvas.drawOval(
-      glowRect,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [accent.withValues(alpha: 0.16), Colors.transparent],
-        ).createShader(glowRect),
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(activeRect, const Radius.circular(999)),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.10),
-            Colors.white.withValues(alpha: 0.035),
-          ],
-        ).createShader(activeRect),
-    );
+    canvas
+      ..drawOval(
+        glowRect,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [accent.withValues(alpha: 0.16), Colors.transparent],
+          ).createShader(glowRect),
+      )
+      ..drawRRect(
+        RRect.fromRectAndRadius(activeRect, const Radius.circular(999)),
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.10),
+              Colors.white.withValues(alpha: 0.035),
+            ],
+          ).createShader(activeRect),
+      );
 
     final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.025);
     const spacing = 18.0;

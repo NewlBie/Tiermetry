@@ -28,11 +28,10 @@ class AppDrawer extends StatelessWidget {
   final List<DrawerItem> items;
 
   const AppDrawer({
-    super.key,
+    required this.items, super.key,
     this.userName = 'User',
     this.userHandle = '@user',
     this.userAvatarAsset,
-    required this.items,
   });
 
   @override

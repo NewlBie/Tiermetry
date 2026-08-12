@@ -1,21 +1,20 @@
 // lib/pages/all_arenas_page.dart
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-
-// Models and Services
-// Entities
-import '../../domain/entities/arena_entity.dart';
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/glass_search_bar.dart';
 
-// Widgets
+import '../../domain/entities/arena_entity.dart';
 import '../widgets/arena_card.dart';
 import '../widgets/filter_sheet.dart';
-import 'package:tiermetry/core/widgets/glass_search_bar.dart';
-import 'package:tiermetry/core/theme/colors.dart';
 
 // Default filter values for easy comparison and reset
 const double _defaultDistance = 10.0;
@@ -29,7 +28,7 @@ class AllArenasScreen extends StatefulWidget {
   State<AllArenasScreen> createState() => _AllArenasScreenState();
 }
 
-class _AllArenasScreenState extends State<AllArenasScreen> {
+class _AllArenasScreenState extends State<AllArenasScreen> with RefreshRateMixin {
   final _arenaCtrl = locator.arenaCtrl;
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
@@ -56,14 +55,15 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(_fetchArenas);
+    unawaited(_fetchArenas());
     _searchController.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _debounce?.cancel();
     super.dispose();
   }
@@ -79,12 +79,12 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      debugPrint("Error fetching arenas: $e");
+      debugPrint('Error fetching arenas: $e');
     }
   }
 
   void _onSearchChanged() {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
       _applyFilters();
     });
@@ -92,7 +92,7 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
 
   void _applyFilters() {
     List<ArenaEntity> tempArenas = List.from(_arenaCtrl.arenas);
-    String searchQuery = _searchController.text.toLowerCase();
+    final String searchQuery = _searchController.text.toLowerCase();
 
     // Search query filter
     if (searchQuery.isNotEmpty) {
@@ -146,7 +146,7 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
   }
 
   void _showFilterSheet() async {
-    HapticFeedback.lightImpact();
+    unawaited(HapticFeedback.lightImpact());
     final result = await showModalBottomSheet<Map<String, dynamic>>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -162,11 +162,11 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
 
     if (result != null) {
       setState(() {
-        _selectedDistance = result['distance'];
-        _selectedPriceTier = result['price'];
-        _selectedTime = result['time'];
-        _selectedType = result['type'];
-        _sortBy = result['sortBy'];
+        _selectedDistance = result['distance'] as double?;
+        _selectedPriceTier = result['price'] as int?;
+        _selectedTime = result['time'] as String? ?? _defaultTime;
+        _selectedType = result['type'] as ArenaActivity?;
+        _sortBy = result['sortBy'] as String? ?? _defaultSortBy;
         _applyFilters();
       });
     }
@@ -199,11 +199,10 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(
-        "All Arenas",
-        style: GoogleFonts.urbanist(
+        'All Arenas',
+        style: TiermetryTypography.title(
           color: Colors.white,
           fontSize: 22,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -226,12 +225,11 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: TiermetryColors.surfaceUnderlay,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
+        AppSurface(
+          color: TiermetryColors.surfaceUnderlay,
+          borderRadius: 16,
+          border: Border.all(color: TiermetryColors.cardBorderEmphasis),
+          shadows: const [],
           child: IconButton(
             icon: const Icon(Icons.tune_rounded, color: Colors.white),
             onPressed: _showFilterSheet,
@@ -270,33 +268,20 @@ class _AllArenasScreenState extends State<AllArenasScreen> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: _filteredArenas.length,
+      addRepaintBoundaries: false, // We use RepaintBoundary inside ArenaCard
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0),
           child: ArenaCard(arena: _filteredArenas[index]),
-        ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0);
+        );
       },
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.search_off_rounded, color: Colors.white24, size: 60),
-          const SizedBox(height: 16),
-          Text(
-            "No Arenas Found",
-            style: GoogleFonts.urbanist(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Try adjusting your search or filters.",
-            style: GoogleFonts.urbanist(color: Colors.white54, fontSize: 16),
-          ),
-        ],
-      ).animate().fadeIn(duration: 300.ms),
+    return const AppEmptyState(
+      message: 'No Arenas Found',
+      icon: Icons.search_off_rounded,
     );
   }
 }

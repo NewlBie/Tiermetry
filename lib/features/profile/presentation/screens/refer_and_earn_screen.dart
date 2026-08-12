@@ -1,10 +1,11 @@
+import 'package:confetti/confetti.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:confetti/confetti.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 
 class ReferAndEarnScreen extends StatefulWidget {
   const ReferAndEarnScreen({super.key});
@@ -13,35 +14,35 @@ class ReferAndEarnScreen extends StatefulWidget {
   State<ReferAndEarnScreen> createState() => _ReferAndEarnScreenState();
 }
 
-class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
-  final String referralCode = "NEAL420";
+class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRateMixin {
+  final String referralCode = 'NEAL420';
   final int totalEarned = 730;
   final ConfettiController _confetti = ConfettiController(duration: const Duration(seconds: 1));
 
   final List<String> invitedFriends = [
-    "Rohit K.",
-    "Ananya J.",
-    "Yusuf A.",
-    "Tanya S.",
-    "Jay M.",
+    'Rohit K.',
+    'Ananya J.',
+    'Yusuf A.',
+    'Tanya S.',
+    'Jay M.',
   ];
 
   final List<Map<String, dynamic>> rewards = [
-    {"label": "Free Avatar Skin", "threshold": 500},
-    {"label": "10% Store Discount", "threshold": 1000},
-    {"label": "Exclusive Badge", "threshold": 1500},
+    {'label': 'Free Avatar Skin', 'threshold': 500},
+    {'label': '10% Store Discount', 'threshold': 1000},
+    {'label': 'Exclusive Badge', 'threshold': 1500},
   ];
 
   void _copyCode() {
     Clipboard.setData(ClipboardData(text: referralCode));
     _confetti.play();
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Code zapped! 🚨")),
+      const SnackBar(content: Text('Code zapped! 🚨')),
     );
   }
 
   void _shareCode() {
-    Share.share("Use my referral code $referralCode on Tiermetry and earn Tiergies!");
+    Share.share('Use my referral code $referralCode on Tiermetry and earn Tiergies!');
     _confetti.play();
   }
 
@@ -57,7 +58,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text("Refer & Earn",
+        middle: Text('Refer & Earn',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 17,
               fontWeight: FontWeight.w600,
@@ -87,7 +88,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                   colors: const [Colors.tealAccent, Colors.amber, Colors.purpleAccent],
                 ),
               ),
-              Align(
+              const Align(
                 alignment: Alignment.bottomCenter,
                 // child: Lottie.asset(
                 //   'assets/animations/celebrate.json',
@@ -109,20 +110,20 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Earn Tiergies 💎",
+          Text('Earn Tiergies 💎',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
                 color: Colors.white,
               )),
           const SizedBox(height: 10),
-          Text("Invite your friends & both of you earn rewards!",
+          Text('Invite your friends & both of you earn rewards!',
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: Colors.white60,
               )),
           const SizedBox(height: 24),
-          Text("You’ve earned",
+          Text('You’ve earned',
               style: GoogleFonts.inter(
                 fontSize: 13,
                 color: Colors.white54,
@@ -131,14 +132,14 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text("$totalEarned",
+              Text('$totalEarned',
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 32,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   )),
               const SizedBox(width: 8),
-              Text("Tiergies",
+              Text('Tiergies',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: Colors.white38,
@@ -152,7 +153,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _copyCode,
                   icon: const Icon(Icons.copy, size: 16),
-                  label: const Text("Copy Code"),
+                  label: const Text('Copy Code'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white24),
@@ -166,7 +167,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _shareCode,
                   icon: const Icon(Icons.share, size: 16),
-                  label: const Text("Share Link"),
+                  label: const Text('Share Link'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.tealAccent,
                     foregroundColor: Colors.black,
@@ -187,7 +188,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           const SizedBox(height: 30),
-          Text("Unlockable Rewards 🎁",
+          Text('Unlockable Rewards 🎁',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -196,7 +197,9 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
           const SizedBox(height: 12),
           Column(
             children: rewards.map((reward) {
-              final unlocked = totalEarned >= reward['threshold'];
+              final threshold = reward['threshold'] as int;
+              final label = reward['label'] as String;
+              final unlocked = totalEarned >= threshold;
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(12),
@@ -208,12 +211,12 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(reward['label'],
+                    Text(label,
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: unlocked ? Colors.tealAccent : Colors.white70,
                         )),
-                    Text("${reward['threshold']} 🪙",
+                    Text('$threshold 🪙',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.white38,
@@ -226,7 +229,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
           const SizedBox(height: 30),
           Center(
             child: QrImageView(
-              data: "https://tiermetry.com/signup?ref=$referralCode",
+              data: 'https://tiermetry.com/signup?ref=$referralCode',
               backgroundColor: Colors.white,
               padding: const EdgeInsets.all(12),
               size: 150,
@@ -238,7 +241,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
             ),
           ),
           const SizedBox(height: 30),
-          Text("Leaderboard Preview 🏆",
+          Text('Leaderboard Preview 🏆',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -255,15 +258,15 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _leaderboardTile("You", totalEarned, isYou: true),
-                _leaderboardTile("Ashish 🐐", 2040),
-                _leaderboardTile("Zainab ⚡", 1800),
-                _leaderboardTile("Pranav 🔥", 1450),
+                _leaderboardTile('You', totalEarned, isYou: true),
+                _leaderboardTile('Ashish 🐐', 2040),
+                _leaderboardTile('Zainab ⚡', 1800),
+                _leaderboardTile('Pranav 🔥', 1450),
               ],
             ),
           ),
           const SizedBox(height: 30),
-          Text("You’ve invited",
+          Text('You’ve invited',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -298,7 +301,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
           ),
           const SizedBox(height: 20),
           Center(
-            child: Text("More friends = more Tiergies 🚀",
+            child: Text('More friends = more Tiergies 🚀',
                 style: GoogleFonts.inter(
                   fontSize: 13,
                   color: Colors.white30,
@@ -324,7 +327,7 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> {
             ),
           ),
           Text(
-            "$points Tiergies",
+            '$points Tiergies',
             style: GoogleFonts.inter(
               fontSize: 13,
               color: Colors.white54,
