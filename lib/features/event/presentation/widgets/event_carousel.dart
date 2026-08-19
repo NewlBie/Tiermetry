@@ -1,9 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 import '../../domain/entities/event_entity.dart';
-import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 class EventCarousel extends StatefulWidget {
   final List<EventEntity> events;
@@ -53,7 +57,7 @@ class _EventCarouselState extends State<EventCarousel> {
         height: 200,
         child: Center(
           child: Text(
-            "No featured events right now.",
+            'No featured events right now.',
             style: TextStyle(color: Colors.white38),
           ),
         ),
@@ -90,14 +94,15 @@ class _EventCarouselState extends State<EventCarousel> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(widget.events.length, (index) {
-        bool isActive = index == _currentPage;
+        final bool isActive = index == _currentPage;
         return AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.symmetric(horizontal: 4.0),
           height: 8.0,
           width: isActive ? 24.0 : 8.0,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+            color:
+                isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
           ),
         );
@@ -114,17 +119,34 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 6),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+      child: AppSurface(
+        borderRadius: 20,
+        padding: EdgeInsets.zero,
         child: Stack(
           children: [
             Positioned.fill(
-              child: Image.asset(
-                event.image,
-                fit: BoxFit.cover,
-                color: Colors.black.withValues(alpha: 0.3),
-                colorBlendMode: BlendMode.darken,
-              ),
+              child:
+                  event.image != null && !event.image!.startsWith('assets/')
+                      ? Image.network(
+                        event.image!,
+                        fit: BoxFit.cover,
+                        color: Colors.black.withValues(alpha: 0.3),
+                        colorBlendMode: BlendMode.darken,
+                        errorBuilder:
+                            (context, error, stackTrace) => Container(
+                              color: TiermetryColors.surfaceUnderlay,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.white24,
+                              ),
+                            ),
+                      )
+                      : Image.asset(
+                        event.image ?? 'assets/Hackathon.jpg',
+                        fit: BoxFit.cover,
+                        color: Colors.black.withValues(alpha: 0.3),
+                        colorBlendMode: BlendMode.darken,
+                      ),
             ),
             Positioned(
               bottom: 0,
@@ -142,9 +164,8 @@ class _EventCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      event.title,
-                      style: GoogleFonts.plusJakartaSans(
+                    Text((event.title).toUpperCase(),
+                      style: TiermetryTypography.titleSmall(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -152,8 +173,8 @@ class _EventCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${event.date} • ${event.location}',
-                      style: GoogleFonts.urbanist(
+                      '${DateFormat('MMM d').format(event.startTime)} • ${event.location}',
+                      style: TiermetryTypography.bodySmall(
                         color: Colors.white.withValues(alpha: 0.85),
                         fontSize: 13,
                       ),

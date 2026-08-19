@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:tiermetry/features/home/domain/entities/trending_activity.dart';
 import 'package:tiermetry/core/services/api_service.dart';
+import 'package:tiermetry/features/home/domain/entities/trending_activity.dart';
 
 class TrendingActivityCtrl extends ChangeNotifier {
   final ApiService apiService;
@@ -20,7 +20,7 @@ class TrendingActivityCtrl extends ChangeNotifier {
     try {
       _activities = await apiService.getTrendingActivities();
     } catch (e) {
-      debugPrint("Error loading trending activities: $e");
+      debugPrint('Error loading trending activities: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 
 /// A simple bento tile widget used in the metrics grid.
 /// Shows a title with a decorative image positioned in the background.
@@ -23,24 +23,10 @@ class BentoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(TiermetryRadii.md),
-      child: Container(
+    return RepaintBoundary(
+      child: AppSurface(
         height: MediaQuery.of(context).size.width < 360 ? 110 : 140,
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.06),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.28),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: TiermetryRadii.md,
         child: Stack(
           children: [
             // Background image – bottom right
@@ -67,9 +53,9 @@ class BentoTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(14),
               child: Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  title,
+                alignment: Alignment.topCenter,
+                child: Text((title).toUpperCase(),
+                  textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.title(

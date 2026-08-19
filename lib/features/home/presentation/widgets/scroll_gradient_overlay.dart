@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 
 /// A scroll-responsive gradient overlay that sits at the top of the page.
 /// This widget has its own scroll listener and only rebuilds itself,
@@ -14,21 +15,12 @@ class ScrollGradientOverlay extends StatefulWidget {
 }
 
 class _ScrollGradientOverlayState extends State<ScrollGradientOverlay> {
-  double _scrollOffset = 0;
+  double _scrollOffset = 0.0;
 
   @override
   void initState() {
     super.initState();
     widget.scrollController.addListener(_onScroll);
-  }
-
-  @override
-  void didUpdateWidget(ScrollGradientOverlay oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.scrollController != widget.scrollController) {
-      oldWidget.scrollController.removeListener(_onScroll);
-      widget.scrollController.addListener(_onScroll);
-    }
   }
 
   @override
@@ -38,13 +30,21 @@ class _ScrollGradientOverlayState extends State<ScrollGradientOverlay> {
   }
 
   void _onScroll() {
-    setState(() {
-      _scrollOffset = widget.scrollController.offset;
-    });
+    if (mounted) {
+      final newOffset = widget.scrollController.offset;
+      if (newOffset != _scrollOffset) {
+        setState(() {
+          _scrollOffset = newOffset;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final alphaValue = (0.3 + (_scrollOffset / 500) * 0.3).clamp(0.3, 0.6);
+
     return Positioned(
       top: 0,
       left: 0,
@@ -52,15 +52,13 @@ class _ScrollGradientOverlayState extends State<ScrollGradientOverlay> {
       child: IgnorePointer(
         child: RepaintBoundary(
           child: Container(
-            height: MediaQuery.of(context).padding.top + 60,
+            height: topPadding + TiermetrySpacing.topBarHeight,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  TiermetryColors.background.withValues(
-                    alpha: (0.3 + (_scrollOffset / 500) * 0.3).clamp(0.3, 0.6),
-                  ),
+                  TiermetryColors.background.withValues(alpha: alphaValue),
                   Colors.transparent,
                 ],
               ),

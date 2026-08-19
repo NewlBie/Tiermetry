@@ -1,6 +1,7 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 
 class TrendingGamePoster extends StatelessWidget {
   final int rank;
@@ -8,31 +9,29 @@ class TrendingGamePoster extends StatelessWidget {
   final Color baseColor;
 
   const TrendingGamePoster({
-    super.key,
     required this.rank,
     required this.title,
     required this.baseColor,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppSurface(
       width: 140, // Vertical poster width
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: baseColor.withValues(alpha: 0.2),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+      borderRadius: 20,
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.1),
+        width: 0.5,
       ),
+      shadows: [
+        BoxShadow(
+          color: baseColor.withValues(alpha: 0.2),
+          blurRadius: 16,
+          offset: const Offset(0, 8),
+        ),
+      ],
+      padding: EdgeInsets.zero,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -93,22 +92,21 @@ class TrendingGamePoster extends StatelessWidget {
           Positioned(
             top: 12,
             left: 12,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+            child: AppSurface(
+              borderRadius: 12,
+              color: Colors.white.withValues(alpha: 0.15),
+              border: Border.all(color: Colors.transparent),
+              shadows: const [],
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
+                filter: TiermetryBlur.filter(8),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                   child: Text(
                     '#$rank',
-                    style: TiermetryTypography.caption(
+                    style: TiermetryTypography.bodySmall(
                       color: Colors.white,
                       fontSize: 14,
                     ),

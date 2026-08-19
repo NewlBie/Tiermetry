@@ -9,4 +9,3 @@ class TiermetryRadii {
 
   static const double pill = 999;
 }
-

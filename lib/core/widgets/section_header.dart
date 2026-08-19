@@ -11,7 +11,7 @@ class SectionHeader extends StatelessWidget {
   const SectionHeader({
     required this.title,
     this.onViewMore,
-    this.viewMoreText = "View More",
+    this.viewMoreText = 'View More',
     super.key,
   });
 
@@ -21,7 +21,7 @@ class SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          title,
+          (title).toUpperCase(),
           style: TiermetryTypography.title(color: Colors.white),
         ),
         if (onViewMore != null)

@@ -1,6 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
+import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/widgets/dot_grid_background.dart';
 
@@ -56,7 +55,7 @@ class _BlurBlob extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 34, sigmaY: 34),
+      imageFilter: TiermetryBlur.filter(TiermetryBlur.lg),
       child: Container(
         width: size,
         height: size,
@@ -68,4 +67,3 @@ class _BlurBlob extends StatelessWidget {
     );
   }
 }
-

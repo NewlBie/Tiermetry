@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/app_typography.dart';
+import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/widgets/custom_progress_bar.dart';
-
-
 
 class TierAndBadgeCard extends StatelessWidget {
   final String tierName;
@@ -15,7 +13,6 @@ class TierAndBadgeCard extends StatelessWidget {
   final List<Color> badgeColors;
 
   const TierAndBadgeCard({
-    super.key,
     required this.tierName,
     required this.tierProgress,
     required this.openedBadges,
@@ -23,6 +20,7 @@ class TierAndBadgeCard extends StatelessWidget {
     required this.totalUniqueBadges,
     required this.badgeTitles,
     required this.badgeColors,
+    super.key,
   });
 
   @override
@@ -37,47 +35,50 @@ class TierAndBadgeCard extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 18,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader("Tier", trailing: "Tutorials"),
+          _buildSectionHeader('Tier', trailing: 'Tutorials'),
           const SizedBox(height: 14),
 
-          Text("$tierName is your current tier", style: AppTypography.xl),
+          Text('$tierName is your current tier', style: AppTypography.xl),
           const SizedBox(height: 6),
-          Text("Purple path", style: AppTypography.accent),
+          Text('Purple path', style: AppTypography.accent),
           const SizedBox(height: 20),
 
           TierProgressBar(progress: tierProgress),
           const SizedBox(height: 12),
 
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _TierLabel("VII"),
-              _PercentText("25%"),
-              _PercentText("50%"),
-              _PercentText("75%"),
-              _TierLabel("VIII"),
+            children: [
+              _TierLabel('VII'),
+              _PercentText('25%'),
+              _PercentText('50%'),
+              _PercentText('75%'),
+              _TierLabel('VIII'),
             ],
           ),
           const SizedBox(height: 32),
 
-          _buildSectionHeader("Badges", trailing: "Open all"),
+          _buildSectionHeader('Badges', trailing: 'Open all'),
           const SizedBox(height: 14),
 
-          Text("Opened $openedBadges/$totalBadges badges", style: AppTypography.lg),
+          Text(
+            'Opened $openedBadges/$totalBadges badges',
+            style: AppTypography.lg,
+          ),
           const SizedBox(height: 4),
-          Text("From $totalUniqueBadges unique badges", style: AppTypography.subtitle),
+          Text(
+            'From $totalUniqueBadges unique badges',
+            style: AppTypography.subtitle,
+          ),
           const SizedBox(height: 18),
 
-          _BadgeList(
-            badgeTitles: badgeTitles,
-            badgeColors: badgeColors,
-          )
+          _BadgeList(badgeTitles: badgeTitles, badgeColors: badgeColors),
         ],
       ),
     );
@@ -88,8 +89,7 @@ class TierAndBadgeCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: AppTypography.sm),
-        if (trailing != null)
-          Text(trailing, style: AppTypography.subtitle),
+        if (trailing != null) Text(trailing, style: AppTypography.subtitle),
       ],
     );
   }
@@ -148,13 +148,15 @@ class _BadgeCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("${index + 1}", style: AppTypography.sm),
+          Text('${index + 1}', style: AppTypography.sm),
           const Spacer(),
           Text(
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.xs.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+            style: AppTypography.xs.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),
@@ -166,10 +168,7 @@ class _BadgeList extends StatelessWidget {
   final List<String> badgeTitles;
   final List<Color> badgeColors;
 
-  const _BadgeList({
-    required this.badgeTitles,
-    required this.badgeColors,
-  });
+  const _BadgeList({required this.badgeTitles, required this.badgeColors});
 
   @override
   Widget build(BuildContext context) {
@@ -215,7 +214,7 @@ class _BadgeList extends StatelessWidget {
           ),
         ),
 
-// Right Fade
+        // Right Fade
         Positioned(
           right: 0,
           top: 0,
@@ -240,4 +239,3 @@ class _BadgeList extends StatelessWidget {
     );
   }
 }
-

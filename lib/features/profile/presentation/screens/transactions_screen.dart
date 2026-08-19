@@ -1,35 +1,97 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/features/payment/domain/entities/payment_entity.dart';
+import 'package:tiermetry/features/payment/domain/entities/payment_status.dart';
 
-// A simple data model for a transaction
-class Transaction {
-  final String title;
-  final String type; // e.g., "Payment", "Refund", "Subscription"
-  final double amount;
-  final DateTime date;
-  final IconData icon;
-
-  Transaction({
-    required this.title,
-    required this.type,
-    required this.amount,
-    required this.date,
-    required this.icon,
-  });
-}
-
-class TransactionsScreen extends StatelessWidget {
+class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
-  // Mock data for the transaction list
-  static final List<Transaction> _transactions = [
-    Transaction(title: "Monthly Subscription", type: "Subscription", amount: -9.99, date: DateTime(2025, 8, 25), icon: Icons.star_rounded),
-    Transaction(title: "Ticket Purchase: Event Name", type: "Payment", amount: -45.50, date: DateTime(2025, 8, 20), icon: Icons.local_activity_rounded),
-    Transaction(title: "Refund for cancelled event", type: "Refund", amount: 25.00, date: DateTime(2025, 8, 18), icon: Icons.refresh_rounded),
-    Transaction(title: "Arena Booking Fee", type: "Payment", amount: -150.00, date: DateTime(2025, 8, 12), icon: Icons.sports_esports_rounded),
-    Transaction(title: "Marketplace Sale", type: "Deposit", amount: 75.00, date: DateTime(2025, 8, 5), icon: Icons.storefront_rounded),
-  ];
+  @override
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends State<TransactionsScreen>
+    with RefreshRateMixin {
+  bool _isLoading = true;
+  List<PaymentEntity> _payments = [];
+  List<_CreditEntry> _credits = [];
+  RealtimeChannel? _creditChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+    _creditChannel =
+        locator.supabase
+            .channel('tiermetry-credit-ledger')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'tiermetry_credit_ledger',
+              callback: (_) => _loadTransactions(),
+            )
+            .subscribe();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() => _isLoading = true);
+    try {
+      final userId = locator.supabase.auth.currentUser?.id;
+      if (userId != null) {
+        final response = await locator.supabase
+            .from('payments')
+            .select()
+            .order('created_at', ascending: false);
+
+        final credits = await locator.supabase
+            .from('tiermetry_credit_ledger')
+            .select('id, amount, reason, created_at, booking_id')
+            .order('created_at', ascending: false);
+        if (mounted) {
+          setState(() {
+            _payments =
+                (response as List)
+                    .map(
+                      (json) => PaymentEntity(
+                        id: json['id'] as String,
+                        amount: (json['amount'] as num).toDouble(),
+                        status: PaymentStatus.values.firstWhere(
+                          (e) => e.name == json['status'],
+                        ),
+                        createdAt: DateTime.parse(json['created_at'] as String),
+                        updatedAt: DateTime.parse(json['updated_at'] as String),
+                        bookingId: json['booking_id'] as String?,
+                        holdId: json['hold_id'] as String?,
+                        method: json['method'] as String?,
+                      ),
+                    )
+                    .toList();
+            _credits =
+                (credits as List)
+                    .map(
+                      (json) => _CreditEntry(
+                        id: json['id'] as String,
+                        amount: (json['amount'] as num).toDouble(),
+                        reason: json['reason'] as String? ?? 'service recovery',
+                        createdAt: DateTime.parse(json['created_at'] as String),
+                      ),
+                    )
+                    .toList();
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading transactions: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +109,8 @@ class TransactionsScreen extends StatelessWidget {
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: FlexibleSpaceBar(
                   centerTitle: true,
-                  title: Text(
-                    'My Transactions',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  title: Text(('My Transactions').toUpperCase(),
+                    style: TiermetryTypography.title(color: Colors.white),
                   ),
                 ),
               ),
@@ -60,23 +118,55 @@ class TransactionsScreen extends StatelessWidget {
           ),
           SliverPadding(
             padding: const EdgeInsets.all(16.0),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final transaction = _transactions[index];
-                  return _buildTransactionItem(context, transaction);
-                },
-                childCount: _transactions.length,
-              ),
-            ),
+            sliver:
+                _isLoading
+                    ? const SliverToBoxAdapter(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: TiermetryColors.accentNeonGreen,
+                        ),
+                      ),
+                    )
+                    : _payments.isEmpty && _credits.isEmpty
+                    ? const SliverToBoxAdapter(
+                      child: Center(
+                        child: Text(
+                          'No transactions yet.',
+                          style: TextStyle(color: Colors.white38),
+                        ),
+                      ),
+                    )
+                    : SliverList(
+                      delegate: SliverChildListDelegate([
+                        if (_credits.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 10),
+                            child: Text(
+                              'TIERMETRY CREDITS',
+                              style: TextStyle(
+                                color: Colors.amber,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ..._credits.map(
+                            (credit) => _buildCreditItem(context, credit),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        ..._payments.map(
+                          (payment) => _buildTransactionItem(context, payment),
+                        ),
+                      ]),
+                    ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTransactionItem(BuildContext context, Transaction transaction) {
-    final isCredit = transaction.amount > 0;
+  Widget _buildTransactionItem(BuildContext context, PaymentEntity payment) {
+    final isSuccess = payment.status == PaymentStatus.paid;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -86,27 +176,37 @@ class TransactionsScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(transaction.icon, color: Colors.white70),
+          Icon(
+            payment.bookingId != null
+                ? Icons.sports_esports_rounded
+                : Icons.local_activity_rounded,
+            color: isSuccess ? TiermetryColors.accentNeonGreen : Colors.white38,
+          ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  transaction.title,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                Text((payment.bookingId != null ? 'Arena Booking' : 'Event Ticket').toUpperCase(),
+                  style: TiermetryTypography.title(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
-                  transaction.type,
-                  style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 14),
+                  '${DateFormat('MMM d, yyyy').format(payment.createdAt)} • ${payment.status.name.toUpperCase()}',
+                  style: TiermetryTypography.bodySmall(
+                    color: Colors.white54,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
           ),
-          Text(
-            "${isCredit ? '+' : ''}\$${transaction.amount.toStringAsFixed(2)}",
-            style: GoogleFonts.plusJakartaSans(
-              color: isCredit ? Colors.greenAccent : Colors.white,
+          Text(('₹${payment.amount.toInt()}').toUpperCase(),
+            style: TiermetryTypography.title(
+              color: isSuccess ? Colors.white : Colors.white38,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -115,4 +215,68 @@ class TransactionsScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildCreditItem(BuildContext context, _CreditEntry credit) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.amber.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.account_balance_wallet_rounded, color: Colors.amber),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(('Service recovery credit').toUpperCase(),
+                  style: TiermetryTypography.title(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  DateFormat('MMM d, yyyy').format(credit.createdAt),
+                  style: TiermetryTypography.bodySmall(
+                    color: Colors.white54,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(('+₹${credit.amount.toStringAsFixed(0)}').toUpperCase(),
+            style: TiermetryTypography.title(
+              color: Colors.amber,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _creditChannel?.unsubscribe();
+    super.dispose();
+  }
+}
+
+class _CreditEntry {
+  final String id;
+  final double amount;
+  final String reason;
+  final DateTime createdAt;
+  const _CreditEntry({
+    required this.id,
+    required this.amount,
+    required this.reason,
+    required this.createdAt,
+  });
 }

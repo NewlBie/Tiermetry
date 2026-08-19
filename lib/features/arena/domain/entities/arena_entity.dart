@@ -44,7 +44,7 @@ class ArenaEntity {
       case ArenaActivity.arcade:
         return 'Arcade';
       case ArenaActivity.recreational:
-        return "Turf/Court";
+        return 'Turf/Court';
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 
 /// A dynamic greeting for the Arena tab that rotates through
@@ -14,13 +15,13 @@ class ArenaGreeting extends StatefulWidget {
 
 class _ArenaGreetingState extends State<ArenaGreeting> {
   static const List<String> greetings = [
-    "Ready to lock in?",
-    "Step into the Arena",
-    "Find your battlefield",
+    'Ready to lock in?',
+    'Step into the Arena',
+    'Find your battlefield',
     "Who's next?",
-    "Prove your rank",
-    "Own the lobby tonight",
-    "Where legends play",
+    'Prove your rank',
+    'Own the lobby tonight',
+    'Where legends play',
   ];
 
   late String currentGreeting;
@@ -59,15 +60,11 @@ class _ArenaGreetingState extends State<ArenaGreeting> {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(
-            currentGreeting,
-            style: TiermetryTypography.display(
-              color: Colors.white,
-              fontSize: 32,
-            ),
+          child: Text((currentGreeting).toUpperCase(),
+            style: TiermetryTypography.display(color: Colors.white),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: TiermetrySpacing.sm),
         Text(
           'Find a match, join a tournament, or watch the pros.',
           style: TiermetryTypography.caption(

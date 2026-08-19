@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^6.1.0
+  google_fonts: ^8.2.1
   cupertino_icons: ^1.0.8
   gradient_borders: 1.0.1
   flutter_svg: ^2.0.7
@@ -52,6 +52,10 @@ dependencies:
   circulito: ^1.0.3
   flutter_refresh_rate_control: ^0.0.3
   line_icons: ^2.0.3
+  supabase_flutter: ^2.16.0
+  mobile_scanner: ^7.4.0
+  silky_scroll: ^2.6.2
+  amazing_icons: ^3.1.1
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +89,7 @@ flutter:
     - assets/score.png
     - assets/skill.png
     - assets/time.png
+    - assets/arena.png
     - assets/arena_color.png
     - assets/arena1.jpeg
     - assets/verified.svg

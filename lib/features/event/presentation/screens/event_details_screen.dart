@@ -1,31 +1,128 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
+import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_pill.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 
 import '../../domain/entities/event_entity.dart';
-import 'package:tiermetry/core/theme/colors.dart';
 
-class EventDetailsScreen extends StatelessWidget {
+class EventDetailsScreen extends StatefulWidget {
   final EventEntity event;
 
-  const EventDetailsScreen({super.key, required this.event});
+  const EventDetailsScreen({required this.event, super.key});
+
+  @override
+  State<EventDetailsScreen> createState() => _EventDetailsScreenState();
+}
+
+class _EventDetailsScreenState extends State<EventDetailsScreen>
+    with RefreshRateMixin {
+  final _eventCtrl = locator.eventCtrl;
+  bool _isRegistered = false;
+  bool _isLoadingStatus = true;
+  bool _isRegistering = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkRegistration();
+  }
+
+  Future<void> _checkRegistration() async {
+    try {
+      final status = await _eventCtrl.checkRegistrationStatus(widget.event.id);
+      if (mounted) {
+        setState(() {
+          _isRegistered = status;
+          _isLoadingStatus = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingStatus = false);
+      }
+    }
+  }
+
+  Future<void> _handleRegister() async {
+    if (!widget.event.isRegistrationOpen) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration is currently closed.')),
+      );
+      return;
+    }
+
+    if (widget.event.isFull) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This event is already full.')),
+      );
+      return;
+    }
+
+    setState(() => _isRegistering = true);
+    try {
+      await _eventCtrl.registerForEvent(widget.event.id);
+      if (mounted) {
+        setState(() {
+          _isRegistered = true;
+          _isRegistering = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registration successful!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isRegistering = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final event = widget.event;
     return Scaffold(
       backgroundColor: TiermetryColors.background,
       body: Stack(
         children: [
           // Background image
           Hero(
-            tag: event.image,
-            child: Image.asset(
-              event.image,
-              height: 300,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+            tag: event.id,
+            child:
+                event.image != null && !event.image!.startsWith('assets/')
+                    ? Image.network(
+                      event.image!,
+                      height: 300,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            height: 300,
+                            width: double.infinity,
+                            color: TiermetryColors.surfaceUnderlay,
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.white24,
+                              size: 50,
+                            ),
+                          ),
+                    )
+                    : Image.asset(
+                      event.image ?? 'assets/Hackathon.jpg',
+                      height: 300,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
           ),
 
           // Back button
@@ -35,7 +132,10 @@ class EventDetailsScreen extends StatelessWidget {
             child: CircleAvatar(
               backgroundColor: Colors.transparent,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: TiermetryColors.white),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: TiermetryColors.white,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -48,9 +148,7 @@ class EventDetailsScreen extends StatelessWidget {
             maxChildSize: 0.95,
             builder: (context, scrollController) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: TiermetryColors.surface,
-                ),
+                decoration: const BoxDecoration(color: TiermetryColors.surface),
                 child: Column(
                   children: [
                     // ✅ Top SVG
@@ -58,28 +156,31 @@ class EventDetailsScreen extends StatelessWidget {
                       'assets/ticket_cut.svg',
                       width: MediaQuery.of(context).size.width,
                       fit: BoxFit.fitWidth,
-                      colorFilter: const ColorFilter.mode(TiermetryColors.primary, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(
+                        TiermetryColors.primary,
+                        BlendMode.srcIn,
+                      ),
                     ),
 
                     // ✅ Scrollable Content
                     Expanded(
                       child: ListView(
                         controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 18,
+                        ),
                         children: [
-                          // Title
-                          Text(
-                            event.title,
-                            style: GoogleFonts.urbanist(
+                          Text((event.title).toUpperCase(),
+                            style: TiermetryTypography.title(
                               fontSize: 26,
-                              fontWeight: FontWeight.w700,
                               color: TiermetryColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            event.subtitle,
-                            style: GoogleFonts.urbanist(
+                            event.location,
+                            style: TiermetryTypography.bodySmall(
                               fontSize: 15,
                               color: TiermetryColors.textSecondary,
                             ),
@@ -87,21 +188,42 @@ class EventDetailsScreen extends StatelessWidget {
                           const SizedBox(height: 20),
 
                           // Info rows
-                          _buildInfoRow(Icons.calendar_today, 'Date', event.date),
-                          _buildInfoRow(Icons.access_time, 'Time', event.time),
-                          _buildInfoRow(Icons.monetization_on_outlined, 'Cost', event.cost),
-                          _buildInfoRow(Icons.stars, 'Points', '${event.points} pts'),
+                          _buildInfoRow(
+                            Icons.calendar_today,
+                            'Date',
+                            DateFormat(
+                              'EEEE, MMM d, y',
+                            ).format(event.startTime),
+                          ),
+                          _buildInfoRow(
+                            Icons.access_time,
+                            'Time',
+                            '${DateFormat('hh:mm a').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.endTime)}',
+                          ),
+                          _buildInfoRow(
+                            Icons.location_on_outlined,
+                            'Location',
+                            event.location,
+                          ),
+                          _buildInfoRow(
+                            Icons.monetization_on_outlined,
+                            'Cost',
+                            event.cost,
+                          ),
+                          _buildInfoRow(
+                            Icons.stars,
+                            'Points',
+                            '${event.points} pts',
+                          ),
                           const SizedBox(height: 20),
 
                           // 📊 Total Enrollments
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Total Enrollments',
-                                style: GoogleFonts.urbanist(
+                              Text(('Total Enrollments').toUpperCase(),
+                                style: TiermetryTypography.titleSmall(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w600,
                                   color: TiermetryColors.textPrimary,
                                 ),
                               ),
@@ -112,7 +234,7 @@ class EventDetailsScreen extends StatelessWidget {
                                   const SizedBox(width: 8),
                                   Text(
                                     'joined',
-                                    style: GoogleFonts.urbanist(
+                                    style: TiermetryTypography.bodySmall(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w500,
                                       color: TiermetryColors.textSecondary,
@@ -123,57 +245,57 @@ class EventDetailsScreen extends StatelessWidget {
                             ],
                           ),
 
-
                           const SizedBox(height: 24),
 
-// ⏳ Countdown Timer
-                          Text(
-                            'Time Remaining',
-                            style: GoogleFonts.urbanist(
+                          Text(('Time Remaining').toUpperCase(),
+                            style: TiermetryTypography.titleSmall(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
                               color: TiermetryColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          CountdownTimer(eventDate: event.dateTime),
+                          CountdownTimer(eventDate: event.startTime),
                           const SizedBox(height: 30),
 
-                          // Event Perks (Interactive looking icons)
-                          Text(
-                            'Event Perks',
-                            style: GoogleFonts.urbanist(
+                          Text(('Event Perks').toUpperCase(),
+                            style: TiermetryTypography.titleSmall(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
                               color: TiermetryColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: [
-                              _perkTile(Icons.emoji_events, "Certificate"),
-                              _perkTile(Icons.fastfood, "Snacks"),
-                              _perkTile(Icons.wifi, "Free Wi-Fi"),
-                              _perkTile(Icons.people_alt_outlined, "Networking"),
-                            ],
-                          ),
+                          event.perks.isEmpty
+                              ? Text(
+                                'No specific perks listed for this event.',
+                                style: TiermetryTypography.bodySmall(
+                                  color: TiermetryColors.textSecondary,
+                                ),
+                              )
+                              : Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children:
+                                    event.perks
+                                        .map(
+                                          (perk) => _perkTile(
+                                            _getIconData(perk.icon),
+                                            perk.name,
+                                          ),
+                                        )
+                                        .toList(),
+                              ),
                           const SizedBox(height: 24),
 
-                          // Description
-                          Text(
-                            'Description',
-                            style: GoogleFonts.urbanist(
+                          Text(('Description').toUpperCase(),
+                            style: TiermetryTypography.titleSmall(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
                               color: TiermetryColors.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            event.desc,
-                            style: GoogleFonts.urbanist(
+                            event.description ?? 'No description available.',
+                            style: TiermetryTypography.bodySmall(
                               fontSize: 14,
                               height: 1.6,
                               color: TiermetryColors.textSecondary,
@@ -182,47 +304,25 @@ class EventDetailsScreen extends StatelessWidget {
 
                           const SizedBox(height: 24),
 
-                          // Tags
                           Wrap(
                             spacing: 10,
                             runSpacing: 8,
-                            children: event.tags.map((tag) => Chip(
-                              label: Text(tag),
-                              backgroundColor: TiermetryColors.violet300,
-                              labelStyle: GoogleFonts.urbanist(
-                                fontSize: 12,
-                                color: TiermetryColors.white,
-                              ),
-                            )).toList(),
+                            children:
+                                event.tags
+                                    .map(
+                                      (tag) => AppPill(
+                                        text: tag,
+                                        color: TiermetryColors.violet300,
+                                        textColor: TiermetryColors.white,
+                                      ),
+                                    )
+                                    .toList(),
                           ),
 
                           const SizedBox(height: 30),
 
                           // CTA BUTTON
-                          ElevatedButton(
-                            onPressed: () {
-                              // TODO: Handle action (e.g., join/register)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Joined the event!")),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: TiermetryColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              minimumSize: const Size.fromHeight(50),
-                            ),
-                            child: Text(
-                              'Join This Event',
-                              style: GoogleFonts.urbanist(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
+                          _buildCTAButton(event),
                         ],
                       ),
                     ),
@@ -230,9 +330,90 @@ class EventDetailsScreen extends StatelessWidget {
                 ),
               );
             },
-          )
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCTAButton(EventEntity event) {
+    if (_isLoadingStatus) {
+      return const Center(
+        child: CircularProgressIndicator(color: TiermetryColors.primary),
+      );
+    }
+
+    if (_isRegistered) {
+      return ElevatedButton(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: TiermetryColors.surfaceElement,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          minimumSize: const Size.fromHeight(50),
+        ),
+        child: Text(
+          'Already Registered',
+          style: TiermetryTypography.action(
+            fontSize: 15,
+            color: TiermetryColors.white.withValues(alpha: 0.5),
+          ),
+        ),
+      );
+    }
+
+    final bool isOpen = event.isRegistrationOpen;
+    final bool isFull = event.isFull;
+
+    String label = 'Join This Event';
+    if (!isOpen) {
+      final now = DateTime.now();
+      if (now.isBefore(event.registrationStart)) {
+        label =
+            'Registration Opens ${DateFormat('MMM d').format(event.registrationStart)}';
+      } else {
+        label = 'Registration Closed';
+      }
+    } else if (isFull) {
+      label = 'Event Full';
+    }
+
+    return ElevatedButton(
+      onPressed:
+          (isOpen && !isFull && !_isRegistering) ? _handleRegister : null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor:
+            isOpen && !isFull
+                ? TiermetryColors.primary
+                : TiermetryColors.surfaceElement,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        minimumSize: const Size.fromHeight(50),
+      ),
+      child:
+          _isRegistering
+              ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: TiermetryColors.white,
+                  strokeWidth: 2,
+                ),
+              )
+              : Text(
+                label,
+                style: TiermetryTypography.action(
+                  fontSize: 15,
+                  color:
+                      isOpen && !isFull
+                          ? TiermetryColors.white
+                          : TiermetryColors.white.withValues(alpha: 0.5),
+                ),
+              ),
     );
   }
 
@@ -244,8 +425,8 @@ class EventDetailsScreen extends StatelessWidget {
           Icon(icon, color: TiermetryColors.textSecondary, size: 20),
           const SizedBox(width: 12),
           Text(
-            "$title: ",
-            style: GoogleFonts.urbanist(
+            '$title: ',
+            style: TiermetryTypography.bodySmall(
               fontWeight: FontWeight.w600,
               color: TiermetryColors.textPrimary,
             ),
@@ -253,7 +434,7 @@ class EventDetailsScreen extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.urbanist(
+              style: TiermetryTypography.bodySmall(
                 color: TiermetryColors.textSecondary,
               ),
             ),
@@ -264,12 +445,12 @@ class EventDetailsScreen extends StatelessWidget {
   }
 
   Widget _perkTile(IconData icon, String label) {
-    return Container(
+    return AppSurface(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: TiermetryColors.violet300.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      color: TiermetryColors.violet300.withValues(alpha: 0.2),
+      borderRadius: 12,
+      border: Border.all(color: Colors.transparent),
+      shadows: const [],
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -277,7 +458,7 @@ class EventDetailsScreen extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: GoogleFonts.urbanist(
+            style: TiermetryTypography.bodySmall(
               fontSize: 13,
               color: TiermetryColors.textPrimary,
             ),
@@ -286,12 +467,35 @@ class EventDetailsScreen extends StatelessWidget {
       ),
     );
   }
+
+  IconData _getIconData(String iconName) {
+    switch (iconName) {
+      case 'fastfood':
+        return Icons.fastfood;
+      case 'stars':
+        return Icons.stars;
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'verified_user':
+        return Icons.verified_user;
+      case 'chair':
+        return Icons.chair;
+      case 'people':
+        return Icons.people;
+      case 'wifi':
+        return Icons.wifi;
+      case 'notifications':
+        return Icons.notifications;
+      default:
+        return Icons.star_border_rounded;
+    }
+  }
 }
 
 class CountdownTimer extends StatefulWidget {
   final DateTime eventDate;
 
-  const CountdownTimer({super.key, required this.eventDate});
+  const CountdownTimer({required this.eventDate, super.key});
 
   @override
   State<CountdownTimer> createState() => _CountdownTimerState();
@@ -327,11 +531,9 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final hours = _timeLeft.inHours % 24;
     final minutes = _timeLeft.inMinutes % 60;
 
-    return Text(
-      '$days Days : $hours Hrs : $minutes Min',
-      style: GoogleFonts.urbanist(
+    return Text(('$days Days : $hours Hrs : $minutes Min').toUpperCase(),
+      style: TiermetryTypography.titleSmall(
         fontSize: 20,
-        fontWeight: FontWeight.bold,
         color: TiermetryColors.textSecondary,
       ),
     );
@@ -341,7 +543,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
 class RollingDigit extends StatefulWidget {
   final int digit;
 
-  const RollingDigit({super.key, required this.digit});
+  const RollingDigit({required this.digit, super.key});
 
   @override
   State<RollingDigit> createState() => _RollingDigitState();
@@ -378,11 +580,9 @@ class _RollingDigitState extends State<RollingDigit> {
               children: List.generate(10, (i) {
                 return Positioned(
                   top: (i - value) * 40,
-                  child: Text(
-                    '$i',
-                    style: GoogleFonts.urbanist(
+                  child: Text(('$i').toUpperCase(),
+                    style: TiermetryTypography.title(
                       fontSize: 30,
-                      fontWeight: FontWeight.bold,
                       color: TiermetryColors.positive,
                     ),
                   ),
@@ -399,7 +599,7 @@ class _RollingDigitState extends State<RollingDigit> {
 class RollingCounter extends StatelessWidget {
   final int number;
 
-  const RollingCounter({super.key, required this.number});
+  const RollingCounter({required this.number, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -407,12 +607,10 @@ class RollingCounter extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
-      children: digits.map((digit) {
-        return RollingDigit(digit: digit);
-      }).toList(),
+      children:
+          digits.map((digit) {
+            return RollingDigit(digit: digit);
+          }).toList(),
     );
   }
 }
-
-
-

@@ -33,21 +33,18 @@ class _AnimatedListItemState extends State<AnimatedListItem>
       duration: widget.duration ?? const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     final curve = CurvedAnimation(
       parent: _controller,
       curve: Curves.decelerate,
     );
-    
+
     _offsetAnimation = Tween<Offset>(
       begin: const Offset(0.2, 0.0),
       end: Offset.zero,
     ).animate(curve);
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(curve);
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(curve);
 
     final delayMs = widget.delay?.inMilliseconds ?? (widget.index * 100);
     Future.delayed(Duration(milliseconds: delayMs), () {
@@ -67,7 +64,7 @@ class _AnimatedListItemState extends State<AnimatedListItem>
       opacity: _fadeAnimation,
       child: SlideTransition(
         position: _offsetAnimation,
-        child: widget.child,
+        child: RepaintBoundary(child: widget.child),
       ),
     );
   }

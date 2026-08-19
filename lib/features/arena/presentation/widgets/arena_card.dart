@@ -1,34 +1,30 @@
 // lib/features/arena/presentation/widgets/arena_card.dart
-import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:tiermetry/core/theme/blurs.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/arena_entity.dart';
 import '../screens/arena_details_screen.dart';
-import 'package:tiermetry/core/theme/colors.dart';
 
 class ArenaCard extends StatelessWidget {
   final ArenaEntity arena;
 
-  const ArenaCard({super.key, required this.arena});
+  const ArenaCard({required this.arena, super.key});
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: _PremiumTapWrapper(
         onTap: () => _navigateToDetails(context),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color:
-                TiermetryColors
-                    .surface, // Background matching the ref's white but dark mode
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.05),
-              width: 1,
-            ),
-          ),
+        child: AppSurface(
+          borderRadius: TiermetryRadii.xl,
+          shadows: TiermetryShadows.card,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [_buildImageHeader(), _buildDetailsFooter()],
@@ -40,7 +36,7 @@ class ArenaCard extends StatelessWidget {
 
   void _navigateToDetails(BuildContext context) {
     Navigator.of(context).push(
-      PageRouteBuilder(
+      PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, anim, _) => ArenaDetailsScreen(arena: arena),
         transitionsBuilder:
@@ -58,7 +54,7 @@ class ArenaCard extends StatelessWidget {
         children: [
           Hero(
             tag: 'arena_${arena.id}',
-            child: Image.asset(arena.image, fit: BoxFit.cover),
+            child: AppImage(imagePath: arena.image),
           ),
           // Gradient Fade
           Positioned.fill(
@@ -70,7 +66,7 @@ class ArenaCard extends StatelessWidget {
                   stops: const [0.4, 1.0], // Fade starts lower
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(
+                    TiermetryColors.black.withValues(
                       alpha: 0.9,
                     ), // Deep shadow for text readability
                   ],
@@ -87,15 +83,12 @@ class ArenaCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  arena.name,
+                Text((arena.name).toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.urbanist(
-                    color: Colors.white,
+                  style: TiermetryTypography.titleSmall(
+                    color: TiermetryColors.white,
                     fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -103,10 +96,8 @@ class ArenaCard extends StatelessWidget {
                   arena.location,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
+                  style: TiermetryTypography.bodySmall(
+                    color: TiermetryColors.white.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -116,23 +107,23 @@ class ArenaCard extends StatelessWidget {
           Positioned(
             right: 20,
             bottom: 20,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+            child: AppSurface(
+              borderRadius: TiermetryRadii.md,
+              color: TiermetryColors.white.withValues(alpha: 0.15),
+              border: Border.all(color: Colors.transparent),
+              shadows: const [],
+              clipBehavior: Clip.antiAlias,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
-                child: Container(
+                filter: TiermetryBlur.filter(6),
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
                   child: Text(
                     'Directions',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
+                    style: TiermetryTypography.bodySmall(
+                      color: TiermetryColors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -151,7 +142,7 @@ class ArenaCard extends StatelessWidget {
     final tags = ['PS5', 'XBOX', 'PC', 'Nintendo'];
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(TiermetrySpacing.lg),
       child: SizedBox(
         height: 70, // Match the map container height
         child: Row(
@@ -181,10 +172,8 @@ class ArenaCard extends StatelessWidget {
                                 ),
                                 child: Text(
                                   tag,
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
+                                  style: TiermetryTypography.bodySmall(
+                                    color: TiermetryColors.white,
                                   ),
                                 ),
                               ),
@@ -194,7 +183,7 @@ class ArenaCard extends StatelessWidget {
                   // Divider
                   Container(
                     height: 1,
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: TiermetryColors.white.withValues(alpha: 0.1),
                   ),
                   // Stats row
                   Row(
@@ -208,14 +197,14 @@ class ArenaCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: TiermetrySpacing.lg),
             // Right side map shape
             Container(
               width: 70,
               height: 60,
               decoration: BoxDecoration(
                 color: TiermetryColors.surfaceElement,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(TiermetryRadii.md),
               ),
               child: Center(
                 child: Icon(
@@ -237,8 +226,8 @@ class ArenaCard extends StatelessWidget {
       children: [
         Text(
           value,
-          style: GoogleFonts.urbanist(
-            color: Colors.white,
+          style: TiermetryTypography.caption(
+            color: TiermetryColors.white,
             fontSize: 14,
             fontWeight: FontWeight.w700,
           ),
@@ -246,10 +235,9 @@ class ArenaCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TiermetryTypography.bodySmall(
             color: TiermetryColors.textMuted,
             fontSize: 10,
-            fontWeight: FontWeight.w500,
           ),
         ),
       ],

@@ -18,13 +18,13 @@ void main() {
     r'lib\features\home\presentation\widgets\metrics_section.dart',
   ];
 
-  final importStatement = "import 'package:tiermetry/core/theme/colors.dart';";
+  const importStatement = "import 'package:tiermetry/core/theme/colors.dart';";
 
   for (final path in files) {
     final file = File(path);
     if (!file.existsSync()) continue;
 
-    var content = file.readAsStringSync();
+    final content = file.readAsStringSync();
     if (!content.contains(importStatement)) {
       // Find the last import statment and insert after it
       final lines = content.split('\n');

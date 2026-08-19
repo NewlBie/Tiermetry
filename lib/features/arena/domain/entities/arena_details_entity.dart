@@ -32,7 +32,7 @@ class TurfSpecs extends ArenaSpecs {
   });
 }
 
-class Device {
+class ArenaDevice {
   final String id;
   final String name;
   final String desc;
@@ -40,7 +40,7 @@ class Device {
   final String image;
   final bool isOccupied;
 
-  Device({
+  ArenaDevice({
     required this.id,
     required this.name,
     required this.desc,
@@ -50,11 +50,12 @@ class Device {
   });
 }
 
-class DeviceCat {
+class ArenaDeviceCat {
+  final String id;
   final String name;
-  final List<Device> units;
+  final List<ArenaDevice> units;
 
-  DeviceCat({required this.name, required this.units});
+  ArenaDeviceCat({required this.id, required this.name, required this.units});
 }
 
 class ArenaDetailsEntity extends ArenaEntity {
@@ -65,7 +66,7 @@ class ArenaDetailsEntity extends ArenaEntity {
   final String internet;
   final String amenity;
   final ArenaSpecs specs;
-  final List<DeviceCat> devices;
+  final List<ArenaDeviceCat> devices;
   final List<String> rules;
   final String contactPhone;
   final bool hasAC;

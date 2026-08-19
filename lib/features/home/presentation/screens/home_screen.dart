@@ -1,26 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-
-// Features
-import 'package:tiermetry/features/skill/presentation/screens/skill_browser_screen.dart';
-import 'package:tiermetry/features/event/presentation/screens/event_browser_screen.dart';
-
-import 'package:tiermetry/core/locator.dart';
+import 'package:silky_scroll/silky_scroll.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
-
-// Components
 import 'package:tiermetry/core/widgets/section_header.dart';
+import 'package:tiermetry/features/home/presentation/controllers/home_controller.dart';
 
-// Modular Sections
 import '../widgets/adventure_greeting.dart';
-import '../widgets/scroll_gradient_overlay.dart';
-import '../widgets/metrics_section.dart';
-import '../widgets/live_around_you_section.dart';
-import '../widgets/trending_activities_section.dart';
 import '../widgets/featured_skills_section.dart';
-import '../widgets/upcoming_events_section.dart';
 import '../widgets/home_backdrop.dart';
+import '../widgets/live_around_you_section.dart';
+import '../widgets/metrics_section.dart';
+import '../widgets/scroll_gradient_overlay.dart';
+import '../widgets/trending_activities_section.dart';
+import '../widgets/upcoming_events_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -31,20 +27,17 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final _skillCtrl = locator.skillCtrl;
-  final _eventCtrl = locator.eventCtrl;
-  final _trendingActivityCtrl = locator.trendingActivityCtrl;
+class _HomeScreenState extends State<HomeScreen> with RefreshRateMixin {
   late ScrollController _scrollCtrl;
 
   @override
   void initState() {
     super.initState();
-    _scrollCtrl = ScrollController();
+    _scrollCtrl = HomeController.instance.scrollController;
     Future.microtask(() {
-      _skillCtrl.loadSkills();
-      _eventCtrl.loadEvents();
-      _trendingActivityCtrl.loadActivities();
+      HomeController.instance.skillCtrl.loadSkills();
+      HomeController.instance.eventCtrl.loadEvents();
+      HomeController.instance.trendingActivityCtrl.loadActivities();
     });
   }
 
@@ -63,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           const HomeBackdrop(),
-          CustomScrollView(
+          SilkyCustomScrollView(
             controller: _scrollCtrl,
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -72,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     TiermetrySpacing.screenPadding,
-                    topPad + 120,
+                    topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
                     TiermetrySpacing.screenPadding,
                     TiermetrySpacing.xl,
                   ),
@@ -86,11 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 720),
-                      child: Padding(
+                      child: const Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             MetricsSection(),
                             SizedBox(height: TiermetrySpacing.sectionGap),
                           ],
@@ -102,11 +95,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               // --- Live Around You -------------------------------------------
-              SliverToBoxAdapter(
+              const SliverToBoxAdapter(
                 child: RepaintBoundary(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       LiveAroundYouSection(),
                       SizedBox(height: TiermetrySpacing.sectionGap),
                     ],
@@ -122,23 +115,24 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Padding(
                         padding: TiermetrySpacing.pagePadding,
-                        child: Text(
-                          'Trending Activities',
-                          style: TiermetryTypography.title(color: Colors.white),
+                        child: Text(('Trending Activities').toUpperCase(),
+                          style: TiermetryTypography.title(
+                            color: TiermetryColors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       ListenableBuilder(
-                        listenable: _trendingActivityCtrl,
+                        listenable:
+                            HomeController.instance.trendingActivityCtrl,
                         builder: (context, _) {
+                          final ctrl =
+                              HomeController.instance.trendingActivityCtrl;
                           return TrendingActivitiesSection(
-                            activities: _trendingActivityCtrl.activities,
-                            isLoading: _trendingActivityCtrl.isLoading,
-                            onActivitySelected: (id) {
-                              _trendingActivityCtrl.updateActivitySelection(
-                                id,
-                                true,
-                              );
+                            activities: ctrl.activities,
+                            isLoading: ctrl.isLoading,
+                            onActivitySelected: (String id) {
+                              ctrl.updateActivitySelection(id, true);
                             },
                           );
                         },
@@ -155,26 +149,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
+                      const Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: SectionHeader(
                           title: 'Featured Skills',
-                          onViewMore:
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SkillBrowserScreen(),
-                                ),
-                              ),
+                          onViewMore: null,
                         ),
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       ListenableBuilder(
-                        listenable: _skillCtrl,
+                        listenable: HomeController.instance.skillCtrl,
                         builder: (context, _) {
+                          final ctrl = HomeController.instance.skillCtrl;
                           return FeaturedSkillsSection(
-                            skills: _skillCtrl.skills,
-                            isLoading: _skillCtrl.isLoading,
+                            skills: ctrl.skills,
+                            isLoading: ctrl.isLoading,
                           );
                         },
                       ),
@@ -190,26 +179,21 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
+                      const Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: SectionHeader(
                           title: 'Upcoming Events',
-                          onViewMore:
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const EventBrowserScreen(),
-                                ),
-                              ),
+                          onViewMore: null,
                         ),
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       ListenableBuilder(
-                        listenable: _eventCtrl,
+                        listenable: HomeController.instance.eventCtrl,
                         builder: (context, _) {
+                          final ctrl = HomeController.instance.eventCtrl;
                           return UpcomingEventsSection(
-                            events: _eventCtrl.events,
-                            isLoading: _eventCtrl.isLoading,
+                            events: ctrl.events,
+                            isLoading: ctrl.isLoading,
                           );
                         },
                       ),

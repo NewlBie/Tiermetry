@@ -1,9 +1,16 @@
 import 'dart:math';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../domain/entities/event_entity.dart';
+import 'package:intl/intl.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import '../../domain/entities/event_entity.dart';
+import '../screens/event_details_screen.dart';
 
 class UpcomingEventCard extends StatefulWidget {
   final EventEntity event;
@@ -37,37 +44,50 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: GestureDetector(
-        onTap: () => HapticFeedback.lightImpact(),
-        child: Container(
-          // Split Inset Card Styling
-          decoration: BoxDecoration(
-            color: TiermetryColors.surface,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1.5,
+        onTap: () {
+          HapticFeedback.lightImpact();
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => EventDetailsScreen(event: widget.event),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 22,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(12),
+          );
+        },
+        child: AppSurface(
+          borderRadius: TiermetryRadii.md,
+          border: const Border(),
+          shadows: TiermetryShadows.upcomingEvent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- INSET IMAGE (No Overlap) ---
-              Expanded(
-                flex: 12,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.asset(widget.event.image, fit: BoxFit.cover),
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                      Hero(
+                        tag: widget.event.id,
+                        child: AppImage(
+                          imagePath:
+                              widget.event.image ?? 'assets/Hackathon.jpg',
+                        ),
+                      ),
                       // Top gradient just for top badges clarity if image is bright
                       Positioned(
                         top: 0,
@@ -136,11 +156,10 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                "Live soon",
-                                style: GoogleFonts.urbanist(
+                                'Live soon',
+                                style: TiermetryTypography.label(
                                   fontSize: 11,
                                   letterSpacing: 0.3,
-                                  fontWeight: FontWeight.w800,
                                   color: Colors.white,
                                 ),
                               ),
@@ -162,7 +181,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                             ],
                           ),
                           child: const Icon(
-                            Icons.notifications_active_rounded,
+                            CupertinoIcons.bell_solid,
                             size: 18,
                             color: Colors.black,
                           ),
@@ -172,29 +191,28 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
               // --- SEPARATED TEXT AREA ---
               Expanded(
-                flex: 11,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Title
-                      Text(
-                        widget.event.title,
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      Text((widget.event.title).toUpperCase(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.bricolageGrotesque(
+                        style: TiermetryTypography.titleSmall(
                           fontSize: 18,
-                          fontWeight: FontWeight.w800,
                           height: 1.15,
                           color: Colors.white,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       // Date & Time Row
                       Row(
                         children: [
@@ -207,7 +225,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
-                              Icons.calendar_month_rounded,
+                              CupertinoIcons.calendar,
                               size: 14,
                               color: TiermetryColors.accentNeonGreen,
                             ),
@@ -215,8 +233,8 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              "${widget.event.date} • ${widget.event.time}",
-                              style: GoogleFonts.urbanist(
+                              '${DateFormat('MMM d').format(widget.event.startTime)} • ${DateFormat('hh:mm a').format(widget.event.startTime)}',
+                              style: TiermetryTypography.caption(
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.white70,
@@ -236,7 +254,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
-                              Icons.place_rounded,
+                              CupertinoIcons.location_solid,
                               size: 14,
                               color: Colors.white70,
                             ),
@@ -247,9 +265,8 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               widget.event.location,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.urbanist(
+                              style: TiermetryTypography.caption(
                                 fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
                                 color: Colors.white60,
                               ),
                             ),
@@ -261,6 +278,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),

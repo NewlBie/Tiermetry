@@ -1,15 +1,22 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class LegalPoliciesScreen extends StatelessWidget {
+class LegalPoliciesScreen extends StatefulWidget {
   const LegalPoliciesScreen({super.key});
 
+  @override
+  State<LegalPoliciesScreen> createState() => _LegalPoliciesScreenState();
+}
+
+class _LegalPoliciesScreenState extends State<LegalPoliciesScreen>
+    with RefreshRateMixin {
   void _openWebLink(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception("Could not open $url");
+      throw Exception('Could not open $url');
     }
   }
 
@@ -19,12 +26,14 @@ class LegalPoliciesScreen extends StatelessWidget {
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text("Legal & Policies",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            )),
+        middle: Text(
+          'Legal & Policies',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         border: null,
       ),
       child: SafeArea(
@@ -33,45 +42,45 @@ class LegalPoliciesScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Legal Documents",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  )),
+              Text(
+                'Legal Documents',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 12),
-              Text("These documents outline our policies and your rights.",
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white60,
-                  )),
+              Text(
+                'These documents outline our policies and your rights.',
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+              ),
               const SizedBox(height: 30),
               _legalTile(
                 context,
-                title: "Terms of Service",
-                subtitle: "Rules and conditions for using Tiermetry",
-                url: "https://tiermetry.com/terms",
+                title: 'Terms of Service',
+                subtitle: 'Rules and conditions for using Tiermetry',
+                url: 'https://tiermetry.com/terms',
               ),
               _legalTile(
                 context,
-                title: "Privacy Policy",
-                subtitle: "How we handle your data and protect privacy",
-                url: "https://tiermetry.com/privacy",
+                title: 'Privacy Policy',
+                subtitle: 'How we handle your data and protect privacy',
+                url: 'https://tiermetry.com/privacy',
               ),
               _legalTile(
                 context,
-                title: "Community Guidelines",
-                subtitle: "What behavior is acceptable on our platform",
-                url: "https://tiermetry.com/guidelines",
+                title: 'Community Guidelines',
+                subtitle: 'What behavior is acceptable on our platform',
+                url: 'https://tiermetry.com/guidelines',
               ),
               const Spacer(),
               Center(
-                child: Text("Last updated: July 2025",
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white30,
-                    )),
-              )
+                child: Text(
+                  'Last updated: July 2025',
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white30),
+                ),
+              ),
             ],
           ),
         ),
@@ -79,8 +88,12 @@ class LegalPoliciesScreen extends StatelessWidget {
     );
   }
 
-  Widget _legalTile(BuildContext context,
-      {required String title, required String subtitle, required String url}) {
+  Widget _legalTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String url,
+  }) {
     return GestureDetector(
       onTap: () => _openWebLink(url),
       child: Container(
@@ -99,22 +112,30 @@ class LegalPoliciesScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      )),
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white54,
-                      )),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.white54,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white24)
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: Colors.white24,
+            ),
           ],
         ),
       ),

@@ -1,17 +1,18 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 
 class BottomNavItem {
-  final IconData icon;
+  final Widget Function(double size, Color color) iconBuilder;
   final String label;
 
-  const BottomNavItem({required this.icon, required this.label});
+  const BottomNavItem({
+    required this.iconBuilder,
+    required this.label,
+  });
 }
 
 class BottomNav extends StatefulWidget {
@@ -21,10 +22,10 @@ class BottomNav extends StatefulWidget {
   final Color accentColor;
 
   const BottomNav({
-    super.key,
     required this.items,
     required this.currentIndex,
     required this.onTap,
+    super.key,
     this.accentColor = TiermetryColors.accentNeonGreen,
   });
 
@@ -46,7 +47,7 @@ class _BottomNavState extends State<BottomNav>
     _toIndex = _fromIndex;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 360),
+      duration: const Duration(milliseconds: 500),
     );
     _position = AlwaysStoppedAnimation(_toIndex);
   }
@@ -58,7 +59,7 @@ class _BottomNavState extends State<BottomNav>
       _fromIndex = _position.value;
       _toIndex = widget.currentIndex.toDouble();
       _position = Tween<double>(begin: _fromIndex, end: _toIndex).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+        CurvedAnimation(parent: _controller, curve: Curves.fastLinearToSlowEaseIn),
       );
       _controller.forward(from: 0);
     }
@@ -85,27 +86,11 @@ class _BottomNavState extends State<BottomNav>
           child: Container(
             height: 76,
             decoration: BoxDecoration(
-              color: TiermetryColors.surface.withValues(alpha: 0.94),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.09),
-                width: 0.8,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.52),
-                  blurRadius: 32,
-                  offset: const Offset(0, 18),
-                ),
-                BoxShadow(
-                  color: widget.accentColor.withValues(alpha: 0.10),
-                  blurRadius: 26,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              color: Colors.black.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(12),
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -141,10 +126,12 @@ class _BottomNavState extends State<BottomNav>
     if (FeatureFlags.disableBlur) return surface;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: surface,
+      borderRadius: BorderRadius.circular(12),
+      child: RepaintBoundary(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+          child: surface,
+        ),
       ),
     );
   }
@@ -186,22 +173,20 @@ class _NavItemView extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 5),
             padding: EdgeInsets.symmetric(horizontal: selected ? 10 : 0),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.035 * active),
-              borderRadius: BorderRadius.circular(TiermetryRadii.pill),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Transform.translate(
                   offset: Offset(0, -2 * active),
-                  child: Icon(
-                    item.icon,
-                    size: 23 + (active * 2),
-                    color: Color.lerp(
+                  child: item.iconBuilder(
+                    23 + (active * 2),
+                    Color.lerp(
                       Colors.white.withValues(alpha: 0.42),
                       Colors.white,
                       active,
-                    ),
+                    )!,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -254,8 +239,8 @@ class _NavSurfacePainter extends CustomPainter {
     final center = Offset(slot * (position + 0.5), size.height / 2);
     final activeRect = Rect.fromCenter(
       center: center,
-      width: slot * 0.72,
-      height: 48,
+      width: slot * 0.82,
+      height: 56,
     );
 
     final glowRect = Rect.fromCenter(
@@ -264,34 +249,26 @@ class _NavSurfacePainter extends CustomPainter {
       height: size.height * 1.5,
     );
 
-    canvas.drawOval(
-      glowRect,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [accent.withValues(alpha: 0.16), Colors.transparent],
-        ).createShader(glowRect),
-    );
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(activeRect, const Radius.circular(999)),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.10),
-            Colors.white.withValues(alpha: 0.035),
-          ],
-        ).createShader(activeRect),
-    );
-
-    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.025);
-    const spacing = 18.0;
-    for (double x = spacing / 2; x < size.width; x += spacing) {
-      for (double y = spacing / 2; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 0.85, dotPaint);
-      }
-    }
+    canvas
+      ..drawOval(
+        glowRect,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [accent.withValues(alpha: 0.16), Colors.transparent],
+          ).createShader(glowRect),
+      )
+      ..drawRRect(
+        RRect.fromRectAndRadius(activeRect, const Radius.circular(12)),
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.10),
+              Colors.white.withValues(alpha: 0.035),
+            ],
+          ).createShader(activeRect),
+      );
   }
 
   @override

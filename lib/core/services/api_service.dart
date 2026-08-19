@@ -11,4 +11,3 @@ abstract class ApiService {
 
   Future<List<TrendingActivity>> getTrendingActivities();
 }
-

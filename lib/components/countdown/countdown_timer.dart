@@ -8,11 +8,7 @@ class CountdownTimer extends StatefulWidget {
   final DateTime eventDate;
   final TextStyle? textStyle;
 
-  const CountdownTimer({
-    required this.eventDate,
-    this.textStyle,
-    super.key,
-  });
+  const CountdownTimer({required this.eventDate, this.textStyle, super.key});
 
   @override
   State<CountdownTimer> createState() => _CountdownTimerState();
@@ -50,11 +46,13 @@ class _CountdownTimerState extends State<CountdownTimer> {
 
     return Text(
       '$days Days : $hours Hrs : $minutes Min',
-      style: widget.textStyle ?? GoogleFonts.urbanist(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: TiermetryColors.textSecondary,
-      ),
+      style:
+          widget.textStyle ??
+          GoogleFonts.urbanist(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: TiermetryColors.textSecondary,
+          ),
     );
   }
 }

@@ -17,17 +17,17 @@ class SkillModel extends SkillEntity {
 
   factory SkillModel.fromJson(Map<String, dynamic> json) {
     return SkillModel(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      subtitle: json['subtitle'] ?? '',
-      category: json['category'] ?? "Content Creation",
-      badge: json['badge'] ?? '',
-      image: json['image'] ?? '',
-      time: json['time'] ?? '0h',
-      level: json['level'] ?? 'Beginner',
-      price: json['price'] ?? 'Free',
-      oldPrice: json['oldPrice'] ?? 'Rs. 0',
-      rating: (json['rating'] ?? 0.0).toDouble(),
+      id: json['id'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      category: json['category'] as String? ?? 'Content Creation',
+      badge: json['badge'] as String? ?? '',
+      image: json['image'] as String? ?? '',
+      time: json['time'] as String? ?? '0h',
+      level: json['level'] as String? ?? 'Beginner',
+      price: json['price'] as String? ?? 'Free',
+      oldPrice: json['oldPrice'] as String? ?? 'Rs. 0',
+      rating: (json['rating'] as num? ?? 0.0).toDouble(),
     );
   }
 }

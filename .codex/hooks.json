@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'C:\\Users\\Neal\\StudioProjects\\tiermetry\\.codex\\hooks\\brain-session-start'"
+          }
+        ]
+      }
+    ]
+  }
+}

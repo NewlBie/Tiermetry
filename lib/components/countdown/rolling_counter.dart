@@ -38,11 +38,13 @@ class _RollingDigitState extends State<RollingDigit> {
 
   @override
   Widget build(BuildContext context) {
-    final style = widget.textStyle ?? GoogleFonts.urbanist(
-      fontSize: 30,
-      fontWeight: FontWeight.bold,
-      color: TiermetryColors.positive,
-    );
+    final style =
+        widget.textStyle ??
+        GoogleFonts.urbanist(
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+          color: TiermetryColors.positive,
+        );
 
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 10, end: animatedValue),
@@ -90,14 +92,15 @@ class RollingCounter extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
-      children: digits.map((digit) {
-        return RollingDigit(
-          digit: digit,
-          height: digitHeight,
-          width: digitWidth,
-          textStyle: textStyle,
-        );
-      }).toList(),
+      children:
+          digits.map((digit) {
+            return RollingDigit(
+              digit: digit,
+              height: digitHeight,
+              width: digitWidth,
+              textStyle: textStyle,
+            );
+          }).toList(),
     );
   }
 }
