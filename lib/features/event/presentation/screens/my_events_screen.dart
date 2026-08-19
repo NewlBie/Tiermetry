@@ -6,6 +6,7 @@ import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/event_entity.dart';
@@ -31,61 +32,88 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: TiermetryColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          _buildSliverAppBar(),
-          SliverPadding(
-            padding: const EdgeInsets.all(TiermetrySpacing.screenPadding),
-            sliver: ListenableBuilder(
-              listenable: _eventCtrl,
-              builder: (context, _) {
-                if (_eventCtrl.isLoading) {
-                  return const SliverToBoxAdapter(
-                    child: Center(child: CircularProgressIndicator(color: TiermetryColors.accentAppleBlue)),
-                  );
-                }
-
-                final registrations = _eventCtrl.myRegistrations;
-
-                if (registrations.isEmpty) {
-                  return SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.event_busy_rounded, size: 64, color: TiermetryColors.white.withValues(alpha: 0.2)),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No registered events found.',
-                          style: TiermetryTypography.bodySmall(color: TiermetryColors.textMuted),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(context),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: TiermetryColors.accentAppleBlue,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: const Text('Explore Events'),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return _buildEventRegistrationCard(registrations[index]);
-                    },
-                    childCount: registrations.length,
-                  ),
-                );
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: _eventCtrl.loadMyRegistrations,
+        backgroundColor: TiermetryColors.surface,
+        color: TiermetryColors.accentAppleBlue,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
           ),
-        ],
+          slivers: [
+            _buildSliverAppBar(),
+            SliverPadding(
+              padding: const EdgeInsets.all(TiermetrySpacing.screenPadding),
+              sliver: ListenableBuilder(
+                listenable: _eventCtrl,
+                builder: (context, _) {
+                  if (_eventCtrl.isLoading &&
+                      _eventCtrl.myRegistrations.isEmpty) {
+                    return const SliverToBoxAdapter(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: TiermetryColors.accentAppleBlue,
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (_eventCtrl.error != null &&
+                      _eventCtrl.myRegistrations.isEmpty) {
+                    return SliverToBoxAdapter(
+                      child: AppErrorState(
+                        message: _eventCtrl.error!,
+                        onRetry: _eventCtrl.loadMyRegistrations,
+                      ),
+                    );
+                  }
+
+                  final registrations = _eventCtrl.myRegistrations;
+
+                  if (registrations.isEmpty) {
+                    return SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.event_busy_rounded,
+                            size: 64,
+                            color: TiermetryColors.white.withValues(alpha: 0.2),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No registered events found.',
+                            style: TiermetryTypography.bodySmall(
+                              color: TiermetryColors.textMuted,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: TiermetryColors.accentAppleBlue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text('Explore Events'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return _buildEventRegistrationCard(registrations[index]);
+                    }, childCount: registrations.length),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -93,7 +121,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   Widget _buildSliverAppBar() {
     return SliverAppBar(
       pinned: true,
-      expandedHeight: 120.0,
+      expandedHeight: 80.0,
       backgroundColor: Colors.transparent,
       elevation: 0,
       flexibleSpace: ClipRRect(
@@ -101,8 +129,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: FlexibleSpaceBar(
             centerTitle: true,
-            title: Text(
-              'My Registered Events',
+            title: Text(('My Registered Events').toUpperCase(),
               style: TiermetryTypography.title(
                 color: TiermetryColors.white,
                 fontSize: 20,
@@ -118,10 +145,13 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: TiermetrySpacing.lg),
       child: GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(builder: (_) => EventDetailsScreen(event: event)),
-        ),
+        onTap:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => EventDetailsScreen(event: event),
+              ),
+            ),
         child: AppSurface(
           padding: EdgeInsets.zero,
           borderRadius: TiermetryRadii.lg,
@@ -131,23 +161,31 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(TiermetryRadii.lg)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(TiermetryRadii.lg),
+                    ),
                     child: Hero(
                       tag: event.id,
-                      child: event.image != null && !event.image!.startsWith('assets/')
-                          ? Image.network(
-                              event.image!,
-                              fit: BoxFit.cover,
-                              height: 140,
-                              width: double.infinity,
-                              errorBuilder: (_, __, ___) => Container(height: 140, color: TiermetryColors.surfaceUnderlay),
-                            )
-                          : Image.asset(
-                              event.image ?? 'assets/Hackathon.jpg',
-                              fit: BoxFit.cover,
-                              height: 140,
-                              width: double.infinity,
-                            ),
+                      child:
+                          event.image != null &&
+                                  !event.image!.startsWith('assets/')
+                              ? Image.network(
+                                event.image!,
+                                fit: BoxFit.cover,
+                                height: 140,
+                                width: double.infinity,
+                                errorBuilder:
+                                    (_, __, ___) => Container(
+                                      height: 140,
+                                      color: TiermetryColors.surfaceUnderlay,
+                                    ),
+                              )
+                              : Image.asset(
+                                event.image ?? 'assets/Hackathon.jpg',
+                                fit: BoxFit.cover,
+                                height: 140,
+                                width: double.infinity,
+                              ),
                     ),
                   ),
                   const Positioned(
@@ -166,8 +204,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      event.title,
+                    Text((event.title).toUpperCase(),
                       style: TiermetryTypography.title(
                         color: TiermetryColors.white,
                         fontSize: 18,
@@ -176,11 +213,17 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(Icons.location_on_rounded, size: 14, color: TiermetryColors.textMuted),
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 14,
+                          color: TiermetryColors.textMuted,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           event.location,
-                          style: TiermetryTypography.bodySmall(color: TiermetryColors.textMuted),
+                          style: TiermetryTypography.bodySmall(
+                            color: TiermetryColors.textMuted,
+                          ),
                         ),
                       ],
                     ),
@@ -190,16 +233,24 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.calendar_today_rounded, size: 14, color: TiermetryColors.white),
+                            const Icon(
+                              Icons.calendar_today_rounded,
+                              size: 14,
+                              color: TiermetryColors.white,
+                            ),
                             const SizedBox(width: 6),
                             Text(
-                              DateFormat('EEE, MMM d • hh:mm a').format(event.startTime),
-                              style: TiermetryTypography.bodySmall(color: TiermetryColors.white, fontWeight: FontWeight.w600),
+                              DateFormat(
+                                'EEE, MMM d • hh:mm a',
+                              ).format(event.startTime),
+                              style: TiermetryTypography.bodySmall(
+                                color: TiermetryColors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
-                        Text(
-                          event.cost,
+                        Text((event.cost).toUpperCase(),
                           style: TiermetryTypography.title(
                             color: TiermetryColors.accentNeonGreen,
                             fontSize: 16,

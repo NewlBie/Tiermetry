@@ -18,14 +18,14 @@ class ReservationHoldModel extends ReservationHoldEntity {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       venueId: json['venue_id'] as String,
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
+      startTime: DateTime.parse(json['start_time'] as String).toLocal(),
+      endTime: DateTime.parse(json['end_time'] as String).toLocal(),
       totalAmount: (json['total_amount'] as num).toDouble(),
       status: ReservationHoldStatus.values.firstWhere(
         (e) => e.name == (json['status'] as String),
         orElse: () => ReservationHoldStatus.active,
       ),
-      expiresAt: DateTime.parse(json['expires_at'] as String),
+      expiresAt: DateTime.parse(json['expires_at'] as String).toLocal(),
       convertedBookingId: json['converted_booking_id'] as String?,
     );
   }

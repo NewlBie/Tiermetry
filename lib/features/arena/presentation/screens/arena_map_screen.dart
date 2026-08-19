@@ -231,8 +231,7 @@ class _ArenaMapScreenState extends State<ArenaMapScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Expanded(
-                                      child: Text(
-                                        widget.arena.name,
+                                      child: Text((widget.arena.name).toUpperCase(),
                                         style: TiermetryTypography.title(
                                           fontSize: 22,
                                           color: Colors.white,
@@ -271,7 +270,9 @@ class _ArenaMapScreenState extends State<ArenaMapScreen>
                                         widget.arena.shortAddress,
                                         style: TiermetryTypography.bodySmall(
                                           fontSize: 14,
-                                          color: Colors.white.withValues(alpha: 0.72),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.72,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -432,10 +433,7 @@ class _GlassButton extends StatelessWidget {
   final VoidCallback onTap;
   final Widget child;
 
-  const _GlassButton({
-    required this.onTap,
-    required this.child,
-  });
+  const _GlassButton({required this.onTap, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -451,9 +449,7 @@ class _GlassButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.15),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
             ),
             child: Center(child: child),
           ),

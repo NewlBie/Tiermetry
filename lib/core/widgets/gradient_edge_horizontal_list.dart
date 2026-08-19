@@ -11,7 +11,8 @@ class GradientEdgeHorizontalList extends StatefulWidget {
   final ScrollPhysics physics;
 
   const GradientEdgeHorizontalList({
-    required this.children, this.controller,
+    required this.children,
+    this.controller,
     this.gradientWidth = 32.0,
     this.fadeStartThreshold = 50.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 20),

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/utils/error_mapper.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repo.dart';
 
@@ -30,7 +30,7 @@ class AuthCtrl extends ChangeNotifier {
       await _authRepo.signIn(email: email, password: password);
       _error = null;
     } catch (e) {
-      _error = _handleError(e);
+      _error = ErrorMapper.map(e);
     } finally {
       _setLoading(false);
     }
@@ -42,7 +42,7 @@ class AuthCtrl extends ChangeNotifier {
       await _authRepo.signUp(email: email, password: password, name: name);
       _error = null;
     } catch (e) {
-      _error = _handleError(e);
+      _error = ErrorMapper.map(e);
     } finally {
       _setLoading(false);
     }
@@ -55,26 +55,5 @@ class AuthCtrl extends ChangeNotifier {
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
-  }
-
-  String _handleError(dynamic e) {
-    // DEVELOPMENT LOGGING
-    debugPrint('--- SUPABASE AUTH FAILURE ---');
-    debugPrint('Exception type: ${e.runtimeType}');
-    debugPrint('Error details: $e');
-    if (e is AuthException) {
-      debugPrint('Status code: ${e.statusCode}');
-      debugPrint('Message: ${e.message}');
-    }
-    debugPrint('-----------------------------');
-
-    final message = e.toString();
-    if (message.contains('Invalid login credentials')) {
-      return 'Invalid email or password.';
-    }
-    if (message.contains('User already registered')) {
-      return 'An account with this email already exists.';
-    }
-    return 'Authentication failed: $e';
   }
 }

@@ -7,6 +7,7 @@ import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/arena_entity.dart';
 import '../screens/arena_details_screen.dart';
@@ -53,7 +54,7 @@ class ArenaCard extends StatelessWidget {
         children: [
           Hero(
             tag: 'arena_${arena.id}',
-            child: Image.asset(arena.image, fit: BoxFit.cover),
+            child: AppImage(imagePath: arena.image),
           ),
           // Gradient Fade
           Positioned.fill(
@@ -82,8 +83,7 @@ class ArenaCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  arena.name,
+                Text((arena.name).toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.titleSmall(

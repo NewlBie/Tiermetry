@@ -60,11 +60,8 @@ class _ArenaGreetingState extends State<ArenaGreeting> {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(
-            currentGreeting,
-            style: TiermetryTypography.display(
-              color: Colors.white,
-            ),
+          child: Text((currentGreeting).toUpperCase(),
+            style: TiermetryTypography.display(color: Colors.white),
           ),
         ),
         const SizedBox(height: TiermetrySpacing.sm),

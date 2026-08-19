@@ -10,4 +10,3 @@ class FeatureFlags {
   /// Disable BackdropFilter-based blur effects (can help on some emulators/GPUs).
   static const bool disableBlur = bool.fromEnvironment('TM_DISABLE_BLUR');
 }
-

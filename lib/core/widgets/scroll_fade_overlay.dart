@@ -30,9 +30,7 @@ class ScrollFadeOverlay extends StatelessWidget {
               end: isRight ? Alignment.centerRight : Alignment.centerLeft,
               colors: [
                 Colors.transparent,
-                TiermetryColors.background.withValues(
-                  alpha: opacity * 0.3,
-                ),
+                TiermetryColors.background.withValues(alpha: opacity * 0.3),
               ],
             ),
           ),

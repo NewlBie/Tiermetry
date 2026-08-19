@@ -29,10 +29,7 @@ class AppSearchHero extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: _SearchField(
-                controller: controller,
-                hintText: hintText,
-              ),
+              child: _SearchField(controller: controller, hintText: hintText),
             ),
             if (onClear != null) ...[
               const SizedBox(width: TiermetrySpacing.sm),

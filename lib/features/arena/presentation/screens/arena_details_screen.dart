@@ -9,6 +9,7 @@ import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/features/arena/domain/entities/arena_details_entity.dart';
 import 'package:tiermetry/features/arena/domain/entities/arena_entity.dart';
@@ -22,21 +23,21 @@ import 'arena_map_screen.dart';
 class ArenaDetailsScreen extends StatefulWidget {
   final ArenaEntity arena;
 
-  const ArenaDetailsScreen({
-    required this.arena, super.key,
-  });
+  const ArenaDetailsScreen({required this.arena, super.key});
 
   @override
   State<ArenaDetailsScreen> createState() => _ArenaDetailsScreenState();
 }
 
-class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRateMixin {
+class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
+    with RefreshRateMixin {
   late Future<ArenaDetailsEntity?> _detailsFuture;
-  final Set<String> _selectedDevices = {}; 
+  final Set<String> _selectedDevices = {};
   String? _selectedServiceId;
   bool isDescExpanded = false;
   int activeTab = 0; // 0: Overview, 1: Specs & Games, 2: Rules
   bool _showSuccessOverlay = false;
+  bool _isProcessingPayment = false;
   String? _lastHoldId;
   DateTime? _holdExpiresAt;
 
@@ -73,9 +74,24 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
         future: _detailsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CupertinoActivityIndicator(radius: 15, color: TiermetryColors.white));
-          } else if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text('Failed to load arena details.', style: TextStyle(color: TiermetryColors.white)));
+            return const Center(
+              child: CupertinoActivityIndicator(
+                radius: 15,
+                color: TiermetryColors.white,
+              ),
+            );
+          } else if (snapshot.hasError ||
+              !snapshot.hasData ||
+              snapshot.data == null) {
+            return AppErrorState(
+              message: 'Failed to load arena details.',
+              onRetry:
+                  () => setState(() {
+                    _detailsFuture = locator.arenaCtrl.loadArenaDetails(
+                      widget.arena.id,
+                    );
+                  }),
+            );
           }
 
           final arenaDetails = snapshot.data!;
@@ -90,7 +106,11 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
                     horizontal: TiermetrySpacing.screenPadding,
                     vertical: TiermetrySpacing.xl,
                   ),
-                  child: _buildDetailsContent(context, arenaDetails, accentColor),
+                  child: _buildDetailsContent(
+                    context,
+                    arenaDetails,
+                    accentColor,
+                  ),
                 ),
               ),
             ],
@@ -99,82 +119,94 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
       ),
       bottomNavigationBar: _buildBottomBookingBar(context, accentColor),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: _showSuccessOverlay 
-        ? BookingStatusOverlay(
-            isSuccess: true,
-            title: 'Spot Reserved!',
-            message: 'Your rig is temporarily held at ${widget.arena.name}. Please complete the payment to confirm.',
-            bookingId: _lastHoldId,
-            expiresAt: _holdExpiresAt,
-            actionLabel: 'Pay Now',
-            onTimeout: () {
-              if (mounted) {
-                setState(() => _showSuccessOverlay = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Reservation hold expired. Please try booking again.'),
-                    backgroundColor: TiermetryColors.negative,
-                  ),
-                );
-              }
-            },
-            onAction: () async {
-              if (_lastHoldId != null) {
-                try {
-                  final order = await locator.paymentRepo.initiatePayment(
-                    holdId: _lastHoldId!,
-                  );
-                  
-                  if (!context.mounted) return;
-                  
-                  final result = await Navigator.push<dynamic>(
-                    context,
-                    MaterialPageRoute<dynamic>(
-                      builder: (context) => MockPaymentScreen(order: order),
-                    ),
-                  );
-                  
-                  if (result == PaymentStatus.paid) {
-                    await locator.paymentCtrl.verifyPayment(order.orderId);
-                    if (!context.mounted) return;
+      floatingActionButton:
+          _showSuccessOverlay
+              ? BookingStatusOverlay(
+                isSuccess: true,
+                title: 'Spot Reserved!',
+                message:
+                    'Your rig is temporarily held at ${widget.arena.name}. Please complete the payment to confirm.',
+                bookingId: _lastHoldId,
+                expiresAt: _holdExpiresAt,
+                actionLabel: 'Pay Now',
+                onTimeout: () {
+                  if (mounted) {
                     setState(() => _showSuccessOverlay = false);
-                    await Navigator.push<void>(
-                      context,
-                      MaterialPageRoute<void>(builder: (context) => const BookingScreen()),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Reservation hold expired. Please try booking again.',
+                        ),
+                        backgroundColor: TiermetryColors.negative,
+                      ),
                     );
-                  } else {
-                    // Sync status to DB if it's not null (meaning a button was clicked)
-                    if (result is PaymentStatus) {
-                      await locator.paymentCtrl.verifyPayment(order.orderId);
-                    }
-                    
-                    // Release the hold on failure or cancel
-                    if (_lastHoldId != null) {
-                      await locator.bookingCtrl.releaseHold(_lastHoldId!);
-                    }
-                    
-                    if (context.mounted) {
-                      setState(() => _showSuccessOverlay = false);
-                      final message = result == PaymentStatus.failed 
-                          ? 'Payment failed. Your hold has been released.' 
-                          : 'Payment cancelled. Your hold has been released.';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(message)),
+                  }
+                },
+                onAction: () async {
+                  if (_lastHoldId != null && !_isProcessingPayment) {
+                    setState(() => _isProcessingPayment = true);
+                    try {
+                      final order = await locator.paymentRepo.initiatePayment(
+                        holdId: _lastHoldId!,
                       );
+
+                      if (!context.mounted) return;
+
+                      final result = await Navigator.push<dynamic>(
+                        context,
+                        MaterialPageRoute<dynamic>(
+                          builder: (context) => MockPaymentScreen(order: order),
+                        ),
+                      );
+
+                      if (result == PaymentStatus.paid) {
+                        await locator.paymentCtrl.verifyPayment(order.orderId);
+                        if (!context.mounted) return;
+                        setState(() => _showSuccessOverlay = false);
+                        await Navigator.push<void>(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (context) => const BookingScreen(),
+                          ),
+                        );
+                      } else {
+                        // Sync status to DB if it's not null (meaning a button was clicked)
+                        if (result is PaymentStatus) {
+                          await locator.paymentCtrl.verifyPayment(
+                            order.orderId,
+                          );
+                        }
+
+                        // Release the hold on failure or cancel
+                        if (_lastHoldId != null) {
+                          await locator.bookingCtrl.releaseHold(_lastHoldId!);
+                        }
+
+                        if (context.mounted) {
+                          setState(() => _showSuccessOverlay = false);
+                          final message =
+                              result == PaymentStatus.failed
+                                  ? 'Payment failed. Your hold has been released.'
+                                  : 'Payment cancelled. Your hold has been released.';
+                          ScaffoldMessenger.of(
+                            context,
+                          ).showSnackBar(SnackBar(content: Text(message)));
+                        }
+                      }
+                    } catch (e) {
+                      debugPrint('Payment failed: $e');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    } finally {
+                      if (mounted) setState(() => _isProcessingPayment = false);
                     }
                   }
-                } catch (e) {
-                  debugPrint('Payment failed: $e');
-                  if (context.mounted) {
-                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(e.toString())),
-                    );
-                  }
-                }
-              }
-            },
-          )
-        : null,
+                },
+              )
+              : null,
     );
   }
 
@@ -187,7 +219,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
       elevation: 0,
       automaticallyImplyLeading: false,
       flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground, StretchMode.blurBackground],
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+        ],
         background: Stack(
           fit: StackFit.expand,
           children: [
@@ -215,7 +250,15 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
                 left: 20,
                 child: Row(
                   children: [
-                    SvgPicture.asset('assets/verified.svg', height: 22, width: 22, colorFilter: const ColorFilter.mode(TiermetryColors.white, BlendMode.srcIn)),
+                    SvgPicture.asset(
+                      'assets/verified.svg',
+                      height: 22,
+                      width: 22,
+                      colorFilter: const ColorFilter.mode(
+                        TiermetryColors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
                     const SizedBox(width: TiermetrySpacing.sm),
                     Text(
                       'Verified Partner',
@@ -257,7 +300,11 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
     );
   }
 
-  Widget _buildDetailsContent(BuildContext context, ArenaDetailsEntity arena, Color accentColor) {
+  Widget _buildDetailsContent(
+    BuildContext context,
+    ArenaDetailsEntity arena,
+    Color accentColor,
+  ) {
     const textColorPrimary = TiermetryColors.white;
     const textColorSecondary = TiermetryColors.textMuted;
     const cardBackgroundColor = TiermetryColors.surfaceUnderlay;
@@ -274,8 +321,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    arena.name,
+                  Text((arena.name).toUpperCase(),
                     style: TiermetryTypography.title(
                       fontSize: 26,
                       color: textColorPrimary,
@@ -371,33 +417,51 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
         const SizedBox(height: TiermetrySpacing.xl),
 
         // Tab Content
-        _buildTabContent(arena, textColorSecondary, cardBackgroundColor, accentColor),
+        _buildTabContent(
+          arena,
+          textColorSecondary,
+          cardBackgroundColor,
+          accentColor,
+        ),
         const SizedBox(height: TiermetrySpacing.sectionGap),
 
         _infoTitle('Reserve Your Experience'),
         const SizedBox(height: TiermetrySpacing.lg),
-        ...arena.devices.map((deviceGroup) => _unitRow(
-          deviceGroup.name,
-          deviceGroup.units.map((unit) => _unitCard(
-            deviceGroup.id,
-            unit,
-            accentColor,
-            cardBackgroundColor,
-          )).toList(),
-        )),
+        ...arena.devices.map(
+          (deviceGroup) => _unitRow(
+            deviceGroup.name,
+            deviceGroup.units
+                .map(
+                  (unit) => _unitCard(
+                    deviceGroup.id,
+                    unit,
+                    accentColor,
+                    cardBackgroundColor,
+                  ),
+                )
+                .toList(),
+          ),
+        ),
         const SizedBox(height: 80),
       ],
     );
   }
 
-  Widget _buildFeaturesQuickRow(ArenaDetailsEntity arena, Color textColorSecondary) {
+  Widget _buildFeaturesQuickRow(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+  ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _featureIcon(Icons.ac_unit_rounded, 'AC', arena.hasAC),
         _featureIcon(Icons.bolt_rounded, 'UPS', arena.hasPowerBackup),
         _featureIcon(Icons.wifi_rounded, 'Fiber', true),
-        _featureIcon(Icons.restaurant_rounded, 'Food', arena.amenity.toLowerCase().contains('cafe')),
+        _featureIcon(
+          Icons.restaurant_rounded,
+          'Food',
+          arena.amenity.toLowerCase().contains('cafe'),
+        ),
         _featureIcon(Icons.verified_user_rounded, 'Safety', true),
       ],
     );
@@ -418,7 +482,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
           child: Icon(
             icon,
             size: 20,
-            color: active ? TiermetryColors.accentAppleBlue : TiermetryColors.gray100,
+            color:
+                active
+                    ? TiermetryColors.accentAppleBlue
+                    : TiermetryColors.gray100,
           ),
         ),
         const SizedBox(height: TiermetrySpacing.sm),
@@ -426,7 +493,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
           label,
           style: TiermetryTypography.bodySmall(
             fontSize: 11,
-            color: active ? TiermetryColors.white.withValues(alpha: 0.7) : TiermetryColors.gray100,
+            color:
+                active
+                    ? TiermetryColors.white.withValues(alpha: 0.7)
+                    : TiermetryColors.gray100,
           ),
         ),
       ],
@@ -459,7 +529,8 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
         child: AppSurface(
           duration: const Duration(milliseconds: 200),
           borderRadius: 10,
-          color: isSelected ? TiermetryColors.surfaceElement : Colors.transparent,
+          color:
+              isSelected ? TiermetryColors.surfaceElement : Colors.transparent,
           border: Border.all(color: Colors.transparent),
           shadows: const [],
           child: Center(
@@ -468,7 +539,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
               style: TiermetryTypography.bodySmall(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? TiermetryColors.white : TiermetryColors.textMuted,
+                color:
+                    isSelected
+                        ? TiermetryColors.white
+                        : TiermetryColors.textMuted,
               ),
             ),
           ),
@@ -477,7 +551,12 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
     );
   }
 
-  Widget _buildTabContent(ArenaDetailsEntity arena, Color textColorSecondary, Color cardBackgroundColor, Color accentColor) {
+  Widget _buildTabContent(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+    Color accentColor,
+  ) {
     switch (activeTab) {
       case 0:
         return Column(
@@ -485,76 +564,158 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
           children: [
             _buildOverviewGrid(arena, textColorSecondary, cardBackgroundColor),
             const SizedBox(height: 24),
-            _buildLocationCard(context, arena, textColorSecondary, cardBackgroundColor, accentColor),
+            _buildLocationCard(
+              context,
+              arena,
+              textColorSecondary,
+              cardBackgroundColor,
+              accentColor,
+            ),
           ],
         );
       case 1:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSpecificationsGrid(arena, textColorSecondary, cardBackgroundColor),
+            _buildSpecificationsGrid(
+              arena,
+              textColorSecondary,
+              cardBackgroundColor,
+            ),
             const SizedBox(height: 24),
             _infoTitle('Pre-installed Games'),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: arena.gameLibrary.map((game) => _gameBadge(game)).toList(),
+              children:
+                  arena.gameLibrary.map((game) => _gameBadge(game)).toList(),
             ),
           ],
         );
       case 2:
-        return _buildPoliciesSection(arena, textColorSecondary, cardBackgroundColor);
+        return _buildPoliciesSection(
+          arena,
+          textColorSecondary,
+          cardBackgroundColor,
+        );
       default:
         return const SizedBox.shrink();
     }
   }
 
   Widget _gameBadge(String label) => AppSurface(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        color: TiermetryColors.surfaceUnderlay,
-        borderRadius: TiermetryRadii.sm,
-        border: Border.all(color: TiermetryColors.borderSubtle, width: 0.5),
-        shadows: const [],
-        child: Text(
-          label,
-          style: TiermetryTypography.bodySmall(fontSize: 12, color: TiermetryColors.white.withValues(alpha: 0.7)),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    color: TiermetryColors.surfaceUnderlay,
+    borderRadius: TiermetryRadii.sm,
+    border: Border.all(color: TiermetryColors.borderSubtle, width: 0.5),
+    shadows: const [],
+    child: Text(
+      label,
+      style: TiermetryTypography.bodySmall(
+        fontSize: 12,
+        color: TiermetryColors.white.withValues(alpha: 0.7),
+      ),
+    ),
+  );
 
-  Widget _buildOverviewGrid(ArenaDetailsEntity arena, Color textColorSecondary, Color cardBackgroundColor) {
-    return GridView.count(
-      padding: EdgeInsets.zero,
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 2.8,
+  Widget _buildOverviewGrid(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+  ) {
+    return Column(
       children: [
-        _specChip(Icons.access_time_filled_rounded, 'Hours', arena.hours, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.speed_rounded, 'Internet', arena.internet, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.people_rounded, 'Vibe', 'Professional', textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.chair_rounded, 'Amenities', arena.amenity, textColorSecondary, cardBackgroundColor),
+        Row(
+          children: [
+            Expanded(
+              child: _specChip(
+                Icons.access_time_filled_rounded,
+                'Hours',
+                arena.hours,
+                textColorSecondary,
+                cardBackgroundColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _specChip(
+                Icons.speed_rounded,
+                'Internet',
+                arena.internet,
+                textColorSecondary,
+                cardBackgroundColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        _specChip(
+          Icons.chair_rounded,
+          'Amenities',
+          arena.amenity,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
       ],
     );
   }
 
-  Widget _buildSpecificationsGrid(ArenaDetailsEntity arena, Color textColorSecondary, Color cardBackgroundColor) {
+  Widget _buildSpecificationsGrid(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+  ) {
     List<Widget> specs;
     if (arena.specs is GamingSpecs) {
       final gs = arena.specs as GamingSpecs;
       specs = [
-        _specChip(Icons.monitor_rounded, 'Monitor', gs.refreshRate, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.videogame_asset_rounded, 'GPU', gs.graphicsCard, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.memory_rounded, 'Processor', gs.processor, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.keyboard_rounded, 'Peripherals', 'Pro-grade', textColorSecondary, cardBackgroundColor),
+        _specChip(
+          Icons.monitor_rounded,
+          'Monitor',
+          gs.refreshRate,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
+        _specChip(
+          Icons.videogame_asset_rounded,
+          'GPU',
+          gs.graphicsCard,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
+        _specChip(
+          Icons.memory_rounded,
+          'Processor',
+          gs.processor,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
+        _specChip(
+          Icons.keyboard_rounded,
+          'Peripherals',
+          'Pro-grade',
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
       ];
     } else {
       final ts = arena.specs as TurfSpecs;
       specs = [
-        _specChip(Icons.grass_rounded, 'Surface', ts.surface, textColorSecondary, cardBackgroundColor),
-        _specChip(Icons.lightbulb_rounded, 'Lighting', ts.lighting, textColorSecondary, cardBackgroundColor),
+        _specChip(
+          Icons.grass_rounded,
+          'Surface',
+          ts.surface,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
+        _specChip(
+          Icons.lightbulb_rounded,
+          'Lighting',
+          ts.lighting,
+          textColorSecondary,
+          cardBackgroundColor,
+        ),
       ];
     }
 
@@ -570,20 +731,46 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
     );
   }
 
-  Widget _buildPoliciesSection(ArenaDetailsEntity arena, Color textColorSecondary, Color cardBackgroundColor) {
+  Widget _buildPoliciesSection(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _policyItem(Icons.cancel_rounded, 'Cancellation', arena.cancellationPolicy, textColorSecondary),
+        _policyItem(
+          Icons.cancel_rounded,
+          'Cancellation',
+          arena.cancellationPolicy,
+          textColorSecondary,
+        ),
         const SizedBox(height: 16),
-        _policyItem(Icons.phone_rounded, 'Contact', arena.contactPhone, textColorSecondary),
+        _policyItem(
+          Icons.phone_rounded,
+          'Contact',
+          arena.contactPhone,
+          textColorSecondary,
+        ),
         const SizedBox(height: 16),
-        ...arena.rules.map((rule) => _policyItem(Icons.gavel_rounded, 'Rule', rule, textColorSecondary)),
+        ...arena.rules.map(
+          (rule) => _policyItem(
+            Icons.gavel_rounded,
+            'Rule',
+            rule,
+            textColorSecondary,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _policyItem(IconData icon, String title, String value, Color textColorSecondary) {
+  Widget _policyItem(
+    IconData icon,
+    String title,
+    String value,
+    Color textColorSecondary,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -616,11 +803,19 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
     );
   }
 
-  Widget _buildLocationCard(BuildContext context, ArenaDetailsEntity arena, Color textColorSecondary, Color cardBackgroundColor, Color accentColor) {
+  Widget _buildLocationCard(
+    BuildContext context,
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+    Color accentColor,
+  ) {
     return GestureDetector(
       onTap:
           () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => ArenaMapScreen(arena: arena)),
+            MaterialPageRoute<void>(
+              builder: (_) => ArenaMapScreen(arena: arena),
+            ),
           ),
       child: AppSurface(
         padding: const EdgeInsets.all(TiermetrySpacing.lg),
@@ -689,14 +884,27 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
           scrollDirection: Axis.horizontal,
           physics: const BouncingScrollPhysics(),
           clipBehavior: Clip.none,
-          child: Row(children: units),
+          child: Row(
+            children: [
+              for (int i = 0; i < units.length; i++) ...[
+                units[i],
+                if (i < units.length - 1)
+                  const SizedBox(width: TiermetrySpacing.cardGap),
+              ],
+            ],
+          ),
         ),
         const SizedBox(height: TiermetrySpacing.xl),
       ],
     );
   }
 
-  Widget _unitCard(String serviceId, ArenaDevice unit, Color accentColor, Color cardBackgroundColor) {
+  Widget _unitCard(
+    String serviceId,
+    ArenaDevice unit,
+    Color accentColor,
+    Color cardBackgroundColor,
+  ) {
     final bool isSelected = _selectedDevices.contains(unit.id);
 
     return GestureDetector(
@@ -730,7 +938,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
             Image.asset(
               unit.image,
               fit: BoxFit.cover,
-              color: unit.isOccupied ? TiermetryColors.black.withValues(alpha: 0.5) : null,
+              color:
+                  unit.isOccupied
+                      ? TiermetryColors.black.withValues(alpha: 0.5)
+                      : null,
               colorBlendMode:
                   unit.isOccupied ? BlendMode.darken : BlendMode.dst,
             ),
@@ -815,7 +1026,11 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
                   border: Border.all(color: Colors.transparent),
                   shadows: const [],
                   padding: const EdgeInsets.all(4),
-                  child: const Icon(Icons.check, color: TiermetryColors.white, size: 16),
+                  child: const Icon(
+                    Icons.check,
+                    color: TiermetryColors.white,
+                    size: 16,
+                  ),
                 ),
               ),
           ],
@@ -834,9 +1049,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
       child: BackdropFilter(
         filter: TiermetryBlur.filter(TiermetryBlur.md),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12).copyWith(
-            bottom: MediaQuery.of(context).padding.bottom + 12,
-          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 12,
+          ).copyWith(bottom: MediaQuery.of(context).padding.bottom + 12),
           decoration: BoxDecoration(
             color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.8),
             border: const Border(
@@ -875,51 +1091,60 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
 
   void _showBookingSheet(BuildContext context, Color accentColor) {
     if (_selectedServiceId == null) return;
-    
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => BookingSheet(
-        venueId: widget.arena.id,
-        serviceId: _selectedServiceId!,
-        initialSelectedUnitIds: _selectedDevices.toList(),
-        accentColor: accentColor,
-        onConfirm: ({required int duration, required DateTime startDateTime, required int players, required List<String> addOns, required List<String> serviceUnitIds, required double totalAmount}) async {
-          final endDateTime = startDateTime.add(Duration(hours: duration));
-          
-          try {
-            final hold = await locator.bookingCtrl.createReservationHold(
-              venueId: widget.arena.id,
-              startTime: startDateTime,
-              endTime: endDateTime,
-              serviceUnitIds: serviceUnitIds,
-            );
+      builder:
+          (context) => BookingSheet(
+            venueId: widget.arena.id,
+            serviceId: _selectedServiceId!,
+            initialSelectedUnitIds: _selectedDevices.toList(),
+            accentColor: accentColor,
+            onConfirm: ({
+              required int duration,
+              required DateTime startDateTime,
+              required int players,
+              required List<String> addOns,
+              required List<String> serviceUnitIds,
+              required double totalAmount,
+            }) async {
+              final endDateTime = startDateTime.add(Duration(hours: duration));
 
-            if (context.mounted) {
-              Navigator.pop(context);
-              setState(() {
-                _lastHoldId = hold.id;
-                _holdExpiresAt = hold.expiresAt;
-                _showSuccessOverlay = true;
-                _selectedDevices.clear();
-                _selectedServiceId = null;
-              });
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
-              );
-            }
-          }
-        },
-      ),
+              try {
+                final hold = await locator.bookingCtrl.createReservationHold(
+                  venueId: widget.arena.id,
+                  startTime: startDateTime,
+                  endTime: endDateTime,
+                  serviceUnitIds: serviceUnitIds,
+                );
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  setState(() {
+                    _lastHoldId = hold.id;
+                    _holdExpiresAt = hold.expiresAt;
+                    _showSuccessOverlay = true;
+                    _selectedDevices.clear();
+                    _selectedServiceId = null;
+                  });
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                    ),
+                  );
+                }
+              }
+            },
+          ),
     );
   }
 
-  Widget _infoTitle(String label) => Text(
-    label,
+  Widget _infoTitle(String label) => Text((label).toUpperCase(),
     style: TiermetryTypography.title(
       fontSize: 18,
       color: TiermetryColors.white.withValues(alpha: 0.9),
@@ -927,8 +1152,14 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
     ),
   );
 
-
-  Widget _specChip(IconData icon, String label, String value, Color textColorSecondary, Color cardBackgroundColor) => AppSurface(
+  Widget _specChip(
+    IconData icon,
+    String label,
+    String value,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+  ) => AppSurface(
+    height: 56,
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     color: cardBackgroundColor,
     borderRadius: TiermetryRadii.sm,
@@ -945,7 +1176,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
             children: [
               Text(
                 label,
-                style: TiermetryTypography.bodySmall(fontSize: 11, color: textColorSecondary),
+                style: TiermetryTypography.bodySmall(
+                  fontSize: 11,
+                  color: textColorSecondary,
+                ),
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
@@ -959,7 +1193,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen> with RefreshRat
               ),
             ],
           ),
-        )
+        ),
       ],
     ),
   );

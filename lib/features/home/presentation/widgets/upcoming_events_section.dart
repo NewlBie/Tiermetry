@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/widgets/animated_list_item.dart';
 import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
@@ -70,7 +71,7 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 236,
+      height: 320,
       child:
           widget.isLoading
               ? const ShimmerLoadingList(itemWidth: 300, itemCount: 1)
@@ -83,12 +84,14 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
               )
               : Stack(
                 children: [
-                  ListView.separated(
+                  SilkyListView.separated(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
                     padding: TiermetrySpacing.listPadding,
                     itemCount: widget.events.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: TiermetrySpacing.gridGap),
+                    separatorBuilder:
+                        (_, __) =>
+                            const SizedBox(width: TiermetrySpacing.gridGap),
                     itemBuilder: (_, index) {
                       return AnimatedListItem(
                         index: index,

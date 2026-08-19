@@ -27,14 +27,15 @@ class ShimmerLoadingList extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: itemCount,
         separatorBuilder: (_, __) => SizedBox(width: spacing),
-        itemBuilder: (_, __) => Container(
-          width: itemWidth,
-          height: itemHeight,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-        ),
+        itemBuilder:
+            (_, __) => Container(
+              width: itemWidth,
+              height: itemHeight,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+            ),
       ),
     );
   }
@@ -94,7 +95,9 @@ class ShimmerLoadingVerticalList extends StatelessWidget {
         children: List.generate(
           itemCount,
           (index) => Padding(
-            padding: EdgeInsets.only(bottom: index < itemCount - 1 ? spacing : 0),
+            padding: EdgeInsets.only(
+              bottom: index < itemCount - 1 ? spacing : 0,
+            ),
             child: Container(
               height: itemHeight,
               decoration: BoxDecoration(

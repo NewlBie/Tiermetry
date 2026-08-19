@@ -27,8 +27,7 @@ class _QuestsScreenState extends State<QuestsScreen> with RefreshRateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Choose\nyour quests',
+                  Text(('Choose\nyour quests').toUpperCase(),
                     style: TiermetryTypography.display(
                       fontSize: 42,
                       fontWeight: FontWeight.w800,

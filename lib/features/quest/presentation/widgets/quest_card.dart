@@ -39,7 +39,7 @@ class QuestCard extends StatelessWidget {
                 style: const TextStyle(fontSize: 160),
               ),
             ),
-            
+
             // Content
             Padding(
               padding: const EdgeInsets.all(24.0),
@@ -54,18 +54,18 @@ class QuestCard extends StatelessWidget {
                         child: Icon(
                           Icons.star_rounded,
                           size: 16,
-                          color: index < rating
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.3),
+                          color:
+                              index < rating
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.3),
                         ),
                       );
                     }),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   // Title
-                  Text(
-                    title,
+                  Text((title).toUpperCase(),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
@@ -76,9 +76,9 @@ class QuestCard extends StatelessWidget {
                       color: Colors.white,
                     ),
                   ),
-                  
+
                   const Spacer(),
-                  
+
                   // Action Button
                   if (hasActionButton)
                     GestureDetector(

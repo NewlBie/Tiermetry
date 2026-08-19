@@ -1,95 +1,59 @@
 import 'dart:ui';
-
+import 'package:amazing_icons/amazing_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
 
 class TopBar extends StatelessWidget {
-  final Widget title;
-
-  // Kept for backwards compatibility; this widget previously animated the menu
-  // icon. The current TopBar uses a static icon.
   final Animation<double>? menuAnimationProgress;
-
-  final bool hasNotification;
   final VoidCallback onMenuTap;
 
   const TopBar({
-    required this.title, required this.hasNotification, required this.onMenuTap, super.key,
+    required this.onMenuTap,
+    super.key,
     this.menuAnimationProgress,
   });
 
   @override
   Widget build(BuildContext context) {
     final surface = _TopBarSurface(
-      title: title,
       menuAnimationProgress: menuAnimationProgress,
-      hasNotification: hasNotification,
       onMenuTap: onMenuTap,
     );
 
-    final glass =
-        FeatureFlags.disableBlur
-            ? surface
-            : RepaintBoundary(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: surface,
-              ),
-            );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // --- Frosted Matte Glass Zone ---
-        ClipRect(child: glass),
-
-        // --- Luminous Separator ---
-        Container(
-          height: 0.5,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                Colors.white.withValues(alpha: 0.05),
-                TiermetryColors.accentLavender.withValues(alpha: 0.10),
-                Colors.white.withValues(alpha: 0.05),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
+    final glass = FeatureFlags.disableBlur
+        ? surface
+        : RepaintBoundary(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+              child: surface,
             ),
-          ),
-        ),
+          );
 
-        // --- Fade-out Gradient (no blur, pure paint) ---
-        Container(
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                TiermetryColors.background.withValues(alpha: 0.5),
-                TiermetryColors.background.withValues(alpha: 0.0),
-              ],
-            ),
-          ),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: TiermetrySpacing.screenPadding,
+          vertical: TiermetrySpacing.sm,
         ),
-      ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: glass,
+        ),
+      ),
     );
   }
 }
 
 class _TopBarSurface extends StatelessWidget {
-  final Widget title;
   final Animation<double>? menuAnimationProgress;
-  final bool hasNotification;
   final VoidCallback onMenuTap;
 
   const _TopBarSurface({
-    required this.title,
     required this.menuAnimationProgress,
-    required this.hasNotification,
     required this.onMenuTap,
   });
 
@@ -97,105 +61,42 @@ class _TopBarSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: TiermetryColors.background.withValues(alpha: 0.72),
+        color: Colors.black.withValues(alpha: 0.75),
       ),
-      child: SafeArea(
-        bottom: false,
+      child: SizedBox(
+        height: TiermetrySpacing.topBarHeight,
         child: Padding(
-          padding: const EdgeInsets.only(
-            top: 10,
-            left: 20,
-            right: 20,
-            bottom: 12,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
           ),
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _TopBarButton(
-                  onTap: onMenuTap,
-                  child:
-                      menuAnimationProgress == null
-                          ? const Icon(
-                            Icons.grid_view_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          )
-                          : AnimatedIcon(
-                            icon: AnimatedIcons.menu_close,
-                            progress: menuAnimationProgress!,
-                            color: Colors.white,
-                            size: 22,
-                          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(('TIERMETRY').toUpperCase(),
+                style: TiermetryTypography.title(
+                  color: TiermetryColors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
                 ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeOutCubic,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.08),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Center(
-                      key: title.key ?? ValueKey(title.runtimeType),
-                      child: title,
-                    ),
-                  ),
-                ),
-                _TopBarButton(
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Notifications coming soon!'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
+              ),
+              _TopBarButton(
+                onTap: onMenuTap,
+                child: menuAnimationProgress == null
+                    ? const Icon(
+                        AmazingIconOutlined.menu,
                         color: Colors.white,
-                        size: 22,
+                        size: 20,
+                      )
+                    : AnimatedIcon(
+                        icon: AnimatedIcons.menu_close,
+                        progress: menuAnimationProgress!,
+                        color: Colors.white,
+                        size: 20,
                       ),
-                      if (hasNotification)
-                        Positioned(
-                          right: 1,
-                          top: 1,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: TiermetryColors.accentLavender,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: TiermetryColors.accentLavender
-                                      .withValues(alpha: 0.6),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -215,15 +116,11 @@ class _TopBarButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(12),
           color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-            width: 0.8,
-          ),
         ),
         child: Center(child: child),
       ),

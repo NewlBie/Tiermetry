@@ -1,6 +1,7 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:line_icons/line_icons.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
@@ -53,15 +54,30 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
   IconData _getActivityIcon(String iconKey) {
     switch (iconKey) {
       case 'bowling':
-        return LineIcons.bowlingBall;
+        return CupertinoIcons.sportscourt;
       case 'gokart':
-        return LineIcons.car;
+        return CupertinoIcons.car_detailed;
       case 'football':
-        return LineIcons.futbol;
+        return CupertinoIcons.sportscourt_fill;
       case 'gaming':
-        return LineIcons.gamepad;
+        return CupertinoIcons.game_controller;
       default:
-        return LineIcons.star;
+        return CupertinoIcons.star;
+    }
+  }
+
+  Color _getActivityColor(String iconKey) {
+    switch (iconKey) {
+      case 'bowling':
+        return Colors.deepPurpleAccent.shade200;
+      case 'gokart':
+        return Colors.redAccent.shade200;
+      case 'football':
+        return TiermetryColors.accentNeonGreen;
+      case 'gaming':
+        return Colors.blueAccent.shade200;
+      default:
+        return Colors.orangeAccent.shade200;
     }
   }
 
@@ -77,7 +93,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
 
     return SizedBox(
       height: 120,
-      child: ListView.builder(
+      child: SilkyListView.builder(
         clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(
@@ -100,7 +116,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
   Widget _buildLoadingState() {
     return SizedBox(
       height: 120,
-      child: ListView.builder(
+      child: SilkyListView.builder(
         clipBehavior: Clip.none,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.only(
@@ -115,7 +131,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
               padding: const EdgeInsets.only(right: TiermetrySpacing.lg),
               child: AppSurface(
                 width: 100,
-                borderRadius: TiermetryRadii.lg,
+                borderRadius: TiermetryRadii.md,
                 color: Colors.white.withValues(alpha: 0.06),
                 border: Border.all(color: Colors.transparent),
                 shadows: const [],
@@ -128,7 +144,7 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
 
   Widget _buildCapsuleCard(TrendingActivity activity, int index) {
     final isSelected = _activities[index].isSelected;
-    const primaryColor = TiermetryColors.accentNeonGreen;
+    final activityColor = _getActivityColor(activity.icon);
 
     return GestureDetector(
       onTap: () => _toggleActivity(index),
@@ -136,32 +152,22 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeOutBack,
             width: 105,
-            borderRadius: TiermetryRadii.lg,
-            border:
-                isSelected
-                    ? Border.all(color: primaryColor, width: 1.5)
-                    : Border.all(
-                      color: TiermetryColors.cardBorder,
-                      width: 1,
-                    ),
-            shadows: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
+            borderRadius: TiermetryRadii.md,
+            border: const Border(),
+            shadows: const [],
+            color: Colors.white.withValues(alpha: 0.05),
             child: RepaintBoundary(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Icon Container
                   MaterialMorphingShape(
-                    isSelected: isSelected,
-                    color: primaryColor,
+                    isSelected: isSelected, // true by default visually
+                    activeColor: activityColor,
+                    inactiveColor: activityColor, // Always colored
                     child: Icon(
                       _getActivityIcon(activity.icon),
-                      color: Colors.black.withAlpha(220),
+                      color: Colors.black,
                       size: 26,
                     ),
                   ),
@@ -196,12 +202,14 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
 class MaterialMorphingShape extends StatefulWidget {
   final Widget child;
   final bool isSelected;
-  final Color color;
+  final Color activeColor;
+  final Color inactiveColor;
 
   const MaterialMorphingShape({
     required this.child,
     required this.isSelected,
-    required this.color,
+    required this.activeColor,
+    required this.inactiveColor,
     super.key,
   });
 
@@ -324,17 +332,8 @@ class _MaterialMorphingShapeState extends State<MaterialMorphingShape>
               width: 58,
               height: 58,
               decoration: BoxDecoration(
-                color: widget.color,
+                color: Color.lerp(widget.inactiveColor, widget.activeColor, selectValue),
                 borderRadius: finalRadius,
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.color.withValues(
-                      alpha: 0.15 + (0.25 * selectValue),
-                    ),
-                    blurRadius: 8.0 + (8.0 * selectValue),
-                    spreadRadius: 1.0 + (1.0 * selectValue),
-                  ),
-                ],
               ),
               child: widget.child,
             );

@@ -42,9 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
     await _authCtrl.signIn(email, password);
     if (_authCtrl.error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_authCtrl.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_authCtrl.error!)));
     }
   }
 
@@ -62,8 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'TIERMETRY',
+                  Text(('TIERMETRY').toUpperCase(),
                     textAlign: TextAlign.center,
                     style: TiermetryTypography.display(
                       color: TiermetryColors.white,
@@ -84,9 +83,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          'Sign In',
-                          style: TiermetryTypography.title(color: TiermetryColors.white),
+                        Text(('Sign In').toUpperCase(),
+                          style: TiermetryTypography.title(
+                            color: TiermetryColors.white,
+                          ),
                         ),
                         const SizedBox(height: 24),
                         _buildTextField(
@@ -104,7 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 32),
                         if (_authCtrl.isLoading)
-                          const Center(child: CircularProgressIndicator(color: TiermetryColors.accentNeonGreen))
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: TiermetryColors.accentNeonGreen,
+                            ),
+                          )
                         else
                           TiermetryPrimaryButton(
                             text: 'Login',
@@ -119,13 +123,17 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         'Don\'t have an account? ',
-                        style: TiermetryTypography.caption(color: TiermetryColors.white.withValues(alpha: 0.6)),
+                        style: TiermetryTypography.caption(
+                          color: TiermetryColors.white.withValues(alpha: 0.6),
+                        ),
                       ),
                       GestureDetector(
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute<void>(builder: (context) => const SignupScreen()),
+                            MaterialPageRoute<void>(
+                              builder: (context) => const SignupScreen(),
+                            ),
                           );
                         },
                         child: Text(
@@ -159,7 +167,9 @@ class _LoginScreenState extends State<LoginScreen> {
       children: [
         Text(
           label,
-          style: TiermetryTypography.label(color: TiermetryColors.white.withValues(alpha: 0.8)),
+          style: TiermetryTypography.label(
+            color: TiermetryColors.white.withValues(alpha: 0.8),
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -169,14 +179,19 @@ class _LoginScreenState extends State<LoginScreen> {
           style: const TextStyle(color: TiermetryColors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: TiermetryColors.white.withValues(alpha: 0.3)),
+            hintStyle: TextStyle(
+              color: TiermetryColors.white.withValues(alpha: 0.3),
+            ),
             filled: true,
             fillColor: TiermetryColors.surfaceElement,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(TiermetryRadii.sm),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],

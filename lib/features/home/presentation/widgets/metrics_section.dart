@@ -23,12 +23,14 @@ class MetricsSection extends StatelessWidget {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute<void>(builder: (_) => const ArenaScreen()),
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ArenaScreen(),
+                    ),
                   );
                 },
                 child: const BentoTile(
                   title: 'Discover Arenas',
-                  imagePath: 'assets/sticks/steering.png',
+                  imagePath: 'assets/arena.png',
                   imageRight: -30,
                   imageBottom: -50,
                   imageScale: 2.0,

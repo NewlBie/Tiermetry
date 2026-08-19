@@ -21,7 +21,9 @@ class FilterSheet extends StatefulWidget {
   final String initialSortBy;
 
   const FilterSheet({
-    required this.initialTime, required this.initialSortBy, super.key,
+    required this.initialTime,
+    required this.initialSortBy,
+    super.key,
     this.initialDistance,
     this.initialPrice,
     this.initialType,
@@ -86,8 +88,12 @@ class _FilterSheetState extends State<FilterSheet> {
         filter: TiermetryBlur.filter(TiermetryBlur.sm),
         child: Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          padding:
-              const EdgeInsets.only(top: 12, left: 20, right: 20, bottom: 20),
+          padding: const EdgeInsets.only(
+            top: 12,
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
           decoration: BoxDecoration(
             color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.85),
             borderRadius: const BorderRadius.vertical(
@@ -136,12 +142,8 @@ class _FilterSheetState extends State<FilterSheet> {
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          'Filter & Sort',
-          style: TiermetryTypography.title(
-            fontSize: 20,
-            color: Colors.white,
-          ),
+        Text(('Filter & Sort').toUpperCase(),
+          style: TiermetryTypography.title(fontSize: 20, color: Colors.white),
         ),
       ],
     );
@@ -176,7 +178,10 @@ class _FilterSheetState extends State<FilterSheet> {
                 borderRadius: BorderRadius.circular(16),
               ),
             ),
-            child: const Text('Apply Filters', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            child: const Text(
+              'Apply Filters',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
           ),
         ),
       ],
@@ -185,12 +190,8 @@ class _FilterSheetState extends State<FilterSheet> {
 
   Widget _filterTitle(String text) => Padding(
     padding: const EdgeInsets.only(top: 24, bottom: 12),
-    child: Text(
-      text,
-      style: TiermetryTypography.titleSmall(
-        fontSize: 16,
-        color: Colors.white,
-      ),
+    child: Text((text).toUpperCase(),
+      style: TiermetryTypography.titleSmall(fontSize: 16, color: Colors.white),
     ),
   );
 
@@ -199,7 +200,9 @@ class _FilterSheetState extends State<FilterSheet> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _distance == null ? 'Any' : 'Up to ${_distance?.toStringAsFixed(1)} km',
+          _distance == null
+              ? 'Any'
+              : 'Up to ${_distance?.toStringAsFixed(1)} km',
           style: const TextStyle(color: Colors.white70),
         ),
         Slider(
@@ -223,16 +226,19 @@ class _FilterSheetState extends State<FilterSheet> {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: tiers.entries.map((entry) {
-        return _buildChip(
-          label: entry.value,
-          isSelected: _price == entry.key,
-          onSelected: () {
-            HapticFeedback.lightImpact();
-            setState(() => _price = (_price == entry.key) ? null : entry.key);
-          },
-        );
-      }).toList(),
+      children:
+          tiers.entries.map((entry) {
+            return _buildChip(
+              label: entry.value,
+              isSelected: _price == entry.key,
+              onSelected: () {
+                HapticFeedback.lightImpact();
+                setState(
+                  () => _price = (_price == entry.key) ? null : entry.key,
+                );
+              },
+            );
+          }).toList(),
     );
   }
 
@@ -240,16 +246,17 @@ class _FilterSheetState extends State<FilterSheet> {
     final times = ['Anytime', 'Open Now'];
     return Wrap(
       spacing: 12,
-      children: times.map((label) {
-        return _buildChip(
-          label: label,
-          isSelected: _time == label,
-          onSelected: () {
-            HapticFeedback.lightImpact();
-            setState(() => _time = label);
-          },
-        );
-      }).toList(),
+      children:
+          times.map((label) {
+            return _buildChip(
+              label: label,
+              isSelected: _time == label,
+              onSelected: () {
+                HapticFeedback.lightImpact();
+                setState(() => _time = label);
+              },
+            );
+          }).toList(),
     );
   }
 
@@ -257,17 +264,18 @@ class _FilterSheetState extends State<FilterSheet> {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: ArenaActivity.values.map((type) {
-        final label = type.name[0].toUpperCase() + type.name.substring(1);
-        return _buildChip(
-          label: label,
-          isSelected: _type == type,
-          onSelected: () {
-            HapticFeedback.lightImpact();
-            setState(() => _type = (_type == type) ? null : type);
-          },
-        );
-      }).toList(),
+      children:
+          ArenaActivity.values.map((type) {
+            final label = type.name[0].toUpperCase() + type.name.substring(1);
+            return _buildChip(
+              label: label,
+              isSelected: _type == type,
+              onSelected: () {
+                HapticFeedback.lightImpact();
+                setState(() => _type = (_type == type) ? null : type);
+              },
+            );
+          }).toList(),
     );
   }
 
@@ -276,20 +284,25 @@ class _FilterSheetState extends State<FilterSheet> {
     return Wrap(
       spacing: 12,
       runSpacing: 12,
-      children: sorts.map((label) {
-        return _buildChip(
-          label: label,
-          isSelected: _sortBy == label,
-          onSelected: () {
-            HapticFeedback.lightImpact();
-            setState(() => _sortBy = label);
-          },
-        );
-      }).toList(),
+      children:
+          sorts.map((label) {
+            return _buildChip(
+              label: label,
+              isSelected: _sortBy == label,
+              onSelected: () {
+                HapticFeedback.lightImpact();
+                setState(() => _sortBy = label);
+              },
+            );
+          }).toList(),
     );
   }
 
-  Widget _buildChip({required String label, required bool isSelected, required VoidCallback onSelected}) {
+  Widget _buildChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onSelected,
+  }) {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
@@ -297,14 +310,17 @@ class _FilterSheetState extends State<FilterSheet> {
       backgroundColor: TiermetryColors.surface,
       selectedColor: Colors.greenAccent,
       labelStyle: TextStyle(
-          color: isSelected ? Colors.black : Colors.white,
-          fontWeight: FontWeight.bold),
+        color: isSelected ? Colors.black : Colors.white,
+        fontWeight: FontWeight.bold,
+      ),
       shape: const StadiumBorder(), // More modern, pill-shaped border
       side: BorderSide(
-        color: isSelected ? Colors.greenAccent.withValues(alpha: 0.5) : Colors.transparent,
+        color:
+            isSelected
+                ? Colors.greenAccent.withValues(alpha: 0.5)
+                : Colors.transparent,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     );
   }
 }
-

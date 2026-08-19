@@ -10,10 +10,13 @@ import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
 import 'package:tiermetry/features/wallet/presentation/widgets/wallet_flip_card.dart';
 
+import '../../../../features/booking/presentation/screens/booking_screen.dart';
+import '../../../../features/event/presentation/screens/my_events_screen.dart';
 import '../../domain/entities/profile_entity.dart';
 import '../widgets/profile_settings_section.dart';
 import '../widgets/tier_and_badge_card.dart';
@@ -53,39 +56,39 @@ class _ProfileScreenState extends State<ProfileScreen> with RefreshRateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       backgroundColor: TiermetryColors.background,
       body: Stack(
         children: [
           const HomeBackdrop(),
-          SafeArea(
-            bottom: false,
-            child: ListenableBuilder(
-              listenable: _profileCtrl,
-              builder: (context, child) {
-                if (_profileCtrl.isLoading && _profileCtrl.profile == null) {
-                  return const _ProfileShimmerPlaceholder();
-                }
+          ListenableBuilder(
+            listenable: _profileCtrl,
+            builder: (context, child) {
+              if (_profileCtrl.isLoading && _profileCtrl.profile == null) {
+                return const _ProfileShimmerPlaceholder();
+              }
 
-                if (_profileCtrl.profile == null) {
-                  return _ProfileErrorState(
-                    message:
-                        _profileCtrl.errorMessage ?? 'Profile is unavailable.',
-                    onRetry: _refreshProfile,
-                  );
-                }
-
-                return RefreshIndicator(
-                  backgroundColor: TiermetryColors.surface,
-                  color: TiermetryColors.accentNeonGreen,
-                  onRefresh: _refreshProfile,
-                  child: _ProfileContentView(
-                    controller: _scrollController,
-                    profile: _profileCtrl.profile!,
-                  ),
+              if (_profileCtrl.profile == null) {
+                return AppErrorState(
+                  message:
+                      _profileCtrl.errorMessage ?? 'Profile is unavailable.',
+                  onRetry: _refreshProfile,
                 );
-              },
-            ),
+              }
+
+              return RefreshIndicator(
+                backgroundColor: TiermetryColors.surface,
+                color: TiermetryColors.accentNeonGreen,
+                edgeOffset: topPad + TiermetrySpacing.topBarHeight,
+                onRefresh: _refreshProfile,
+                child: _ProfileContentView(
+                  controller: _scrollController,
+                  profile: _profileCtrl.profile!,
+                ),
+              );
+            },
           ),
           ScrollGradientOverlay(scrollController: _scrollController),
         ],
@@ -187,6 +190,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
               : _animatedBalanceText,
     );
 
+    final topPad = MediaQuery.of(context).padding.top;
     return CustomScrollView(
       controller: widget.controller,
       physics: const AlwaysScrollableScrollPhysics(
@@ -195,9 +199,9 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               TiermetrySpacing.screenPadding,
-              92,
+              topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
               TiermetrySpacing.screenPadding,
               TiermetrySpacing.lg,
             ),
@@ -215,23 +219,22 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
             child: _QuickActionsRow(
               actions: [
                 _QuickAction(
-                  title: 'Wallet',
-                  subtitle: '${profile.tiergies.toInt()} pts',
-                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'Bookings',
+                  subtitle: 'My reservations',
+                  icon: Icons.bookmark_added_outlined,
+                  onTap: () => _openRoute(const BookingScreen()),
+                ),
+                _QuickAction(
+                  title: 'Events',
+                  subtitle: 'My tickets',
+                  icon: Icons.confirmation_number_outlined,
+                  onTap: () => _openRoute(const MyEventsScreen()),
+                ),
+                _QuickAction(
+                  title: 'Transactions',
+                  subtitle: 'View history',
+                  icon: Icons.receipt_long_rounded,
                   onTap: () => _openRoute(const TransactionsScreen()),
-                ),
-                _QuickAction(
-                  title: 'Rewards',
-                  subtitle:
-                      '${profile.openedBadges}/${profile.totalBadges} badges',
-                  icon: Icons.emoji_events_rounded,
-                  onTap: () => _openRoute(const ReferAndEarnScreen()),
-                ),
-                _QuickAction(
-                  title: 'Account',
-                  subtitle: 'Privacy',
-                  icon: Icons.verified_user_rounded,
-                  onTap: () => _openRoute(const AccountPrivacyScreen()),
                 ),
               ],
             ),
@@ -281,8 +284,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Settings',
+                Text(('Settings').toUpperCase(),
                   style: TiermetryTypography.title(color: Colors.white),
                 ),
                 const SizedBox(height: TiermetrySpacing.headerToContent),
@@ -343,8 +345,7 @@ class _ProfileHeaderCard extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            profile.name,
+                          child: Text((profile.name).toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TiermetryTypography.display(
@@ -583,8 +584,7 @@ class _ProfileStat extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            value,
+          Text((value).toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TiermetryTypography.title(
@@ -674,8 +674,7 @@ class _QuickActionTile extends StatelessWidget {
               ),
             ),
             const Spacer(),
-            Text(
-              action.title,
+            Text((action.title).toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TiermetryTypography.title(
@@ -716,71 +715,20 @@ class _QuickAction {
   });
 }
 
-class _ProfileErrorState extends StatelessWidget {
-  final String message;
-  final Future<void> Function() onRetry;
-
-  const _ProfileErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: TiermetrySpacing.pagePadding,
-        child: Container(
-          padding: const EdgeInsets.all(TiermetrySpacing.xl),
-          decoration: BoxDecoration(
-            color: TiermetryColors.surface,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.cloud_off_rounded,
-                color: Colors.white38,
-                size: 40,
-              ),
-              const SizedBox(height: TiermetrySpacing.md),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TiermetryTypography.title(
-                  color: Colors.white,
-                  fontSize: 17,
-                ),
-              ),
-              const SizedBox(height: TiermetrySpacing.lg),
-              ElevatedButton(
-                onPressed: onRetry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: TiermetryColors.accentNeonGreen,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ProfileShimmerPlaceholder extends StatelessWidget {
   const _ProfileShimmerPlaceholder();
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Shimmer.fromColors(
       baseColor: Colors.grey[900]!,
       highlightColor: Colors.grey[800]!,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           TiermetrySpacing.screenPadding,
-          92,
+          topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
           TiermetrySpacing.screenPadding,
           TiermetrySpacing.bottomSafeArea,
         ),

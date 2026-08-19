@@ -27,15 +27,16 @@ class ProfileModel extends ProfileEntity {
       email: json['email'] as String? ?? '',
       level: json['level'] as String? ?? 'Beginner',
       location: json['location'] as String? ?? 'India',
-      joinedDate: json['created_at'] != null 
-          ? _formatDate(DateTime.parse(json['created_at'] as String)) 
-          : 'Unknown',
+      joinedDate:
+          json['created_at'] != null
+              ? _formatDate(DateTime.parse(json['created_at'] as String))
+              : 'Unknown',
       age: json['age'] as int?,
       image: json['avatar_url'] as String?,
       tierName: json['tier'] as String? ?? 'Bronze I',
       tierProgress: (json['tier_progress'] as num?)?.toDouble() ?? 0.0,
       tiergies: (json['tiergies'] as num?)?.toDouble() ?? 0.0,
-      openedBadges: 0, 
+      openedBadges: 0,
       totalBadges: 10,
       badges: [],
       wallet: WalletModel.fromJson({}),
@@ -43,7 +44,20 @@ class ProfileModel extends ProfileEntity {
   }
 
   static String _formatDate(DateTime dt) {
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return '${months[dt.month - 1]} ${dt.year}';
   }
 }

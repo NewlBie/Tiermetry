@@ -51,4 +51,3 @@ class GlassSearchBar extends StatelessWidget {
     );
   }
 }
-

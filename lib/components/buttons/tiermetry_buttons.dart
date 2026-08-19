@@ -31,10 +31,14 @@ class TiermetryPrimaryButton extends StatelessWidget {
       },
       child: Container(
         width: width,
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [TiermetryColors.white, TiermetryColors.white.withValues(alpha: 0.9)],
+            colors: [
+              TiermetryColors.white,
+              TiermetryColors.white.withValues(alpha: 0.9),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -97,18 +101,25 @@ class TiermetryGlassButton extends StatelessWidget {
       },
       child: Container(
         width: width,
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: TiermetryColors.white.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
-          border: Border.all(color: TiermetryColors.white.withValues(alpha: 0.1)),
+          border: Border.all(
+            color: TiermetryColors.white.withValues(alpha: 0.1),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (leadingIcon != null) ...[
-              Icon(leadingIcon, size: 16, color: TiermetryColors.white.withValues(alpha: 0.7)),
+              Icon(
+                leadingIcon,
+                size: 16,
+                color: TiermetryColors.white.withValues(alpha: 0.7),
+              ),
               const SizedBox(width: 6),
             ],
             Text(
@@ -152,7 +163,8 @@ class TiermetryPillButton extends StatelessWidget {
         onPressed?.call();
       },
       child: Container(
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: backgroundColor ?? TiermetryColors.white,
           borderRadius: BorderRadius.circular(TiermetryRadii.md),
@@ -189,7 +201,7 @@ class TiermetryChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accentColor = selectedColor ?? TiermetryColors.white;
-    
+
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
@@ -199,10 +211,16 @@ class TiermetryChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? accentColor : TiermetryColors.white.withValues(alpha: 0.05),
+          color:
+              isSelected
+                  ? accentColor
+                  : TiermetryColors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
           border: Border.all(
-            color: isSelected ? Colors.transparent : TiermetryColors.white.withValues(alpha: 0.1),
+            color:
+                isSelected
+                    ? Colors.transparent
+                    : TiermetryColors.white.withValues(alpha: 0.1),
           ),
         ),
         child: Text(
@@ -210,7 +228,10 @@ class TiermetryChip extends StatelessWidget {
           style: GoogleFonts.urbanist(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: isSelected ? TiermetryColors.black : TiermetryColors.white.withValues(alpha: 0.7),
+            color:
+                isSelected
+                    ? TiermetryColors.black
+                    : TiermetryColors.white.withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -251,4 +272,3 @@ class TiermetryBadge extends StatelessWidget {
     );
   }
 }
-

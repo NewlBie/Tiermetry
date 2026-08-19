@@ -101,7 +101,8 @@ class _EventCarouselState extends State<EventCarousel> {
           height: 8.0,
           width: isActive ? 24.0 : 8.0,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
+            color:
+                isActive ? Colors.white : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(12),
           ),
         );
@@ -124,23 +125,28 @@ class _EventCard extends StatelessWidget {
         child: Stack(
           children: [
             Positioned.fill(
-              child: event.image != null && !event.image!.startsWith('assets/')
-                ? Image.network(
-                    event.image!,
-                    fit: BoxFit.cover,
-                    color: Colors.black.withValues(alpha: 0.3),
-                    colorBlendMode: BlendMode.darken,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: TiermetryColors.surfaceUnderlay,
-                      child: const Icon(Icons.broken_image, color: Colors.white24),
-                    ),
-                  )
-                : Image.asset(
-                    event.image ?? 'assets/Hackathon.jpg',
-                    fit: BoxFit.cover,
-                    color: Colors.black.withValues(alpha: 0.3),
-                    colorBlendMode: BlendMode.darken,
-                  ),
+              child:
+                  event.image != null && !event.image!.startsWith('assets/')
+                      ? Image.network(
+                        event.image!,
+                        fit: BoxFit.cover,
+                        color: Colors.black.withValues(alpha: 0.3),
+                        colorBlendMode: BlendMode.darken,
+                        errorBuilder:
+                            (context, error, stackTrace) => Container(
+                              color: TiermetryColors.surfaceUnderlay,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.white24,
+                              ),
+                            ),
+                      )
+                      : Image.asset(
+                        event.image ?? 'assets/Hackathon.jpg',
+                        fit: BoxFit.cover,
+                        color: Colors.black.withValues(alpha: 0.3),
+                        colorBlendMode: BlendMode.darken,
+                      ),
             ),
             Positioned(
               bottom: 0,
@@ -158,8 +164,7 @@ class _EventCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      event.title,
+                    Text((event.title).toUpperCase(),
                       style: TiermetryTypography.titleSmall(
                         color: Colors.white,
                         fontSize: 18,

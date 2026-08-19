@@ -8,7 +8,8 @@ class DotGridBackground extends StatelessWidget {
   final double radius;
 
   const DotGridBackground({
-    required this.dotColor, super.key,
+    required this.dotColor,
+    super.key,
     this.opacity = 0.06,
     this.spacing = 22,
     this.radius = 1.0,
@@ -69,4 +70,3 @@ class _DotGridPainter extends CustomPainter {
         oldDelegate.radius != radius;
   }
 }
-

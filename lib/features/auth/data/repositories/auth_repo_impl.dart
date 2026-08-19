@@ -9,7 +9,8 @@ class AuthRepoImpl implements AuthRepo {
   AuthRepoImpl(this._supabase);
 
   @override
-  Stream<UserEntity?> get authStateChanges => _supabase.auth.onAuthStateChange.map((data) {
+  Stream<UserEntity?> get authStateChanges =>
+      _supabase.auth.onAuthStateChange.map((data) {
         final user = data.session?.user;
         if (user == null) return null;
         return UserEntity(
@@ -36,17 +37,23 @@ class AuthRepoImpl implements AuthRepo {
   }
 
   @override
-  Future<void> signUp({required String email, required String password, String? name}) async {
+  Future<void> signUp({
+    required String email,
+    required String password,
+    String? name,
+  }) async {
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
       data: name != null ? {'name': name} : null,
     );
-    
+
     // DEVELOPMENT LOGGING
     debugPrint('--- SUPABASE SIGNUP RESPONSE ---');
     debugPrint('User: ${response.user?.id}');
-    debugPrint('Session: ${response.session?.accessToken != null ? "PRESENT" : "NULL"}');
+    debugPrint(
+      'Session: ${response.session?.accessToken != null ? "PRESENT" : "NULL"}',
+    );
     debugPrint('-------------------------------');
   }
 

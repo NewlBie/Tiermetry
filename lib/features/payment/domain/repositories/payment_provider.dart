@@ -15,7 +15,7 @@ abstract class PaymentProvider {
 
   /// Verifies the status of a payment
   Future<PaymentStatus> verifyPayment(String orderId);
-  
+
   /// Opens the payment UI/SDK if applicable
   Future<void> openPaymentWorkflow(PaymentOrder order);
 }

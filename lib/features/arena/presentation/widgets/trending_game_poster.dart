@@ -9,7 +9,10 @@ class TrendingGamePoster extends StatelessWidget {
   final Color baseColor;
 
   const TrendingGamePoster({
-    required this.rank, required this.title, required this.baseColor, super.key,
+    required this.rank,
+    required this.title,
+    required this.baseColor,
+    super.key,
   });
 
   @override
@@ -17,7 +20,10 @@ class TrendingGamePoster extends StatelessWidget {
     return AppSurface(
       width: 140, // Vertical poster width
       borderRadius: 20,
-      border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.1),
+        width: 0.5,
+      ),
       shadows: [
         BoxShadow(
           color: baseColor.withValues(alpha: 0.2),

@@ -25,9 +25,10 @@ class _TierProgressBarState extends State<TierProgressBar>
       duration: const Duration(seconds: 2),
     )..repeat(); // Loops infinitely
 
-    _shimmerAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.linear),
-    );
+    _shimmerAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.linear));
   }
 
   @override
@@ -45,7 +46,7 @@ class _TierProgressBarState extends State<TierProgressBar>
       builder: (context, _) {
         final shimmerPhase = _shimmerAnimation.value * 2 * pi;
         final filledSegments =
-        (segments * widget.progress.clamp(0.0, 1.0)).round();
+            (segments * widget.progress.clamp(0.0, 1.0)).round();
 
         return Row(
           children: List.generate(segments, (i) {
@@ -53,11 +54,12 @@ class _TierProgressBarState extends State<TierProgressBar>
 
             final bool isFilled = i < filledSegments;
             final Color baseColor =
-            isFilled ? TiermetryColors.accentPink : Colors.white12;
+                isFilled ? TiermetryColors.accentPink : Colors.white12;
 
-            final Color animatedColor = isFilled
-                ? Color.lerp(baseColor, Colors.white, 0.1 * shimmer)!
-                : baseColor;
+            final Color animatedColor =
+                isFilled
+                    ? Color.lerp(baseColor, Colors.white, 0.1 * shimmer)!
+                    : baseColor;
 
             return Expanded(
               child: Container(
@@ -66,15 +68,16 @@ class _TierProgressBarState extends State<TierProgressBar>
                 decoration: BoxDecoration(
                   color: animatedColor,
                   borderRadius: BorderRadius.circular(3),
-                  boxShadow: isFilled
-                      ? [
-                    BoxShadow(
-                      color: baseColor.withValues(alpha: 0.2 * shimmer),
-                      blurRadius: 4,
-                      spreadRadius: 0.5,
-                    )
-                  ]
-                      : [],
+                  boxShadow:
+                      isFilled
+                          ? [
+                            BoxShadow(
+                              color: baseColor.withValues(alpha: 0.2 * shimmer),
+                              blurRadius: 4,
+                              spreadRadius: 0.5,
+                            ),
+                          ]
+                          : [],
                 ),
               ),
             );
@@ -84,4 +87,3 @@ class _TierProgressBarState extends State<TierProgressBar>
     );
   }
 }
-

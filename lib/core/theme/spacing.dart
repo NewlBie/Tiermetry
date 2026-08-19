@@ -65,14 +65,19 @@ class TiermetrySpacing {
   // --- Pre-built EdgeInsets (convenience) -----------------------------------
 
   /// Symmetric horizontal padding for the page body (20px each side)
-  static const EdgeInsets pagePadding =
-      EdgeInsets.symmetric(horizontal: screenPadding);
+  static const EdgeInsets pagePadding = EdgeInsets.symmetric(
+    horizontal: screenPadding,
+  );
 
   /// Padding for horizontally-scrolling ListViews (20px left & right)
-  static const EdgeInsets listPadding =
-      EdgeInsets.symmetric(horizontal: listInset);
+  static const EdgeInsets listPadding = EdgeInsets.symmetric(
+    horizontal: listInset,
+  );
 
-  // --- Bottom safe area / scroll overrun ------------------------------------
+  // --- Top bar & Bottom safe area / scroll overrun -------------------------
+
+  /// Standard height of the top navigation bar (excluding status bar safe area)
+  static const double topBarHeight = 64.0;
 
   /// Large bottom pad so the last section clears a floating nav bar
   static const double bottomSafeArea = 140.0;

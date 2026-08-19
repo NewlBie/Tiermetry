@@ -12,10 +12,7 @@ class EventCard extends StatelessWidget {
   final EventEntity event;
   final VoidCallback? onAddToCalendar;
 
-  const EventCard({
-    required this.event, super.key,
-    this.onAddToCalendar,
-  });
+  const EventCard({required this.event, super.key, this.onAddToCalendar});
 
   @override
   Widget build(BuildContext context) {
@@ -26,25 +23,30 @@ class EventCard extends StatelessWidget {
         children: [
           Hero(
             tag: event.id,
-            child: event.image != null && !event.image!.startsWith('assets/')
-              ? Image.network(
-                  event.image!,
-                  height: 240,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 240,
-                    width: double.infinity,
-                    color: TiermetryColors.surfaceUnderlay,
-                    child: const Icon(Icons.broken_image, color: Colors.white24),
-                  ),
-                )
-              : Image.asset(
-                  event.image ?? 'assets/Hackathon.jpg',
-                  height: 240,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+            child:
+                event.image != null && !event.image!.startsWith('assets/')
+                    ? Image.network(
+                      event.image!,
+                      height: 240,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            height: 240,
+                            width: double.infinity,
+                            color: TiermetryColors.surfaceUnderlay,
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.white24,
+                            ),
+                          ),
+                    )
+                    : Image.asset(
+                      event.image ?? 'assets/Hackathon.jpg',
+                      height: 240,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
           ),
           Container(
             height: 240,
@@ -95,8 +97,7 @@ class EventCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
 
-                  Text(
-                    event.title,
+                  Text((event.title).toUpperCase(),
                     style: TiermetryTypography.titleSmall(
                       fontSize: 18,
                       color: Colors.white,
@@ -157,4 +158,3 @@ class EventCard extends StatelessWidget {
     );
   }
 }
-

@@ -14,7 +14,8 @@ class AccountPrivacyScreen extends StatefulWidget {
   State<AccountPrivacyScreen> createState() => _AccountPrivacyScreenState();
 }
 
-class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with RefreshRateMixin {
+class _AccountPrivacyScreenState extends State<AccountPrivacyScreen>
+    with RefreshRateMixin {
   final _profileCtrl = locator.profileCtrl;
   late final TextEditingController _nameController;
   late final TextEditingController _locationController;
@@ -45,7 +46,10 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
 
     if (picked != null) {
       setState(() {
@@ -56,9 +60,9 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
 
   void _saveChanges() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Name cannot be empty')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Name cannot be empty')));
       return;
     }
 
@@ -68,7 +72,7 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
         name: _nameController.text.trim(),
         location: _locationController.text.trim(),
         age: int.tryParse(_ageController.text.trim()),
-        // image: _profileImage?.path, // Avatar upload would go here
+        image: _profileImage?.path,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -77,34 +81,47 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, {TextInputType? type, bool enabled = true}) {
+  Widget _buildInputField(
+    String label,
+    TextEditingController controller, {
+    TextInputType? type,
+    bool enabled = true,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: TiermetryTypography.bodySmall(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: Colors.white60,
-            )),
+        Text(
+          label,
+          style: TiermetryTypography.bodySmall(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.white60,
+          ),
+        ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: type,
           enabled: enabled,
-          style: TiermetryTypography.bodySmall(color: enabled ? Colors.white : Colors.white38, fontSize: 14),
+          style: TiermetryTypography.bodySmall(
+            color: enabled ? Colors.white : Colors.white38,
+            fontSize: 14,
+          ),
           decoration: InputDecoration(
             filled: true,
             fillColor: TiermetryColors.surfaceElement,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -122,7 +139,11 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
     if (_profileImage != null) {
       imageProvider = FileImage(_profileImage!);
     } else if (p?.image != null && p!.image!.isNotEmpty) {
-      imageProvider = NetworkImage(p.image!);
+      if (p.image!.startsWith('http')) {
+        imageProvider = NetworkImage(p.image!);
+      } else {
+        imageProvider = AssetImage(p.image!);
+      }
     }
 
     return Center(
@@ -135,7 +156,14 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
               radius: 45,
               backgroundColor: TiermetryColors.surfaceElement,
               backgroundImage: imageProvider,
-              child: imageProvider == null ? const Icon(Icons.person, size: 40, color: Colors.white24) : null,
+              child:
+                  imageProvider == null
+                      ? const Icon(
+                        Icons.person,
+                        size: 40,
+                        color: Colors.white24,
+                      )
+                      : null,
             ),
             Positioned(
               bottom: 4,
@@ -163,11 +191,9 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: Text('Account & Privacy',
-            style: TiermetryTypography.title(
-              fontSize: 18,
-              color: Colors.white,
-            )),
+        title: Text(('Account & Privacy').toUpperCase(),
+          style: TiermetryTypography.title(fontSize: 18, color: Colors.white),
+        ),
         centerTitle: true,
         actions: [
           Padding(
@@ -175,13 +201,16 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
             child: Center(
               child: GestureDetector(
                 onTap: _saving ? null : _saveChanges,
-                child: _saving
-                    ? const CupertinoActivityIndicator()
-                    : Text('Save',
-                    style: TiermetryTypography.action(
-                      color: TiermetryColors.accentNeonGreen,
-                      fontWeight: FontWeight.w600,
-                    )),
+                child:
+                    _saving
+                        ? const CupertinoActivityIndicator()
+                        : Text(
+                          'Save',
+                          style: TiermetryTypography.action(
+                            color: TiermetryColors.accentNeonGreen,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
               ),
             ),
           ),
@@ -197,16 +226,25 @@ class _AccountPrivacyScreenState extends State<AccountPrivacyScreen> with Refres
               const SizedBox(height: 30),
               _buildInputField('Name', _nameController),
               _buildInputField('Location', _locationController),
-              _buildInputField('Age', _ageController, type: TextInputType.number),
-              _buildInputField('Email (Read-only)', _emailController, enabled: false),
+              _buildInputField(
+                'Age',
+                _ageController,
+                type: TextInputType.number,
+              ),
+              _buildInputField(
+                'Email (Read-only)',
+                _emailController,
+                enabled: false,
+              ),
               const SizedBox(height: 10),
               const Divider(color: Colors.white12),
               const SizedBox(height: 10),
-              Text('Privacy',
-                  style: TiermetryTypography.title(
-                    fontSize: 16,
-                    color: Colors.white,
-                  )),
+              Text(('Privacy').toUpperCase(),
+                style: TiermetryTypography.title(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 10),
               Text(
                 'Your account is private by design. No public profile setting is required.',

@@ -21,7 +21,7 @@ class SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          title,
+          (title).toUpperCase(),
           style: TiermetryTypography.title(color: Colors.white),
         ),
         if (onViewMore != null)

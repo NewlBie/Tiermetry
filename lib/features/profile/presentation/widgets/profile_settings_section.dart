@@ -38,41 +38,55 @@ class ProfileSettingsSection extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: settings.map((item) {
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.035),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: ListTile(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            leading: Icon(item['icon'] as IconData, color: Colors.white70, size: 22),
-            title: Text(
-              item['title'] as String,
-              style: TiermetryTypography.bodySmall(
-                fontSize: 14.5,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
+      children:
+          settings.map((item) {
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.035),
+                borderRadius: BorderRadius.circular(18),
               ),
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white30, size: 16),
-            onTap: () {
-              final title = item['title'] as String;
-              final route = item['route'] as Widget?;
-              
-              if (onItemTap != null) onItemTap!(title);
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+                leading: Icon(
+                  item['icon'] as IconData,
+                  color: Colors.white70,
+                  size: 22,
+                ),
+                title: Text(
+                  item['title'] as String,
+                  style: TiermetryTypography.bodySmall(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                trailing: const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: Colors.white30,
+                  size: 16,
+                ),
+                onTap: () {
+                  final title = item['title'] as String;
+                  final route = item['route'] as Widget?;
 
-              if (route != null) {
-                Navigator.of(context).push(MaterialPageRoute<void>(
-                  builder: (_) => route,
-                ));
-              }
-            },
-          ),
-        );
-      }).toList(),
+                  if (onItemTap != null) onItemTap!(title);
+
+                  if (route != null) {
+                    Navigator.of(
+                      context,
+                    ).push(MaterialPageRoute<void>(builder: (_) => route));
+                  }
+                },
+              ),
+            );
+          }).toList(),
     );
   }
 }

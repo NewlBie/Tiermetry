@@ -53,9 +53,9 @@ class BentoTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(14),
               child: Align(
-                alignment: Alignment.topLeft,
-                child: Text(
-                  title,
+                alignment: Alignment.topCenter,
+                child: Text((title).toUpperCase(),
+                  textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.title(

@@ -29,7 +29,9 @@ class TiermetryColors {
   static const background = Color(0xFF080808);
   static const surface = Color(0xFF151515);
   static const surfaceElement = Color(0xFF212121);
-  static const surfaceUnderlay = Color(0xFF101010); // for deeper elements like map backings
+  static const surfaceUnderlay = Color(
+    0xFF101010,
+  ); // for deeper elements like map backings
 
   // Feature Accents
   static const accentNeonGreen = Color(0xFFB6FF00);

@@ -21,14 +21,14 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
 
   Future<void> _handlePayment(PaymentStatus status) async {
     setState(() => _isProcessing = true);
-    
+
     // Simulate provider callback
     (locator.paymentProvider as DevelopmentPaymentProvider)
         .simulatePaymentResult(widget.order.orderId, status);
-    
+
     // Wait for the simulated callback to "propagate"
     await Future<void>.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       Navigator.pop(context, status);
     }
@@ -51,20 +51,30 @@ class _MockPaymentScreenState extends State<MockPaymentScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.developer_mode, size: 64, color: TiermetryColors.accentAppleBlue),
+                const Icon(
+                  Icons.developer_mode,
+                  size: 64,
+                  color: TiermetryColors.accentAppleBlue,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   'Order: ${widget.order.orderId}',
-                  style: TiermetryTypography.bodySmall(color: TiermetryColors.textMuted),
+                  style: TiermetryTypography.bodySmall(
+                    color: TiermetryColors.textMuted,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Amount: ₹${widget.order.amount}',
-                  style: TiermetryTypography.title(fontSize: 24, color: TiermetryColors.white),
+                Text(('Amount: ₹${widget.order.amount}').toUpperCase(),
+                  style: TiermetryTypography.title(
+                    fontSize: 24,
+                    color: TiermetryColors.white,
+                  ),
                 ),
                 const SizedBox(height: 32),
                 if (_isProcessing)
-                  const CircularProgressIndicator(color: TiermetryColors.accentAppleBlue)
+                  const CircularProgressIndicator(
+                    color: TiermetryColors.accentAppleBlue,
+                  )
                 else ...[
                   SizedBox(
                     width: double.infinity,

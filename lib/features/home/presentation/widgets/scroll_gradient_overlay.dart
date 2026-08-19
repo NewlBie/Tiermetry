@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 
 /// A scroll-responsive gradient overlay that sits at the top of the page.
 /// This widget has its own scroll listener and only rebuilds itself,
@@ -7,10 +8,7 @@ import 'package:tiermetry/core/theme/colors.dart';
 class ScrollGradientOverlay extends StatefulWidget {
   final ScrollController scrollController;
 
-  const ScrollGradientOverlay({
-    required this.scrollController,
-    super.key,
-  });
+  const ScrollGradientOverlay({required this.scrollController, super.key});
 
   @override
   State<ScrollGradientOverlay> createState() => _ScrollGradientOverlayState();
@@ -54,7 +52,7 @@ class _ScrollGradientOverlayState extends State<ScrollGradientOverlay> {
       child: IgnorePointer(
         child: RepaintBoundary(
           child: Container(
-            height: topPadding + 60,
+            height: topPadding + TiermetrySpacing.topBarHeight,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,

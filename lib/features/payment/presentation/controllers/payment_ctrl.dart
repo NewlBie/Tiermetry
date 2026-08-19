@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../../../core/utils/error_mapper.dart';
 import '../../domain/entities/payment_entity.dart';
 import '../../domain/repositories/payment_provider.dart';
 import '../../domain/repositories/payment_repo.dart';
@@ -12,27 +13,28 @@ class PaymentCtrl extends ChangeNotifier {
   bool _isProcessing = false;
   bool get isProcessing => _isProcessing;
 
+  String? _error;
+  String? get error => _error;
+
   PaymentEntity? _currentPayment;
   PaymentEntity? get currentPayment => _currentPayment;
 
-  Future<void> startPaymentFlow({
-    required String holdId,
-  }) async {
+  Future<void> startPaymentFlow({required String holdId}) async {
     _isProcessing = true;
+    _error = null;
     notifyListeners();
 
     try {
       // 1. Create order
-      final order = await repo.initiatePayment(
-        holdId: holdId,
-      );
+      final order = await repo.initiatePayment(holdId: holdId);
 
       // 2. Open provider workflow (mock UI in dev)
       await provider.openPaymentWorkflow(order);
-      
+
       // In dev mode, we might need a manual trigger or polling.
       // For now, let's assume the UI will call verify.
     } catch (e) {
+      _error = ErrorMapper.map(e);
       debugPrint('Payment initiation failed: $e');
       rethrow;
     } finally {
@@ -43,12 +45,16 @@ class PaymentCtrl extends ChangeNotifier {
 
   Future<PaymentEntity> verifyPayment(String orderId) async {
     _isProcessing = true;
+    _error = null;
     notifyListeners();
 
     try {
       final payment = await repo.verifyAndSyncPayment(orderId);
       _currentPayment = payment;
       return payment;
+    } catch (e) {
+      _error = ErrorMapper.map(e);
+      rethrow;
     } finally {
       _isProcessing = false;
       notifyListeners();

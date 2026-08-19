@@ -5,24 +5,21 @@ import 'package:google_fonts/google_fonts.dart';
 /// TIERMETRY TYPOGRAPHY - Universal Design Tokens
 /// ---------------------------------------------------------------------------
 /// Central source for all text styles in the app.
-/// Established on two primary families:
-///   - Bricolage Grotesque: Playful, high-personality titles and displays.
-///   - Urbanist: Clean, geometric, and highly readable for body and UI labels.
+/// Established on Geist for a modern, sleek aesthetic.
 /// ---------------------------------------------------------------------------
 class TiermetryTypography {
   TiermetryTypography._();
 
-  // Base: clean + premium for body/labels.
   static TextTheme textTheme(TextTheme base) {
-    final urbanist = GoogleFonts.urbanistTextTheme(base);
-    return urbanist.copyWith(
-      bodyMedium: urbanist.bodyMedium?.copyWith(height: 1.35),
-      bodySmall: urbanist.bodySmall?.copyWith(height: 1.3),
-      labelLarge: urbanist.labelLarge?.copyWith(
+    final geist = GoogleFonts.geistTextTheme(base);
+    return geist.copyWith(
+      bodyMedium: geist.bodyMedium?.copyWith(height: 1.35),
+      bodySmall: geist.bodySmall?.copyWith(height: 1.3),
+      labelLarge: geist.labelLarge?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: 0.3,
       ),
-      labelMedium: urbanist.labelMedium?.copyWith(
+      labelMedium: geist.labelMedium?.copyWith(
         fontWeight: FontWeight.w700,
         letterSpacing: 0.2,
       ),
@@ -33,14 +30,14 @@ class TiermetryTypography {
   static TextStyle display({
     required Color color,
     double fontSize = 32,
-    FontWeight fontWeight = FontWeight.w800,
+    FontWeight fontWeight = FontWeight.w900,
     double letterSpacing = -0.6,
     double height = 1.05,
   }) {
-    return GoogleFonts.bricolageGrotesque(
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
       letterSpacing: letterSpacing,
       height: height,
     );
@@ -50,14 +47,14 @@ class TiermetryTypography {
   static TextStyle title({
     required Color color,
     double fontSize = 20,
-    FontWeight fontWeight = FontWeight.w700,
+    FontWeight fontWeight = FontWeight.w900,
     double letterSpacing = -0.2,
     double? height,
   }) {
-    return GoogleFonts.bricolageGrotesque(
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
       letterSpacing: letterSpacing,
       height: height,
     );
@@ -67,13 +64,13 @@ class TiermetryTypography {
   static TextStyle titleSmall({
     required Color color,
     double fontSize = 16,
-    FontWeight fontWeight = FontWeight.w800,
+    FontWeight fontWeight = FontWeight.w900,
     double? height,
   }) {
-    return GoogleFonts.bricolageGrotesque(
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
       height: height,
     );
   }
@@ -85,10 +82,10 @@ class TiermetryTypography {
     FontWeight fontWeight = FontWeight.w800,
     double letterSpacing = 0.8,
   }) {
-    return GoogleFonts.urbanist(
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
       letterSpacing: letterSpacing,
     );
   }
@@ -116,10 +113,10 @@ class TiermetryTypography {
     double letterSpacing = 0.4,
     double? height,
   }) {
-    return GoogleFonts.urbanist(
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
       letterSpacing: letterSpacing,
       height: height,
     );
@@ -132,10 +129,13 @@ class TiermetryTypography {
     FontWeight fontWeight = FontWeight.w800,
     double letterSpacing = 0.4,
   }) {
-    return GoogleFonts.urbanist(
+    return TextStyle(
+      fontFamily: 'Geist',
       color: color,
       fontSize: fontSize,
-      fontWeight: fontWeight,
+      fontVariations: [
+        FontVariation('wght', (fontWeight.value).toDouble()),
+      ],
       letterSpacing: letterSpacing,
     );
   }

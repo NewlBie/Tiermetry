@@ -7,10 +7,14 @@ import 'app_surface.dart';
 class AppEmptyState extends StatelessWidget {
   final String message;
   final IconData? icon;
+  final VoidCallback? onAction;
+  final String? actionLabel;
 
   const AppEmptyState({
     required this.message,
     this.icon,
+    this.onAction,
+    this.actionLabel,
     super.key,
   });
 
@@ -38,6 +42,23 @@ class AppEmptyState extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (onAction != null && actionLabel != null) ...[
+              const SizedBox(height: TiermetrySpacing.md),
+              TextButton(
+                onPressed: onAction,
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.white10,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  actionLabel!,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+            ],
           ],
         ),
       ),

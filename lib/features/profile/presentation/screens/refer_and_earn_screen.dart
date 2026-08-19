@@ -14,10 +14,13 @@ class ReferAndEarnScreen extends StatefulWidget {
   State<ReferAndEarnScreen> createState() => _ReferAndEarnScreenState();
 }
 
-class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRateMixin {
+class _ReferAndEarnScreenState extends State<ReferAndEarnScreen>
+    with RefreshRateMixin {
   final String referralCode = 'NEAL420';
   final int totalEarned = 730;
-  final ConfettiController _confetti = ConfettiController(duration: const Duration(seconds: 1));
+  final ConfettiController _confetti = ConfettiController(
+    duration: const Duration(seconds: 1),
+  );
 
   final List<String> invitedFriends = [
     'Rohit K.',
@@ -36,13 +39,15 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
   void _copyCode() {
     Clipboard.setData(ClipboardData(text: referralCode));
     _confetti.play();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Code zapped! 🚨')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Code zapped! 🚨')));
   }
 
   void _shareCode() {
-    Share.share('Use my referral code $referralCode on Tiermetry and earn Tiergies!');
+    Share.share(
+      'Use my referral code $referralCode on Tiermetry and earn Tiergies!',
+    );
     _confetti.play();
   }
 
@@ -58,12 +63,14 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text('Refer & Earn',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            )),
+        middle: Text(
+          'Refer & Earn',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         border: null,
       ),
       child: Material(
@@ -85,7 +92,11 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
                   emissionFrequency: 0.2,
                   numberOfParticles: 20,
                   gravity: 0.2,
-                  colors: const [Colors.tealAccent, Colors.amber, Colors.purpleAccent],
+                  colors: const [
+                    Colors.tealAccent,
+                    Colors.amber,
+                    Colors.purpleAccent,
+                  ],
                 ),
               ),
               const Align(
@@ -110,40 +121,41 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Earn Tiergies 💎',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              )),
+          Text(
+            'Earn Tiergies 💎',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 10),
-          Text('Invite your friends & both of you earn rewards!',
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: Colors.white60,
-              )),
+          Text(
+            'Invite your friends & both of you earn rewards!',
+            style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+          ),
           const SizedBox(height: 24),
-          Text('You’ve earned',
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                color: Colors.white54,
-              )),
+          Text(
+            'You’ve earned',
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.white54),
+          ),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('$totalEarned',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  )),
+              Text(
+                '$totalEarned',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(width: 8),
-              Text('Tiergies',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white38,
-                  )),
+              Text(
+                'Tiergies',
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.white38),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -158,7 +170,9 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white24),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -172,7 +186,9 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
                     backgroundColor: Colors.tealAccent,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     elevation: 0,
                   ),
                 ),
@@ -188,43 +204,56 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
             borderRadius: BorderRadius.circular(20),
           ),
           const SizedBox(height: 30),
-          Text('Unlockable Rewards 🎁',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              )),
+          Text(
+            'Unlockable Rewards 🎁',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 12),
           Column(
-            children: rewards.map((reward) {
-              final threshold = reward['threshold'] as int;
-              final label = reward['label'] as String;
-              final unlocked = totalEarned >= threshold;
-              return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: unlocked ? Colors.teal.withValues(alpha: 0.2) : Colors.white10,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: unlocked ? Colors.tealAccent : Colors.white12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(label,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: unlocked ? Colors.tealAccent : Colors.white70,
-                        )),
-                    Text('$threshold 🪙',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: Colors.white38,
-                        )),
-                  ],
-                ),
-              );
-            }).toList(),
+            children:
+                rewards.map((reward) {
+                  final threshold = reward['threshold'] as int;
+                  final label = reward['label'] as String;
+                  final unlocked = totalEarned >= threshold;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color:
+                          unlocked
+                              ? Colors.teal.withValues(alpha: 0.2)
+                              : Colors.white10,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: unlocked ? Colors.tealAccent : Colors.white12,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          label,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color:
+                                unlocked ? Colors.tealAccent : Colors.white70,
+                          ),
+                        ),
+                        Text(
+                          '$threshold 🪙',
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: Colors.white38,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
           ),
           const SizedBox(height: 30),
           Center(
@@ -233,7 +262,10 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
               backgroundColor: Colors.white,
               padding: const EdgeInsets.all(12),
               size: 150,
-              eyeStyle: const QrEyeStyle(color: Colors.black, eyeShape: QrEyeShape.circle),
+              eyeStyle: const QrEyeStyle(
+                color: Colors.black,
+                eyeShape: QrEyeShape.circle,
+              ),
               dataModuleStyle: const QrDataModuleStyle(
                 color: Colors.black,
                 dataModuleShape: QrDataModuleShape.circle,
@@ -241,12 +273,14 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
             ),
           ),
           const SizedBox(height: 30),
-          Text('Leaderboard Preview 🏆',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              )),
+          Text(
+            'Leaderboard Preview 🏆',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             decoration: BoxDecoration(
@@ -266,12 +300,14 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
             ),
           ),
           const SizedBox(height: 30),
-          Text('You’ve invited',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              )),
+          Text(
+            'You’ve invited',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
           const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.all(12),
@@ -281,31 +317,37 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
               border: Border.all(color: Colors.white12),
             ),
             child: Column(
-              children: invitedFriends.map((friend) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person_outline, size: 18, color: Colors.white54),
-                      const SizedBox(width: 10),
-                      Text(friend,
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: Colors.white70,
-                          )),
-                    ],
-                  ),
-                );
-              }).toList(),
+              children:
+                  invitedFriends.map((friend) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.person_outline,
+                            size: 18,
+                            color: Colors.white54,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            friend,
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
             ),
           ),
           const SizedBox(height: 20),
           Center(
-            child: Text('More friends = more Tiergies 🚀',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: Colors.white30,
-                )),
+            child: Text(
+              'More friends = more Tiergies 🚀',
+              style: GoogleFonts.inter(fontSize: 13, color: Colors.white30),
+            ),
           ),
         ],
       ),
@@ -328,14 +370,10 @@ class _ReferAndEarnScreenState extends State<ReferAndEarnScreen> with RefreshRat
           ),
           Text(
             '$points Tiergies',
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              color: Colors.white54,
-            ),
+            style: GoogleFonts.inter(fontSize: 13, color: Colors.white54),
           ),
         ],
       ),
     );
   }
 }
-

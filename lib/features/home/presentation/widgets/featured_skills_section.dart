@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/widgets/animated_list_item.dart';
 import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
@@ -84,12 +85,14 @@ class _FeaturedSkillsSectionState extends State<FeaturedSkillsSection> {
               : Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  ListView.separated(
+                  SilkyListView.separated(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
                     padding: TiermetrySpacing.listPadding,
                     itemCount: widget.skills.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: TiermetrySpacing.cardGap),
+                    separatorBuilder:
+                        (_, __) =>
+                            const SizedBox(width: TiermetrySpacing.cardGap),
                     itemBuilder: (_, index) {
                       return AnimatedListItem(
                         index: index,

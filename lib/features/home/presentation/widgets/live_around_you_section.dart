@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
@@ -80,6 +82,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
       playersPlaying: 12,
       distance: '1.2 km',
       temperature: '24 C',
+      priceDisplay: '₹1200',
     ),
     _LiveActivity(
       image: 'assets/images/football.png',
@@ -88,6 +91,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
       playersPlaying: 18,
       distance: '0.8 km',
       temperature: '19 C',
+      priceDisplay: 'Free',
     ),
     _LiveActivity(
       image: 'assets/images/gaming.png',
@@ -96,6 +100,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
       playersPlaying: 8,
       distance: '2.5 km',
       temperature: '21 C',
+      priceDisplay: '₹800/hr',
     ),
     _LiveActivity(
       image: 'assets/images/racing.png',
@@ -104,6 +109,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
       playersPlaying: 6,
       distance: '3.1 km',
       temperature: '28 C',
+      priceDisplay: '₹2000',
     ),
     _LiveActivity(
       image: 'assets/images/pool.png',
@@ -112,6 +118,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
       playersPlaying: 24,
       distance: '4.0 km',
       temperature: '30 C',
+      priceDisplay: 'Free',
     ),
   ];
 
@@ -144,8 +151,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                'Live Around You',
+              Text(('Live Around You').toUpperCase(),
                 style: TiermetryTypography.title(color: Colors.white),
               ),
             ],
@@ -159,7 +165,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
           height: 320,
           child: Stack(
             children: [
-              ListView.separated(
+              SilkyListView.separated(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
@@ -225,7 +231,8 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
   Widget build(BuildContext context) {
     return AppSurface(
       width: 240,
-      borderRadius: TiermetryRadii.lg,
+      border: const Border(),
+      borderRadius: TiermetryRadii.md,
       shadows: TiermetryShadows.liveActivity,
       child: Column(
         children: [
@@ -237,10 +244,10 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
               children: [
                 // Main Image with Rounded Corners on All Sides
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
                   child: Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.25),
@@ -251,7 +258,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                       ],
                     ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       child: Image.asset(
                         widget.activity.image,
                         fit: BoxFit.cover,
@@ -317,65 +324,23 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                   ),
                 ),
 
-                // Bottom Left Overlay: Avatars
+                // Pagination Dots
                 Positioned(
-                  left: 24,
                   bottom: 24,
-                  child: SizedBox(
-                    height: 25,
-                    width: 70, // ample width for stack
-                    child: Stack(
-                      children: [
-                        _buildAvatar(0, Colors.blue),
-                        _buildAvatar(18, Colors.red),
-                        _buildAvatar(36, TiermetryColors.accentNeonGreen),
-                      ],
-                    ),
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildDot(true),
+                      const SizedBox(width: 4),
+                      _buildDot(false),
+                      const SizedBox(width: 4),
+                      _buildDot(false),
+                    ],
                   ),
                 ),
 
-                // Bottom Right Overlay: Active Users Tag
-                Positioned(
-                  right: 24,
-                  bottom: 24,
-                  child: SizedBox(
-                    height: 25,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            width: 0.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.local_fire_department_rounded,
-                              size: 10,
-                              color: TiermetryColors.accentNeonGreen,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${widget.activity.playersPlaying} active',
-                              style: TiermetryTypography.label(
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -396,29 +361,17 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
 
   // Use a helper method for the static content to reduce build nesting clutter
   Widget _buildCardContent() {
-    return Column(
+    return Center(
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Pagination Dots
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildDot(true),
-            const SizedBox(width: 4),
-            _buildDot(false),
-            const SizedBox(width: 4),
-            _buildDot(false),
-          ],
-        ),
-
-        const SizedBox(height: 2),
-
         // Title
-        Text(
-          widget.activity.title,
+        Text((widget.activity.title).toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
           style: TiermetryTypography.title(
             color: Colors.white,
             fontSize: 16,
@@ -431,7 +384,6 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
           widget.activity.location,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
           style: TiermetryTypography.caption(
             fontWeight: FontWeight.w500,
             color: Colors.white.withValues(alpha: 0.5),
@@ -452,7 +404,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildStatIcon(
-                Icons.directions_run,
+                CupertinoIcons.person_2,
                 '${widget.activity.playersPlaying}',
               ),
               Container(
@@ -460,33 +412,17 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
                 height: 10,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _buildStatIcon(Icons.near_me, widget.activity.distance),
+              _buildStatIcon(CupertinoIcons.location_solid, widget.activity.distance),
               Container(
                 width: 1,
                 height: 10,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              _buildStatIcon(Icons.confirmation_number_outlined, 'Ticket'),
+              _buildStatIcon(CupertinoIcons.ticket, widget.activity.priceDisplay),
             ],
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAvatar(double left, Color color) {
-    return Positioned(
-      left: left,
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: Border.all(color: TiermetryColors.surface, width: 2),
-        ),
-        child: const Center(
-          child: Icon(Icons.person, size: 14, color: Colors.white),
         ),
       ),
     );
@@ -528,6 +464,7 @@ class _LiveActivity {
   final int playersPlaying;
   final String distance;
   final String temperature;
+  final String priceDisplay;
 
   const _LiveActivity({
     required this.image,
@@ -536,5 +473,6 @@ class _LiveActivity {
     required this.playersPlaying,
     required this.distance,
     required this.temperature,
+    required this.priceDisplay,
   });
 }

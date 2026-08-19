@@ -15,7 +15,8 @@ class SkillBrowserScreen extends StatefulWidget {
   State<SkillBrowserScreen> createState() => _SkillBrowserScreenState();
 }
 
-class _SkillBrowserScreenState extends State<SkillBrowserScreen> with RefreshRateMixin {
+class _SkillBrowserScreenState extends State<SkillBrowserScreen>
+    with RefreshRateMixin {
   final _skillCtrl = locator.skillCtrl;
 
   String query = '';
@@ -87,19 +88,28 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen> with RefreshRat
                       onTap: () => setState(() => selectedFilter = f),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
-                          color: selected ? Colors.white : Colors.white.withValues(alpha: 0.07),
+                          color:
+                              selected
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(100),
-                          boxShadow: selected
-                              ? [
-                            BoxShadow(
-                              color: Colors.white.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            )
-                          ]
-                              : [],
+                          boxShadow:
+                              selected
+                                  ? [
+                                    BoxShadow(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ]
+                                  : [],
                         ),
                         child: Text(
                           f,
@@ -126,20 +136,34 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen> with RefreshRat
                   }
                   if (_skillCtrl.skills.isEmpty) {
                     return const Center(
-                      child: Text('Could not load skills.', style: TextStyle(color: Colors.white38)),
+                      child: Text(
+                        'Could not load skills.',
+                        style: TextStyle(color: Colors.white38),
+                      ),
                     );
                   }
 
                   // Apply local search and filter to the fetched data
-                  final filtered = _skillCtrl.skills.where((skill) {
-                    final matchesQuery = query.isEmpty || skill.title.toLowerCase().contains(query.toLowerCase());
-                    final matchesFilter = selectedFilter == 'All' || skill.level == selectedFilter || (selectedFilter == 'Free' && skill.price == 'Free');
-                    return matchesQuery && matchesFilter;
-                  }).toList();
+                  final filtered =
+                      _skillCtrl.skills.where((skill) {
+                        final matchesQuery =
+                            query.isEmpty ||
+                            skill.title.toLowerCase().contains(
+                              query.toLowerCase(),
+                            );
+                        final matchesFilter =
+                            selectedFilter == 'All' ||
+                            skill.level == selectedFilter ||
+                            (selectedFilter == 'Free' && skill.price == 'Free');
+                        return matchesQuery && matchesFilter;
+                      }).toList();
 
                   if (filtered.isEmpty) {
                     return const Center(
-                      child: Text('No matching skills found.', style: TextStyle(color: Colors.white38)),
+                      child: Text(
+                        'No matching skills found.',
+                        style: TextStyle(color: Colors.white38),
+                      ),
                     );
                   }
 

@@ -67,4 +67,3 @@ class _BlurBlob extends StatelessWidget {
     );
   }
 }
-

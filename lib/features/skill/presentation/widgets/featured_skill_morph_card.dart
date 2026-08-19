@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
@@ -9,43 +10,52 @@ import '../../domain/entities/skill_entity.dart';
 class FeaturedSkillMorphCard extends StatelessWidget {
   final SkillEntity skill;
 
-  const FeaturedSkillMorphCard({
-    required this.skill,
-    super.key,
-  });
+  const FeaturedSkillMorphCard({required this.skill, super.key});
 
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
       child: AppSurface(
         width: 280,
-        borderRadius: TiermetryRadii.xl,
+        borderRadius: TiermetryRadii.md,
         shadows: TiermetryShadows.featuredSkill,
-        border: Border.all(
-          color: TiermetryColors.cardBorderEmphasis,
-          width: 1,
-        ),
+        border: const Border(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// IMAGE SECTION 
+            /// IMAGE SECTION
             Expanded(
               flex: 55,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(TiermetryRadii.xl),
-                    ),
-                    child: Image.asset(
-                      skill.image,
-                      fit: BoxFit.cover,
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.25),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(skill.image, fit: BoxFit.cover),
+                      ),
                     ),
                   ),
+
                   /// Subtle gradient for top tags
                   Positioned(
-                    top: 0, left: 0, right: 0, height: 80,
+                    top: 12,
+                    left: 12,
+                    right: 12,
+                    height: 80,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -57,24 +67,29 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                           ],
                         ),
                         borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(TiermetryRadii.xl),
+                          top: Radius.circular(12),
                         ),
                       ),
                     ),
                   ),
+
                   /// TAGS
                   Positioned(
-                    top: 16, left: 16, right: 16,
+                    top: 24,
+                    left: 24,
+                    right: 24,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Badge
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.65),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                           ),
                           child: Text(
                             skill.badge.toUpperCase(),
@@ -85,7 +100,10 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                         ),
                         // Rating
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.95),
                             borderRadius: BorderRadius.circular(8),
@@ -93,7 +111,11 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.star_rounded, size: 13, color: Colors.black),
+                              const Icon(
+                                CupertinoIcons.star_fill,
+                                size: 13,
+                                color: Colors.black,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 skill.rating.toString(),
@@ -112,14 +134,16 @@ class FeaturedSkillMorphCard extends StatelessWidget {
               ),
             ),
 
-            /// DETAILS SECTION 
+            /// DETAILS SECTION
             Expanded(
               flex: 45,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text(
                       skill.category.toUpperCase(),
                       style: TiermetryTypography.label(
@@ -130,8 +154,7 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      skill.title,
+                    Text((skill.title).toUpperCase(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TiermetryTypography.title(
@@ -140,8 +163,8 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                         color: Colors.white,
                       ),
                     ),
-                    
-                    const Spacer(),
+
+                    const SizedBox(height: 16),
 
                     /// Meta & Action Row
                     Row(
@@ -153,16 +176,25 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              _buildInfoItem(Icons.schedule_rounded, skill.time),
+                              _buildInfoItem(
+                                CupertinoIcons.time,
+                                skill.time,
+                              ),
                               const SizedBox(height: 6),
-                              _buildInfoItem(Icons.leaderboard_rounded, skill.level),
+                              _buildInfoItem(
+                                CupertinoIcons.chart_bar_alt_fill,
+                                skill.level,
+                              ),
                             ],
                           ),
                         ),
-                        
+
                         /// CTA Button
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 10,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(100),
@@ -178,6 +210,7 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ],

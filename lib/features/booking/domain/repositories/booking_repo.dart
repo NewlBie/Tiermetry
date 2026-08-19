@@ -10,8 +10,9 @@ abstract class BookingRepo {
     required DateTime endTime,
     required List<String> serviceUnitIds,
   });
-  
+
   Future<void> releaseHold(String holdId);
-  
+
   Future<void> cancelBooking(String bookingId);
+  Future<void> checkInBooking(String bookingId, String code);
 }

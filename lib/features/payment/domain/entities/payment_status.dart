@@ -1,7 +1,1 @@
-enum PaymentStatus {
-  created,
-  pending,
-  paid,
-  failed,
-  cancelled,
-}
+enum PaymentStatus { created, pending, paid, failed, cancelled }

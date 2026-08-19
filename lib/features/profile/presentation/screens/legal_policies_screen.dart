@@ -11,7 +11,8 @@ class LegalPoliciesScreen extends StatefulWidget {
   State<LegalPoliciesScreen> createState() => _LegalPoliciesScreenState();
 }
 
-class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshRateMixin {
+class _LegalPoliciesScreenState extends State<LegalPoliciesScreen>
+    with RefreshRateMixin {
   void _openWebLink(String url) async {
     final uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
@@ -25,12 +26,14 @@ class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshR
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text('Legal & Policies',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            )),
+        middle: Text(
+          'Legal & Policies',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         border: null,
       ),
       child: SafeArea(
@@ -39,18 +42,19 @@ class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshR
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Legal Documents',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  )),
+              Text(
+                'Legal Documents',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 12),
-              Text('These documents outline our policies and your rights.',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white60,
-                  )),
+              Text(
+                'These documents outline our policies and your rights.',
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+              ),
               const SizedBox(height: 30),
               _legalTile(
                 context,
@@ -72,12 +76,11 @@ class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshR
               ),
               const Spacer(),
               Center(
-                child: Text('Last updated: July 2025',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white30,
-                    )),
-              )
+                child: Text(
+                  'Last updated: July 2025',
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white30),
+                ),
+              ),
             ],
           ),
         ),
@@ -85,8 +88,12 @@ class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshR
     );
   }
 
-  Widget _legalTile(BuildContext context,
-      {required String title, required String subtitle, required String url}) {
+  Widget _legalTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String url,
+  }) {
     return GestureDetector(
       onTap: () => _openWebLink(url),
       child: Container(
@@ -105,22 +112,30 @@ class _LegalPoliciesScreenState extends State<LegalPoliciesScreen> with RefreshR
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      )),
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white54,
-                      )),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.white54,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white24)
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 14,
+              color: Colors.white24,
+            ),
           ],
         ),
       ),

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -6,6 +7,7 @@ import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/event_entity.dart';
 import '../screens/event_details_screen.dart';
@@ -51,39 +53,40 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
           );
         },
         child: AppSurface(
-          borderRadius: TiermetryRadii.xl,
-          border: Border.all(
-            color: TiermetryColors.cardBorderEmphasis,
-            width: 1.5,
-          ),
+          borderRadius: TiermetryRadii.md,
+          border: const Border(),
           shadows: TiermetryShadows.upcomingEvent,
-          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // --- INSET IMAGE (No Overlap) ---
-              Expanded(
-                flex: 12,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
                       Hero(
                         tag: widget.event.id,
-                        child: widget.event.image != null && !widget.event.image!.startsWith('assets/')
-                          ? Image.network(
-                              widget.event.image!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: TiermetryColors.surfaceUnderlay,
-                                child: const Icon(Icons.broken_image, color: Colors.white24),
-                              ),
-                            )
-                          : Image.asset(
+                        child: AppImage(
+                          imagePath:
                               widget.event.image ?? 'assets/Hackathon.jpg',
-                              fit: BoxFit.cover,
-                            ),
+                        ),
                       ),
                       // Top gradient just for top badges clarity if image is bright
                       Positioned(
@@ -178,7 +181,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                             ],
                           ),
                           child: const Icon(
-                            Icons.notifications_active_rounded,
+                            CupertinoIcons.bell_solid,
                             size: 18,
                             color: Colors.black,
                           ),
@@ -188,18 +191,19 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                   ),
                 ),
               ),
-              const SizedBox(height: 12),
+            ),
+          ),
+          const SizedBox(height: 12),
               // --- SEPARATED TEXT AREA ---
               Expanded(
-                flex: 11,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Text(
-                        widget.event.title,
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+                  child: SingleChildScrollView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                      Text((widget.event.title).toUpperCase(),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TiermetryTypography.titleSmall(
@@ -208,7 +212,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                           color: Colors.white,
                         ),
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
                       // Date & Time Row
                       Row(
                         children: [
@@ -221,7 +225,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
-                              Icons.calendar_month_rounded,
+                              CupertinoIcons.calendar,
                               size: 14,
                               color: TiermetryColors.accentNeonGreen,
                             ),
@@ -250,7 +254,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Icon(
-                              Icons.place_rounded,
+                              CupertinoIcons.location_solid,
                               size: 14,
                               color: Colors.white70,
                             ),
@@ -274,6 +278,7 @@ class _UpcomingEventCardState extends State<UpcomingEventCard>
                   ),
                 ),
               ),
+            ),
             ],
           ),
         ),

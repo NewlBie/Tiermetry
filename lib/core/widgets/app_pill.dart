@@ -9,12 +9,7 @@ class AppPill extends StatelessWidget {
   final Color? color;
   final Color? textColor;
 
-  const AppPill({
-    required this.text,
-    this.color,
-    this.textColor,
-    super.key,
-  });
+  const AppPill({required this.text, this.color, this.textColor, super.key});
 
   @override
   Widget build(BuildContext context) {

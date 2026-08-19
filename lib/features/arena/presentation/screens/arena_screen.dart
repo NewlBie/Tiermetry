@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
@@ -8,6 +9,8 @@ import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_empty_state.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_search_hero.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
@@ -33,7 +36,6 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
   final _searchController = TextEditingController();
   late final ScrollController _scrollCtrl;
 
-  String _query = '';
   String _selectedActivity = 'All';
 
   static const List<_ActivityChoice> _activityChoices = [
@@ -77,31 +79,18 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
   }
 
   void _onSearchChanged() {
-    setState(() => _query = _searchController.text.trim().toLowerCase());
+    _arenaCtrl.search(_searchController.text.trim());
   }
 
-  List<ArenaEntity> _filteredArenas(List<ArenaEntity> arenas) {
-    return arenas.where((arena) {
-        final matchesQuery =
-            _query.isEmpty ||
-            arena.name.toLowerCase().contains(_query) ||
-            arena.location.toLowerCase().contains(_query) ||
-            arena.activityLabel.toLowerCase().contains(_query);
+  void _onActivityChanged(String label) {
+    setState(() => _selectedActivity = label);
+    _arenaCtrl.setActivity(label);
+  }
 
-        final matchesActivity =
-            _selectedActivity == 'All' ||
-            (_selectedActivity == 'Gaming cafes' &&
-                arena.activity == ArenaActivity.gaming) ||
-            (_selectedActivity == 'Turfs' &&
-                arena.activity == ArenaActivity.recreational) ||
-            (_selectedActivity == 'Paintball' &&
-                arena.activity == ArenaActivity.arcade) ||
-            (_selectedActivity == 'Karting' &&
-                arena.activity == ArenaActivity.recreational);
-
-        return matchesQuery && matchesActivity;
-      }).toList()
-      ..sort((a, b) => b.rating.compareTo(a.rating));
+  void _onClearAll() {
+    _searchController.clear();
+    setState(() => _selectedActivity = 'All');
+    _arenaCtrl.clearFilters();
   }
 
   void _openAllArenas() {
@@ -132,40 +121,204 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
       body: Stack(
         children: [
           const ArenaBackdrop(),
-          CustomScrollView(
-            controller: _scrollCtrl,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    TiermetrySpacing.screenPadding,
-                    topPad + 120,
-                    TiermetrySpacing.screenPadding,
-                    TiermetrySpacing.lg,
-                  ),
-                  child: const ArenaGreeting(),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: AppSearchHero(
-                      controller: _searchController,
-                      hintText: 'Search gaming cafes, turfs, paintball...',
-                      onClear: _query.isEmpty ? null : _searchController.clear,
+          RefreshIndicator(
+            onRefresh: () => _arenaCtrl.loadArenas(isRefresh: true),
+            backgroundColor: TiermetryColors.surface,
+            color: TiermetryColors.accentNeonGreen,
+            edgeOffset: topPad + TiermetrySpacing.topBarHeight,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels >=
+                        scrollInfo.metrics.maxScrollExtent - 200 &&
+                    !_arenaCtrl.isLoadingMore) {
+                  _arenaCtrl.loadArenas();
+                }
+                return false;
+              },
+              child: ListenableBuilder(
+                listenable: _arenaCtrl,
+                builder: (context, _) {
+                  final arenas = _arenaCtrl.arenas;
+                  final featured = [...arenas]
+                    ..sort((a, b) => b.rating.compareTo(a.rating));
+
+                  return SilkyCustomScrollView(
+                    controller: _scrollCtrl,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
                     ),
-                  ),
-                ),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            TiermetrySpacing.screenPadding,
+                            topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
+                            TiermetrySpacing.screenPadding,
+                            TiermetrySpacing.lg,
+                          ),
+                          child: const ArenaGreeting(),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: RepaintBoundary(
+                          child: Padding(
+                            padding: TiermetrySpacing.pagePadding,
+                            child: AppSearchHero(
+                              controller: _searchController,
+                              hintText:
+                                  'Search gaming cafes, turfs, paintball...',
+                              onClear:
+                                  _searchController.text.isEmpty
+                                      ? null
+                                      : _searchController.clear,
+                            ),
+                          ),
+                        ),
+                      ),
+                      _buildActivityStrip(),
+
+                      // Top Picks Section
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: TiermetrySpacing.sectionGap),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: SectionHeader(
+                            title: 'Top picks this week',
+                            onViewMore: null,
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: TiermetrySpacing.headerToContent,
+                        ),
+                      ),
+
+                      if (featured.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: SizedBox(
+                            height: 286,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              padding: TiermetrySpacing.listPadding,
+                              itemCount:
+                                  featured.length > 5 ? 5 : featured.length,
+                              separatorBuilder:
+                                  (_, __) => const SizedBox(
+                                    width: TiermetrySpacing.cardGap,
+                                  ),
+                              itemBuilder: (context, index) {
+                                return SizedBox(
+                                  width: 320,
+                                  child: ArenaCard(arena: featured[index]),
+                                );
+                              },
+                            ),
+                          ),
+                        )
+                      else if (!_arenaCtrl.isLoading)
+                        const SliverToBoxAdapter(
+                          child: AppEmptyState(message: 'No top picks found.'),
+                        ),
+
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: TiermetrySpacing.sectionGap),
+                      ),
+
+                      // Main Venue Section Header
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: SectionHeader(
+                            title:
+                                _arenaCtrl.isLoading
+                                    ? 'Searching...'
+                                    : 'Venues',
+                            onViewMore: _openAllArenas,
+                          ),
+                        ),
+                      ),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: TiermetrySpacing.headerToContent,
+                        ),
+                      ),
+
+                      if (_arenaCtrl.isLoading && arenas.isEmpty)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.only(top: 60),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                      else if (_arenaCtrl.error != null && arenas.isEmpty)
+                        SliverToBoxAdapter(
+                          child: AppErrorState(
+                            message: _arenaCtrl.error!,
+                            onRetry:
+                                () => _arenaCtrl.loadArenas(isRefresh: true),
+                          ),
+                        )
+                      else if (arenas.isEmpty)
+                        SliverToBoxAdapter(
+                          child: AppEmptyState(
+                            message: 'No matching places found.',
+                            onAction: _onClearAll,
+                            actionLabel: 'Clear Filters',
+                          ),
+                        )
+                      else
+                        SliverPadding(
+                          padding: TiermetrySpacing.pagePadding,
+                          sliver: SliverList.builder(
+                            itemCount: arenas.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(
+                                  bottom: TiermetrySpacing.md,
+                                ),
+                                child: _VenueResultTile(
+                                  arena: arenas[index],
+                                  onTap: () => _openArena(arenas[index]),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+
+                      if (_arenaCtrl.isLoadingMore)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      const SliverToBoxAdapter(
+                        child: SizedBox(height: TiermetrySpacing.sectionGap),
+                      ),
+                      _buildSponsoredSection(),
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: TiermetrySpacing.bottomSafeArea,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              _buildActivityStrip(),
-              _buildVenueSections(),
-              _buildSponsoredSection(),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: TiermetrySpacing.bottomSafeArea),
-              ),
-            ],
+            ),
           ),
           ScrollGradientOverlay(scrollController: _scrollCtrl),
         ],
@@ -182,8 +335,7 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
             const SizedBox(height: TiermetrySpacing.xl),
             Padding(
               padding: TiermetrySpacing.pagePadding,
-              child: Text(
-                'Browse by activity',
+              child: Text(('Browse by activity').toUpperCase(),
                 style: TiermetryTypography.title(color: TiermetryColors.white),
               ),
             ),
@@ -207,9 +359,7 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                     child: _ActivityCapsule(
                       choice: choice,
                       isSelected: _selectedActivity == choice.label,
-                      onTap:
-                          () =>
-                              setState(() => _selectedActivity = choice.label),
+                      onTap: () => _onActivityChanged(choice.label),
                     ),
                   );
                 },
@@ -219,110 +369,6 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildVenueSections() {
-    return ListenableBuilder(
-      listenable: _arenaCtrl,
-      builder: (context, _) {
-        if (_arenaCtrl.isLoading) {
-          return const SliverToBoxAdapter(
-            child: Center(
-              child: CircularProgressIndicator(color: TiermetryColors.white),
-            ),
-          );
-        }
-
-        final arenas = _arenaCtrl.arenas;
-        final featured = [...arenas]
-          ..sort((a, b) => b.rating.compareTo(a.rating));
-        final places = _filteredArenas(arenas);
-        final hasActiveSearch = _query.isNotEmpty || _selectedActivity != 'All';
-
-        return SliverList.list(
-          children: [
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: SectionHeader(
-                      title:
-                          hasActiveSearch
-                              ? 'Best matches'
-                              : 'Recommended near you',
-                      onViewMore: _openAllArenas,
-                    ),
-                  ),
-                  const SizedBox(height: TiermetrySpacing.headerToContent),
-                  places.isEmpty
-                      ? const AppEmptyState(message: 'No matching places found.')
-                      : Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: Column(
-                          children:
-                              places
-                                  .take(3)
-                                  .map(
-                                    (arena) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: TiermetrySpacing.md,
-                                      ),
-                                      child: _VenueResultTile(
-                                        arena: arena,
-                                        onTap: () => _openArena(arena),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                  const SizedBox(height: TiermetrySpacing.sectionGap),
-                ],
-              ),
-            ),
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: SectionHeader(
-                      title: 'Top picks this week',
-                      onViewMore: _openAllArenas,
-                    ),
-                  ),
-                  const SizedBox(height: TiermetrySpacing.headerToContent),
-                  featured.isEmpty
-                      ? const AppEmptyState(message: 'No top picks found.')
-                      : SizedBox(
-                        height: 286,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          padding: TiermetrySpacing.listPadding,
-                          itemCount: featured.length,
-                          separatorBuilder:
-                              (_, __) => const SizedBox(
-                                width: TiermetrySpacing.cardGap,
-                              ),
-                          itemBuilder: (context, index) {
-                            return SizedBox(
-                              width: 320,
-                              child: ArenaCard(arena: featured[index]),
-                            );
-                          },
-                        ),
-                      ),
-                  const SizedBox(height: TiermetrySpacing.sectionGap),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -385,10 +431,7 @@ class _ActivityCapsule extends StatelessWidget {
         border:
             isSelected
                 ? Border.all(color: primaryColor, width: 1.5)
-                : Border.all(
-                  color: TiermetryColors.cardBorder,
-                  width: 1,
-                ),
+                : Border.all(color: TiermetryColors.cardBorder, width: 1),
         shadows: TiermetryShadows.capsule,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -398,7 +441,9 @@ class _ActivityCapsule extends StatelessWidget {
               height: 56,
               decoration: BoxDecoration(
                 color: primaryColor,
-                borderRadius: BorderRadius.circular(isSelected ? 28 : TiermetryRadii.md),
+                borderRadius: BorderRadius.circular(
+                  isSelected ? 28 : TiermetryRadii.md,
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: primaryColor.withValues(
@@ -465,14 +510,18 @@ class _SponsoredVenueTile extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, TiermetrySpacing.lg, 14, TiermetrySpacing.lg),
+              padding: const EdgeInsets.fromLTRB(
+                0,
+                TiermetrySpacing.lg,
+                14,
+                TiermetrySpacing.lg,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppPill(text: data.label),
                   const Spacer(),
-                  Text(
-                    data.title,
+                  Text((data.title).toUpperCase(),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
@@ -520,12 +569,7 @@ class _VenueResultTile extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                arena.image,
-                width: 82,
-                height: 82,
-                fit: BoxFit.cover,
-              ),
+              child: AppImage(imagePath: arena.image, width: 82, height: 82),
             ),
             const SizedBox(width: TiermetrySpacing.md),
             Expanded(
@@ -535,8 +579,7 @@ class _VenueResultTile extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          arena.name,
+                        child: Text((arena.name).toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TiermetryTypography.title(

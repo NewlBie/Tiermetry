@@ -63,21 +63,20 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         FittedBox(
           fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            currentGreeting,
-            style: TiermetryTypography.display(
-              color: Colors.white,
-            ),
+          alignment: Alignment.center,
+          child: Text((currentGreeting).toUpperCase(),
+            textAlign: TextAlign.center,
+            style: TiermetryTypography.display(color: Colors.white),
           ),
         ),
         const SizedBox(height: TiermetrySpacing.sm),
         Text(
-          '${widget.userName}, pick your scene — we’ll handle the rest.',
+          'Lock in your drop zone. We’ll secure the coordinates.',
+          textAlign: TextAlign.center,
           style: TiermetryTypography.caption(
             color: Colors.white.withValues(alpha: 0.62),
             fontSize: 13,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
@@ -55,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> with RefreshRateMixin {
       body: Stack(
         children: [
           const HomeBackdrop(),
-          CustomScrollView(
+          SilkyCustomScrollView(
             controller: _scrollCtrl,
             physics: const BouncingScrollPhysics(),
             slivers: [
@@ -64,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with RefreshRateMixin {
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     TiermetrySpacing.screenPadding,
-                    topPad + 120,
+                    topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
                     TiermetrySpacing.screenPadding,
                     TiermetrySpacing.xl,
                   ),
@@ -114,16 +115,19 @@ class _HomeScreenState extends State<HomeScreen> with RefreshRateMixin {
                     children: [
                       Padding(
                         padding: TiermetrySpacing.pagePadding,
-                        child: Text(
-                          'Trending Activities',
-                          style: TiermetryTypography.title(color: TiermetryColors.white),
+                        child: Text(('Trending Activities').toUpperCase(),
+                          style: TiermetryTypography.title(
+                            color: TiermetryColors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       ListenableBuilder(
-                        listenable: HomeController.instance.trendingActivityCtrl,
+                        listenable:
+                            HomeController.instance.trendingActivityCtrl,
                         builder: (context, _) {
-                          final ctrl = HomeController.instance.trendingActivityCtrl;
+                          final ctrl =
+                              HomeController.instance.trendingActivityCtrl;
                           return TrendingActivitiesSection(
                             activities: ctrl.activities,
                             isLoading: ctrl.isLoading,

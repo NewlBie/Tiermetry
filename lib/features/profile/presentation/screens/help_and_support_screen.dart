@@ -12,7 +12,8 @@ class HelpAndSupportScreen extends StatefulWidget {
   State<HelpAndSupportScreen> createState() => _HelpAndSupportScreenState();
 }
 
-class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with RefreshRateMixin {
+class _HelpAndSupportScreenState extends State<HelpAndSupportScreen>
+    with RefreshRateMixin {
   Future<void> _sendEmail() async {
     final Email email = Email(
       body: '',
@@ -32,7 +33,9 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
   }
 
   Future<void> _openWhatsApp() async {
-    final Uri url = Uri.parse('https://wa.me/919999999999?text=Hello%20Tiermetry%20Support');
+    final Uri url = Uri.parse(
+      'https://wa.me/919999999999?text=Hello%20Tiermetry%20Support',
+    );
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch WhatsApp');
     }
@@ -44,12 +47,14 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
       backgroundColor: Colors.black,
       navigationBar: CupertinoNavigationBar(
         backgroundColor: Colors.transparent,
-        middle: Text('Help & Support',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            )),
+        middle: Text(
+          'Help & Support',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
         border: null,
       ),
       child: SafeArea(
@@ -58,18 +63,19 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("We're here to help!",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  )),
+              Text(
+                "We're here to help!",
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 12),
-              Text('Find answers or get in touch with our support team.',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white60,
-                  )),
+              Text(
+                'Find answers or get in touch with our support team.',
+                style: GoogleFonts.inter(fontSize: 14, color: Colors.white60),
+              ),
               const SizedBox(height: 30),
               _supportTile(
                 context,
@@ -94,12 +100,11 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
               ),
               const Spacer(),
               Center(
-                child: Text('Response time: under 24 hours',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white24,
-                    )),
-              )
+                child: Text(
+                  'Response time: under 24 hours',
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.white24),
+                ),
+              ),
             ],
           ),
         ),
@@ -107,8 +112,13 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
     );
   }
 
-  Widget _supportTile(BuildContext context,
-      {required IconData icon, required String title, required String subtitle, required VoidCallback onTap}) {
+  Widget _supportTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -127,21 +137,25 @@ class _HelpAndSupportScreenState extends State<HelpAndSupportScreen> with Refres
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      )),
+                  Text(
+                    title,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white54,
-                      )),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: Colors.white54,
+                    ),
+                  ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

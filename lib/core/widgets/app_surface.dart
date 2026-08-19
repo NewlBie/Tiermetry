@@ -4,7 +4,7 @@ import '../theme/radii.dart';
 import '../theme/shadows.dart';
 
 /// A reusable decorative container representing the app's visual language.
-/// 
+///
 /// It encapsulates the surface color, subtle border, radius, and shadow.
 /// Content is automatically clipped to the border radius.
 class AppSurface extends StatelessWidget {
@@ -17,7 +17,7 @@ class AppSurface extends StatelessWidget {
   final double? width;
   final double? height;
   final Clip clipBehavior;
-  
+
   /// If provided, changes to the surface properties will be animated.
   final Duration? duration;
   final Curve curve;
@@ -43,29 +43,26 @@ class AppSurface extends StatelessWidget {
     final decoration = BoxDecoration(
       color: color ?? TiermetryColors.surface,
       borderRadius: BorderRadius.circular(effectiveRadius),
-      border: border ??
-          Border.all(
-            color: TiermetryColors.cardBorder,
-            width: 1,
-          ),
+      border: border ?? Border.all(color: TiermetryColors.cardBorder, width: 1),
       boxShadow: shadows ?? TiermetryShadows.card,
     );
 
-    final container = duration != null
-        ? AnimatedContainer(
-            duration: duration!,
-            curve: curve,
-            width: width,
-            height: height,
-            decoration: decoration,
-            child: _buildClippedContent(effectiveRadius),
-          )
-        : Container(
-            width: width,
-            height: height,
-            decoration: decoration,
-            child: _buildClippedContent(effectiveRadius),
-          );
+    final container =
+        duration != null
+            ? AnimatedContainer(
+              duration: duration!,
+              curve: curve,
+              width: width,
+              height: height,
+              decoration: decoration,
+              child: _buildClippedContent(effectiveRadius),
+            )
+            : Container(
+              width: width,
+              height: height,
+              decoration: decoration,
+              child: _buildClippedContent(effectiveRadius),
+            );
 
     return container;
   }
@@ -74,10 +71,7 @@ class AppSurface extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       clipBehavior: clipBehavior,
-      child: Padding(
-        padding: padding ?? EdgeInsets.zero,
-        child: child,
-      ),
+      child: Padding(padding: padding ?? EdgeInsets.zero, child: child),
     );
   }
 }

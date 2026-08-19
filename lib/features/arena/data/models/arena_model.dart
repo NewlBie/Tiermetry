@@ -69,15 +69,20 @@ class ArenaDeviceModel extends ArenaDevice {
 }
 
 class ArenaDeviceCatModel extends ArenaDeviceCat {
-  ArenaDeviceCatModel({required super.id, required super.name, required super.units});
+  ArenaDeviceCatModel({
+    required super.id,
+    required super.name,
+    required super.units,
+  });
 
   factory ArenaDeviceCatModel.fromJson(Map<String, dynamic> json) {
     return ArenaDeviceCatModel(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      units: (json['service_units'] as List? ?? [])
-          .map((e) => ArenaDeviceModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      units:
+          (json['service_units'] as List? ?? [])
+              .map((e) => ArenaDeviceModel.fromJson(e as Map<String, dynamic>))
+              .toList(),
     );
   }
 }
@@ -165,9 +170,12 @@ class ArenaDetailsModel extends ArenaDetailsEntity {
       internet: json['internet'] as String? ?? '',
       amenity: json['amenity'] as String? ?? '',
       specs: specs,
-      devices: (json['services'] as List? ?? [])
-          .map((e) => ArenaDeviceCatModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      devices:
+          (json['services'] as List? ?? [])
+              .map(
+                (e) => ArenaDeviceCatModel.fromJson(e as Map<String, dynamic>),
+              )
+              .toList(),
       rules: List<String>.from((json['rules'] as Iterable?) ?? []),
       contactPhone: json['contact_phone'] as String? ?? '',
       hasAC: json['has_ac'] as bool? ?? false,

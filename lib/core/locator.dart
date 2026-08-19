@@ -46,15 +46,30 @@ class Locator {
   late final SkillRepo skillRepo = SkillRepoImpl(SkillSourceImpl());
   late final AuthRepo authRepo = AuthRepoImpl(supabase);
   late final ApiService apiService = MockApiService();
-  
+
   // Payment
-  late final PaymentProvider paymentProvider = DevelopmentPaymentProvider();
-  late final PaymentRepo paymentRepo = PaymentRepoImpl(supabase, paymentProvider);
+  late final PaymentProvider paymentProvider = _initPaymentProvider();
+  late final PaymentRepo paymentRepo = PaymentRepoImpl(
+    supabase,
+    paymentProvider,
+  );
+
+  PaymentProvider _initPaymentProvider() {
+    const isProd = bool.fromEnvironment('IS_PROD', defaultValue: false);
+    if (isProd) {
+      // Future production provider (Cashfree/Razorpay) will be initialized here.
+      // For now, we block production use of the development provider.
+      throw UnimplementedError('Production Payment Provider not configured.');
+    }
+    return DevelopmentPaymentProvider();
+  }
 
   // UseCases
   late final GetArenasUC getArenasUC = GetArenasUC(arenaRepo);
   late final GetArenaDetailsUC getArenaDetailsUC = GetArenaDetailsUC(arenaRepo);
-  late final GetAvailableUnitsUC getAvailableUnitsUC = GetAvailableUnitsUC(arenaRepo);
+  late final GetAvailableUnitsUC getAvailableUnitsUC = GetAvailableUnitsUC(
+    arenaRepo,
+  );
 
   // Controllers
   late final ArenaCtrl arenaCtrl = ArenaCtrl(

@@ -19,10 +19,10 @@ class DevelopmentPaymentProvider implements PaymentProvider {
   }) async {
     // Simulate network delay
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    
+
     final orderId = 'DEV_ORDER_${DateTime.now().millisecondsSinceEpoch}';
     _orderStatus[orderId] = PaymentStatus.created;
-    
+
     return PaymentOrder(
       orderId: orderId,
       amount: amount,

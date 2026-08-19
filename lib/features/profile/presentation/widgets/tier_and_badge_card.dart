@@ -3,8 +3,6 @@ import 'package:tiermetry/core/theme/app_typography.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/widgets/custom_progress_bar.dart';
 
-
-
 class TierAndBadgeCard extends StatelessWidget {
   final String tierName;
   final double tierProgress;
@@ -15,7 +13,14 @@ class TierAndBadgeCard extends StatelessWidget {
   final List<Color> badgeColors;
 
   const TierAndBadgeCard({
-    required this.tierName, required this.tierProgress, required this.openedBadges, required this.totalBadges, required this.totalUniqueBadges, required this.badgeTitles, required this.badgeColors, super.key,
+    required this.tierName,
+    required this.tierProgress,
+    required this.openedBadges,
+    required this.totalBadges,
+    required this.totalUniqueBadges,
+    required this.badgeTitles,
+    required this.badgeColors,
+    super.key,
   });
 
   @override
@@ -30,7 +35,7 @@ class TierAndBadgeCard extends StatelessWidget {
             color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 18,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -62,15 +67,18 @@ class TierAndBadgeCard extends StatelessWidget {
           _buildSectionHeader('Badges', trailing: 'Open all'),
           const SizedBox(height: 14),
 
-          Text('Opened $openedBadges/$totalBadges badges', style: AppTypography.lg),
+          Text(
+            'Opened $openedBadges/$totalBadges badges',
+            style: AppTypography.lg,
+          ),
           const SizedBox(height: 4),
-          Text('From $totalUniqueBadges unique badges', style: AppTypography.subtitle),
+          Text(
+            'From $totalUniqueBadges unique badges',
+            style: AppTypography.subtitle,
+          ),
           const SizedBox(height: 18),
 
-          _BadgeList(
-            badgeTitles: badgeTitles,
-            badgeColors: badgeColors,
-          )
+          _BadgeList(badgeTitles: badgeTitles, badgeColors: badgeColors),
         ],
       ),
     );
@@ -81,8 +89,7 @@ class TierAndBadgeCard extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: AppTypography.sm),
-        if (trailing != null)
-          Text(trailing, style: AppTypography.subtitle),
+        if (trailing != null) Text(trailing, style: AppTypography.subtitle),
       ],
     );
   }
@@ -147,7 +154,9 @@ class _BadgeCard extends StatelessWidget {
             title,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.xs.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+            style: AppTypography.xs.copyWith(
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ),
@@ -159,10 +168,7 @@ class _BadgeList extends StatelessWidget {
   final List<String> badgeTitles;
   final List<Color> badgeColors;
 
-  const _BadgeList({
-    required this.badgeTitles,
-    required this.badgeColors,
-  });
+  const _BadgeList({required this.badgeTitles, required this.badgeColors});
 
   @override
   Widget build(BuildContext context) {
@@ -208,7 +214,7 @@ class _BadgeList extends StatelessWidget {
           ),
         ),
 
-// Right Fade
+        // Right Fade
         Positioned(
           right: 0,
           top: 0,
@@ -233,4 +239,3 @@ class _BadgeList extends StatelessWidget {
     );
   }
 }
-

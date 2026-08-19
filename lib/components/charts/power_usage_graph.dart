@@ -137,7 +137,9 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
                         show: true,
                         gradient: LinearGradient(
                           colors: [
-                            TiermetryColors.gradientStart.withValues(alpha: 0.3),
+                            TiermetryColors.gradientStart.withValues(
+                              alpha: 0.3,
+                            ),
                             TiermetryColors.gradientEnd.withValues(alpha: 0.1),
                           ],
                           begin: Alignment.topCenter,
@@ -152,7 +154,10 @@ class _BalancePowerUsageGraphState extends State<BalancePowerUsageGraph> {
           ),
           const SizedBox(height: 8),
           Center(
-            child: Text('Balanced Life Progress', style: AppTypography.subtitle),
+            child: Text(
+              'Balanced Life Progress',
+              style: AppTypography.subtitle,
+            ),
           ),
         ],
       ),

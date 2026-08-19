@@ -43,14 +43,18 @@ class _SignupScreenState extends State<SignupScreen> {
 
     await _authCtrl.signUp(email, password, name);
     if (_authCtrl.error != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_authCtrl.error!)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(_authCtrl.error!)));
     } else if (mounted) {
-       // On success, Supabase might send a confirmation email or login immediately depending on config
-       // If confirmation is required, show a message.
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account created! Please check your email for confirmation.')),
+      // On success, Supabase might send a confirmation email or login immediately depending on config
+      // If confirmation is required, show a message.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Account created! Please check your email for confirmation.',
+          ),
+        ),
       );
       Navigator.pop(context);
     }
@@ -78,8 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'Create Account',
+                  Text(('Create Account').toUpperCase(),
                     textAlign: TextAlign.center,
                     style: TiermetryTypography.display(
                       color: TiermetryColors.white,
@@ -113,7 +116,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         const SizedBox(height: 32),
                         if (_authCtrl.isLoading)
-                          const Center(child: CircularProgressIndicator(color: TiermetryColors.accentNeonGreen))
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: TiermetryColors.accentNeonGreen,
+                            ),
+                          )
                         else
                           TiermetryPrimaryButton(
                             text: 'Create Account',
@@ -143,7 +150,9 @@ class _SignupScreenState extends State<SignupScreen> {
       children: [
         Text(
           label,
-          style: TiermetryTypography.label(color: TiermetryColors.white.withValues(alpha: 0.8)),
+          style: TiermetryTypography.label(
+            color: TiermetryColors.white.withValues(alpha: 0.8),
+          ),
         ),
         const SizedBox(height: 8),
         TextField(
@@ -153,14 +162,19 @@ class _SignupScreenState extends State<SignupScreen> {
           style: const TextStyle(color: TiermetryColors.white),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: TiermetryColors.white.withValues(alpha: 0.3)),
+            hintStyle: TextStyle(
+              color: TiermetryColors.white.withValues(alpha: 0.3),
+            ),
             filled: true,
             fillColor: TiermetryColors.surfaceElement,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(TiermetryRadii.sm),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],

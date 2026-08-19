@@ -40,9 +40,13 @@ class EventModel extends EventEntity {
       location: json['location'] as String? ?? 'Online',
       points: json['points'] as int? ?? 0,
       tags: List<String>.from(json['tags'] as List? ?? []),
-      perks: (json['perks'] as List? ?? [])
-          .map((dynamic p) => EventPerkModel.fromJson(p as Map<String, dynamic>))
-          .toList(),
+      perks:
+          (json['perks'] as List? ?? [])
+              .map(
+                (dynamic p) =>
+                    EventPerkModel.fromJson(p as Map<String, dynamic>),
+              )
+              .toList(),
       enrollments: json['enrollments'] as int? ?? 0,
     );
   }

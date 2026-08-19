@@ -22,7 +22,8 @@ class EventDetailsScreen extends StatefulWidget {
   State<EventDetailsScreen> createState() => _EventDetailsScreenState();
 }
 
-class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRateMixin {
+class _EventDetailsScreenState extends State<EventDetailsScreen>
+    with RefreshRateMixin {
   final _eventCtrl = locator.eventCtrl;
   bool _isRegistered = false;
   bool _isLoadingStatus = true;
@@ -52,14 +53,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
 
   Future<void> _handleRegister() async {
     if (!widget.event.isRegistrationOpen) {
-       ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Registration is currently closed.')),
       );
       return;
     }
 
     if (widget.event.isFull) {
-       ScaffoldMessenger.of(context).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('This event is already full.')),
       );
       return;
@@ -97,25 +98,31 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
           // Background image
           Hero(
             tag: event.id,
-            child: event.image != null && !event.image!.startsWith('assets/')
-              ? Image.network(
-                  event.image!,
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 300,
-                    width: double.infinity,
-                    color: TiermetryColors.surfaceUnderlay,
-                    child: const Icon(Icons.broken_image, color: Colors.white24, size: 50),
-                  ),
-                )
-              : Image.asset(
-                  event.image ?? 'assets/Hackathon.jpg',
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+            child:
+                event.image != null && !event.image!.startsWith('assets/')
+                    ? Image.network(
+                      event.image!,
+                      height: 300,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder:
+                          (context, error, stackTrace) => Container(
+                            height: 300,
+                            width: double.infinity,
+                            color: TiermetryColors.surfaceUnderlay,
+                            child: const Icon(
+                              Icons.broken_image,
+                              color: Colors.white24,
+                              size: 50,
+                            ),
+                          ),
+                    )
+                    : Image.asset(
+                      event.image ?? 'assets/Hackathon.jpg',
+                      height: 300,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
           ),
 
           // Back button
@@ -125,7 +132,10 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
             child: CircleAvatar(
               backgroundColor: Colors.transparent,
               child: IconButton(
-                icon: const Icon(Icons.arrow_back, color: TiermetryColors.white),
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: TiermetryColors.white,
+                ),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -138,9 +148,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
             maxChildSize: 0.95,
             builder: (context, scrollController) {
               return Container(
-                decoration: const BoxDecoration(
-                  color: TiermetryColors.surface,
-                ),
+                decoration: const BoxDecoration(color: TiermetryColors.surface),
                 child: Column(
                   children: [
                     // ✅ Top SVG
@@ -148,17 +156,22 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                       'assets/ticket_cut.svg',
                       width: MediaQuery.of(context).size.width,
                       fit: BoxFit.fitWidth,
-                      colorFilter: const ColorFilter.mode(TiermetryColors.primary, BlendMode.srcIn),
+                      colorFilter: const ColorFilter.mode(
+                        TiermetryColors.primary,
+                        BlendMode.srcIn,
+                      ),
                     ),
 
                     // ✅ Scrollable Content
                     Expanded(
                       child: ListView(
                         controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 18,
+                        ),
                         children: [
-                          Text(
-                            event.title,
+                          Text((event.title).toUpperCase(),
                             style: TiermetryTypography.title(
                               fontSize: 26,
                               color: TiermetryColors.textPrimary,
@@ -175,19 +188,40 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                           const SizedBox(height: 20),
 
                           // Info rows
-                          _buildInfoRow(Icons.calendar_today, 'Date', DateFormat('EEEE, MMM d, y').format(event.startTime)),
-                          _buildInfoRow(Icons.access_time, 'Time', '${DateFormat('hh:mm a').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.endTime)}'),
-                          _buildInfoRow(Icons.location_on_outlined, 'Location', event.location),
-                          _buildInfoRow(Icons.monetization_on_outlined, 'Cost', event.cost),
-                          _buildInfoRow(Icons.stars, 'Points', '${event.points} pts'),
+                          _buildInfoRow(
+                            Icons.calendar_today,
+                            'Date',
+                            DateFormat(
+                              'EEEE, MMM d, y',
+                            ).format(event.startTime),
+                          ),
+                          _buildInfoRow(
+                            Icons.access_time,
+                            'Time',
+                            '${DateFormat('hh:mm a').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.endTime)}',
+                          ),
+                          _buildInfoRow(
+                            Icons.location_on_outlined,
+                            'Location',
+                            event.location,
+                          ),
+                          _buildInfoRow(
+                            Icons.monetization_on_outlined,
+                            'Cost',
+                            event.cost,
+                          ),
+                          _buildInfoRow(
+                            Icons.stars,
+                            'Points',
+                            '${event.points} pts',
+                          ),
                           const SizedBox(height: 20),
 
                           // 📊 Total Enrollments
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Total Enrollments',
+                              Text(('Total Enrollments').toUpperCase(),
                                 style: TiermetryTypography.titleSmall(
                                   fontSize: 16,
                                   color: TiermetryColors.textPrimary,
@@ -211,11 +245,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                             ],
                           ),
 
-
                           const SizedBox(height: 24),
 
-                          Text(
-                            'Time Remaining',
+                          Text(('Time Remaining').toUpperCase(),
                             style: TiermetryTypography.titleSmall(
                               fontSize: 16,
                               color: TiermetryColors.textPrimary,
@@ -225,8 +257,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                           CountdownTimer(eventDate: event.startTime),
                           const SizedBox(height: 30),
 
-                          Text(
-                            'Event Perks',
+                          Text(('Event Perks').toUpperCase(),
                             style: TiermetryTypography.titleSmall(
                               fontSize: 16,
                               color: TiermetryColors.textPrimary,
@@ -235,21 +266,27 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                           const SizedBox(height: 12),
                           event.perks.isEmpty
                               ? Text(
-                                  'No specific perks listed for this event.',
-                                  style: TiermetryTypography.bodySmall(color: TiermetryColors.textSecondary),
-                                )
-                              : Wrap(
-                                  spacing: 12,
-                                  runSpacing: 12,
-                                  children: event.perks.map((perk) => _perkTile(
-                                    _getIconData(perk.icon), 
-                                    perk.name,
-                                  )).toList(),
+                                'No specific perks listed for this event.',
+                                style: TiermetryTypography.bodySmall(
+                                  color: TiermetryColors.textSecondary,
                                 ),
+                              )
+                              : Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children:
+                                    event.perks
+                                        .map(
+                                          (perk) => _perkTile(
+                                            _getIconData(perk.icon),
+                                            perk.name,
+                                          ),
+                                        )
+                                        .toList(),
+                              ),
                           const SizedBox(height: 24),
 
-                          Text(
-                            'Description',
+                          Text(('Description').toUpperCase(),
                             style: TiermetryTypography.titleSmall(
                               fontSize: 16,
                               color: TiermetryColors.textPrimary,
@@ -293,7 +330,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
                 ),
               );
             },
-          )
+          ),
         ],
       ),
     );
@@ -301,7 +338,9 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
 
   Widget _buildCTAButton(EventEntity event) {
     if (_isLoadingStatus) {
-      return const Center(child: CircularProgressIndicator(color: TiermetryColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: TiermetryColors.primary),
+      );
     }
 
     if (_isRegistered) {
@@ -332,7 +371,8 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
     if (!isOpen) {
       final now = DateTime.now();
       if (now.isBefore(event.registrationStart)) {
-        label = 'Registration Opens ${DateFormat('MMM d').format(event.registrationStart)}';
+        label =
+            'Registration Opens ${DateFormat('MMM d').format(event.registrationStart)}';
       } else {
         label = 'Registration Closed';
       }
@@ -341,28 +381,39 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
     }
 
     return ElevatedButton(
-      onPressed: (isOpen && !isFull && !_isRegistering) ? _handleRegister : null,
+      onPressed:
+          (isOpen && !isFull && !_isRegistering) ? _handleRegister : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor: isOpen && !isFull ? TiermetryColors.primary : TiermetryColors.surfaceElement,
+        backgroundColor:
+            isOpen && !isFull
+                ? TiermetryColors.primary
+                : TiermetryColors.surfaceElement,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
         ),
         padding: const EdgeInsets.symmetric(vertical: 14),
         minimumSize: const Size.fromHeight(50),
       ),
-      child: _isRegistering
-          ? const SizedBox(
-              height: 20,
-              width: 20,
-              child: CircularProgressIndicator(color: TiermetryColors.white, strokeWidth: 2),
-            )
-          : Text(
-              label,
-              style: TiermetryTypography.action(
-                fontSize: 15,
-                color: isOpen && !isFull ? TiermetryColors.white : TiermetryColors.white.withValues(alpha: 0.5),
+      child:
+          _isRegistering
+              ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(
+                  color: TiermetryColors.white,
+                  strokeWidth: 2,
+                ),
+              )
+              : Text(
+                label,
+                style: TiermetryTypography.action(
+                  fontSize: 15,
+                  color:
+                      isOpen && !isFull
+                          ? TiermetryColors.white
+                          : TiermetryColors.white.withValues(alpha: 0.5),
+                ),
               ),
-            ),
     );
   }
 
@@ -419,15 +470,24 @@ class _EventDetailsScreenState extends State<EventDetailsScreen> with RefreshRat
 
   IconData _getIconData(String iconName) {
     switch (iconName) {
-      case 'fastfood': return Icons.fastfood;
-      case 'stars': return Icons.stars;
-      case 'emoji_events': return Icons.emoji_events;
-      case 'verified_user': return Icons.verified_user;
-      case 'chair': return Icons.chair;
-      case 'people': return Icons.people;
-      case 'wifi': return Icons.wifi;
-      case 'notifications': return Icons.notifications;
-      default: return Icons.star_border_rounded;
+      case 'fastfood':
+        return Icons.fastfood;
+      case 'stars':
+        return Icons.stars;
+      case 'emoji_events':
+        return Icons.emoji_events;
+      case 'verified_user':
+        return Icons.verified_user;
+      case 'chair':
+        return Icons.chair;
+      case 'people':
+        return Icons.people;
+      case 'wifi':
+        return Icons.wifi;
+      case 'notifications':
+        return Icons.notifications;
+      default:
+        return Icons.star_border_rounded;
     }
   }
 }
@@ -471,8 +531,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final hours = _timeLeft.inHours % 24;
     final minutes = _timeLeft.inMinutes % 60;
 
-    return Text(
-      '$days Days : $hours Hrs : $minutes Min',
+    return Text(('$days Days : $hours Hrs : $minutes Min').toUpperCase(),
       style: TiermetryTypography.titleSmall(
         fontSize: 20,
         color: TiermetryColors.textSecondary,
@@ -521,8 +580,7 @@ class _RollingDigitState extends State<RollingDigit> {
               children: List.generate(10, (i) {
                 return Positioned(
                   top: (i - value) * 40,
-                  child: Text(
-                    '$i',
+                  child: Text(('$i').toUpperCase(),
                     style: TiermetryTypography.title(
                       fontSize: 30,
                       color: TiermetryColors.positive,
@@ -549,12 +607,10 @@ class RollingCounter extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
-      children: digits.map((digit) {
-        return RollingDigit(digit: digit);
-      }).toList(),
+      children:
+          digits.map((digit) {
+            return RollingDigit(digit: digit);
+          }).toList(),
     );
   }
 }
-
-
-
