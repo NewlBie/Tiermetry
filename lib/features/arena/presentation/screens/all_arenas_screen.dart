@@ -7,21 +7,20 @@ import 'package:flutter/services.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_empty_state.dart';
 import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/glass_search_bar.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 import '../../domain/entities/arena_entity.dart';
 import '../widgets/arena_card.dart';
 import '../widgets/filter_sheet.dart';
+import 'arena_details_screen.dart';
 
-// Default filter values for easy comparison and reset
-const double _defaultDistance = 10.0;
-const String _defaultTime = 'Anytime';
-const String _defaultSortBy = 'Popularity';
-
+// Default filter values are now in ArenaFilterResult
 class AllArenasScreen extends StatefulWidget {
   const AllArenasScreen({super.key});
 
@@ -35,19 +34,11 @@ class _AllArenasScreenState extends State<AllArenasScreen>
   final TextEditingController _searchController = TextEditingController();
 
   // Filter state variables
-  double? _selectedDistance = _defaultDistance;
-  int? _selectedPriceTier;
-  String _selectedTime = _defaultTime;
-  ArenaActivity? _selectedType;
-  String _sortBy = _defaultSortBy;
+  ArenaFilterResult _currentFilter = ArenaFilterResult.defaults;
 
   // Helper to check if any filters are active
   bool get _areFiltersActive {
-    return _selectedDistance != _defaultDistance ||
-        _selectedPriceTier != null ||
-        _selectedTime != _defaultTime ||
-        _selectedType != null ||
-        _sortBy != _defaultSortBy;
+    return _currentFilter.hasActiveFilters;
   }
 
   @override
@@ -71,34 +62,26 @@ class _AllArenasScreenState extends State<AllArenasScreen>
 
   void _showFilterSheet() async {
     unawaited(HapticFeedback.lightImpact());
-    final result = await showModalBottomSheet<Map<String, dynamic>>(
+    final result = await showModalBottomSheet<ArenaFilterResult>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder:
-          (_) => FilterSheet(
-            initialDistance: _selectedDistance,
-            initialPrice: _selectedPriceTier,
-            initialTime: _selectedTime,
-            initialType: _selectedType,
-            initialSortBy: _sortBy,
-          ),
+      builder: (_) => FilterSheet(initial: _currentFilter),
     );
 
     if (result != null) {
       setState(() {
-        _selectedDistance = result['distance'] as double?;
-        _selectedPriceTier = result['price'] as int?;
-        _selectedTime = result['time'] as String? ?? _defaultTime;
-        _selectedType = result['type'] as ArenaActivity?;
-        _sortBy = result['sortBy'] as String? ?? _defaultSortBy;
+        _currentFilter = result;
       });
 
       _arenaCtrl.setFilters(
-        maxDistance: _selectedDistance,
-        maxPriceTier: _selectedPriceTier,
-        onlyOpenNow: _selectedTime == 'Open Now',
-        sortBy: _sortBy,
+        maxDistance: result.maxDistance,
+        maxPriceTier: result.maxPriceTier,
+        minRating: result.minRating,
+        platforms: result.platforms,
+        onlyOpenNow: result.onlyOpenNow,
+        hasOffers: result.onlyOffers,
+        sortBy: result.sortBy == ArenaFilterDefaults.sortBy ? null : result.sortBy,
       );
     }
   }
@@ -108,6 +91,37 @@ class _AllArenasScreenState extends State<AllArenasScreen>
     return Scaffold(
       backgroundColor: TiermetryColors.background,
       appBar: _buildAppBar(),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (context) => ArenaDetailsScreen(
+                arena: ArenaEntity(
+                  id: 'mock-test-arena',
+                  name: 'UI Test Arena',
+                  image: 'assets/images/arena_1.jpg',
+                  rating: 4.8,
+                  capacity: 50,
+                  location: 'UI City',
+                  screenCount: 10,
+                  activity: ArenaActivity.gaming,
+                  shortAddress: '123 Testing Lane',
+                  hours: '24/7',
+                  isOpen: true,
+                  distance: 2.5,
+                  priceTier: 2,
+                  isVerified: true,
+                  latitude: 0,
+                  longitude: 0,
+                ),
+              ),
+            ),
+          );
+        },
+        backgroundColor: TiermetryColors.accentNeonGreen,
+        icon: const Icon(Icons.bug_report, color: Colors.black),
+        label: const Text('Test UI', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+      ),
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
@@ -152,18 +166,18 @@ class _AllArenasScreenState extends State<AllArenasScreen>
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Text(('All Arenas').toUpperCase(),
-        style: TiermetryTypography.title(color: Colors.white, fontSize: 22),
+        style: TiermetryTypography.title(color: Colors.white),
       ),
     );
   }
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
       child: Row(
         children: [
           Expanded(child: GlassSearchBar(controller: _searchController)),
-          const SizedBox(width: 12),
+          const SizedBox(width: TiermetrySpacing.md),
           _buildFilterButton(),
         ],
       ),
@@ -206,9 +220,14 @@ class _AllArenasScreenState extends State<AllArenasScreen>
       listenable: _arenaCtrl,
       builder: (context, _) {
         if (_arenaCtrl.isLoading) {
-          return const SliverToBoxAdapter(
-            child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
+          return const SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
+            sliver: SliverToBoxAdapter(
+              child: ShimmerLoadingVerticalList(
+                itemHeight: 240,
+                itemCount: 4,
+                spacing: TiermetrySpacing.cardGap,
+              ),
             ),
           );
         }
@@ -227,20 +246,21 @@ class _AllArenasScreenState extends State<AllArenasScreen>
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 if (index < _arenaCtrl.arenas.length) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
+                    padding: const EdgeInsets.only(bottom: TiermetrySpacing.cardGap),
                     child: ArenaCard(arena: _arenaCtrl.arenas[index]),
                   );
                 }
                 return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Center(
-                    child: CircularProgressIndicator(color: Colors.white),
+                  padding: EdgeInsets.only(bottom: TiermetrySpacing.cardGap),
+                  child: ShimmerLoadingVerticalList(
+                    itemHeight: 240,
+                    itemCount: 1,
                   ),
                 );
               },

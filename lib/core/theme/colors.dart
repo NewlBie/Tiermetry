@@ -7,9 +7,20 @@ class TiermetryColors {
   static const violet200 = Color(0xFF2E26BB);
   static const violet300 = Color(0xFF170C33);
 
-  // Gradient
+  // Gradients
   static const gradientStart = Color(0xFF9733FF);
   static const gradientEnd = Color(0xFF00C6FF); // cyan-blue
+
+  static const brandGradient = RadialGradient(
+    center: Alignment(0.4, 0.6),
+    radius: 1.4,
+    colors: [
+      Color(0xFF823558),
+      Color(0xFFFF7A30),
+      Color(0xFFFFD034),
+    ],
+    stops: [0.25, 0.70, 0.90],
+  );
 
   // Neutrals
   static const white = Color(0xFFFFFFFF);

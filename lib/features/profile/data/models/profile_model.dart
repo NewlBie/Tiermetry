@@ -18,6 +18,11 @@ class ProfileModel extends ProfileEntity {
     required super.wallet,
     super.age,
     super.image,
+    super.username,
+    super.dob,
+    super.platforms = const [],
+    super.interests = const [],
+    super.preferredGames = const [],
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
@@ -33,12 +38,23 @@ class ProfileModel extends ProfileEntity {
               : 'Unknown',
       age: json['age'] as int?,
       image: json['avatar_url'] as String?,
+      username: json['username'] as String?,
+      dob: json['dob'] as String?,
+      platforms: (json['platforms'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      interests: (json['interests'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      preferredGames: (json['preferred_games'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
       tierName: json['tier'] as String? ?? 'Bronze I',
-      tierProgress: (json['tier_progress'] as num?)?.toDouble() ?? 0.0,
+      tierProgress: (json['tier_progress'] as num?)?.toDouble() ?? 0.5, // 50% progress mock
       tiergies: (json['tiergies'] as num?)?.toDouble() ?? 0.0,
-      openedBadges: 0,
-      totalBadges: 10,
-      badges: [],
+      openedBadges: 3, // 3 achieved
+      totalBadges: 5,  // out of 5
+      badges: [
+        BadgeModel(title: 'Early Bird', color: Colors.amber),
+        BadgeModel(title: 'Top Reviewer', color: Colors.blue),
+        BadgeModel(title: 'Event Guru', color: Colors.purple),
+        BadgeModel(title: 'Social Butterfly', color: Colors.green), // Unachieved
+        BadgeModel(title: 'Party Animal', color: Colors.red), // Unachieved
+      ],
       wallet: WalletModel.fromJson({}),
     );
   }

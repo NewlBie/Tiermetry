@@ -10,10 +10,16 @@ import 'package:tiermetry/features/event/presentation/widgets/upcoming_event_car
 class UpcomingEventsSection extends StatefulWidget {
   final List<EventEntity> events;
   final bool isLoading;
+  final double cardWidth;
+  final double sectionHeight;
+  final Widget Function(BuildContext, EventEntity)? cardBuilder;
 
   const UpcomingEventsSection({
     required this.events,
     required this.isLoading,
+    this.cardWidth = 225,
+    this.sectionHeight = 300,
+    this.cardBuilder,
     super.key,
   });
 
@@ -71,10 +77,10 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 320,
+      height: widget.sectionHeight,
       child:
           widget.isLoading
-              ? const ShimmerLoadingList(itemWidth: 300, itemCount: 1)
+              ? ShimmerLoadingList(itemWidth: widget.cardWidth, itemCount: 1)
               : widget.events.isEmpty
               ? const Center(
                 child: Text(
@@ -91,13 +97,21 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
                     itemCount: widget.events.length,
                     separatorBuilder:
                         (_, __) =>
-                            const SizedBox(width: TiermetrySpacing.gridGap),
+                            const SizedBox(width: TiermetrySpacing.cardGap),
                     itemBuilder: (_, index) {
                       return AnimatedListItem(
                         index: index,
                         child: SizedBox(
-                          width: 300,
-                          child: UpcomingEventCard(event: widget.events[index]),
+                          width: widget.cardWidth,
+                          child:
+                              widget.cardBuilder != null
+                                  ? widget.cardBuilder!(
+                                    context,
+                                    widget.events[index],
+                                  )
+                                  : UpcomingEventCard(
+                                    event: widget.events[index],
+                                  ),
                         ),
                       );
                     },

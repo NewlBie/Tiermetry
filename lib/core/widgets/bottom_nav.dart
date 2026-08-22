@@ -59,7 +59,10 @@ class _BottomNavState extends State<BottomNav>
       _fromIndex = _position.value;
       _toIndex = widget.currentIndex.toDouble();
       _position = Tween<double>(begin: _fromIndex, end: _toIndex).animate(
-        CurvedAnimation(parent: _controller, curve: Curves.fastLinearToSlowEaseIn),
+        CurvedAnimation(
+          parent: _controller,
+          curve: Curves.easeOutBack, // changed to add some bounce
+        ),
       );
       _controller.forward(from: 0);
     }
@@ -178,15 +181,37 @@ class _NavItemView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Transform.translate(
-                  offset: Offset(0, -2 * active),
-                  child: item.iconBuilder(
-                    23 + (active * 2),
-                    Color.lerp(
-                      Colors.white.withValues(alpha: 0.42),
-                      Colors.white,
-                      active,
-                    )!,
+                Transform.scale(
+                  scale: 1.0 + (0.12 * active),
+                  child: Transform.translate(
+                    offset: Offset(0, -2 * active),
+                    child: ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (bounds) {
+                        final inactiveColor =
+                            Colors.white.withValues(alpha: 0.42);
+                        return LinearGradient(
+                          begin: Alignment.bottomLeft,
+                          end: Alignment.topRight,
+                          stops: [
+                            0.0,
+                            active,
+                            active + 0.1,
+                            1.0,
+                          ],
+                          colors: [
+                            const Color(0xFFFF007F), // Neon Pink
+                            const Color(0xFFFFE600), // Neon Yellow
+                            inactiveColor,
+                            inactiveColor,
+                          ],
+                        ).createShader(bounds);
+                      },
+                      child: item.iconBuilder(
+                        23 + (active * 2),
+                        Colors.white,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -197,12 +222,12 @@ class _NavItemView extends StatelessWidget {
                     color:
                         Color.lerp(
                           Colors.white.withValues(alpha: 0.38),
-                          accent,
+                          Colors.white,
                           active,
                         )!,
                     fontSize: 10,
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
-                    letterSpacing: selected ? 0.55 : 0.2,
+                    fontWeight: FontWeight.normal,
+                    letterSpacing: selected ? 0.3 : 0.2,
                   ),
                   child: Text(
                     item.label,

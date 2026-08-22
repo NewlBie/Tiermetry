@@ -48,6 +48,45 @@ class AuthCtrl extends ChangeNotifier {
     }
   }
 
+  Future<void> verifyOTP(String email, String token) async {
+    _setLoading(true);
+    try {
+      await _authRepo.verifyOTP(email: email, token: token);
+      _error = null;
+    } catch (e) {
+      _error = ErrorMapper.map(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> resendOTP(String email) async {
+    _setLoading(true);
+    try {
+      await _authRepo.resendOTP(email: email);
+      _error = null;
+    } catch (e) {
+      _error = ErrorMapper.map(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> resetPasswordForEmail(String email) async {
+    _setLoading(true);
+    try {
+      await _authRepo.resetPasswordForEmail(email: email);
+      _error = null;
+    } catch (e) {
+      _error = ErrorMapper.map(e);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> signOut() async {
     await _authRepo.signOut();
   }

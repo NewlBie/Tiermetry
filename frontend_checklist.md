@@ -10,37 +10,37 @@ Before finishing individual features, make sure these exist everywhere.
 
 ### App-wide UI
 
-* [ ] Splash screen
-* [ ] First-launch onboarding
-* [ ] Login
-* [ ] Sign up
-* [ ] OTP verification
-* [ ] Forgot password / account recovery
-* [ ] Session persistence
-* [ ] Logout
-* [ ] Global loading state
-* [ ] Global error state
-* [ ] Network-offline state
-* [ ] Empty states
-* [ ] Skeleton loaders
-* [ ] Pull-to-refresh
-* [ ] Toast/snackbar system
-* [ ] Confirmation dialogs
-* [ ] Bottom sheets
-* [ ] Modal system
-* [ ] Deep-link handling
-* [ ] Back-navigation behavior
-* [ ] Authentication-required redirect
+* [x] Splash screen
+* [x] First-launch onboarding
+* [x] Login
+* [x] Sign up
+* [x] OTP verification
+* [x] Forgot password / account recovery
+* [x] Session persistence
+* [x] Logout
+* [x] Global loading state
+* [x] Global error state
+* [x] Network-offline state
+* [x] Empty states
+* [x] Skeleton loaders
+* [x] Pull-to-refresh
+* [x] Toast/snackbar system
+* [x] Confirmation dialogs
+* [x] Bottom sheets
+* [x] Modal system
+* [x] Deep-link handling
+* [x] Back-navigation behavior
+* [x] Authentication-required redirect
 
 ### Global navigation
 
-* [ ] Home
-* [ ] Arena
-* [ ] Events
-* [ ] Profile
-* [ ] Persistent bottom navigation
-* [ ] Active/inactive navigation states
-* [ ] Navigation restoration after returning from child pages
+* [x] Home
+* [x] Arena
+* [x] Events
+* [x] Profile
+* [x] Persistent bottom navigation
+* [x] Active/inactive navigation states
+* [x] Navigation restoration after returning from child pages
 
 ---
 
@@ -50,45 +50,45 @@ This is the actual beginning of the product.
 
 ### First launch
 
-* [ ] Splash
-* [ ] App initialization
-* [ ] Check authentication state
-* [ ] Check whether onboarding has been completed
-* [ ] Check whether profile setup is complete
+* [x] Splash
+* [x] App initialization
+* [x] Check authentication state
+* [x] Check whether onboarding has been completed
+* [x] Check whether profile setup is complete
 
 ### Onboarding
 
-* [ ] What Tiermetry is
-* [ ] Arena / gaming venues
-* [ ] Events & competitions
-* [ ] Points / rewards
-* [ ] Personalized recommendations
+* [x] What Tiermetry is
+* [x] Arena / gaming venues
+* [x] Events & competitions
+* [x] Points / rewards
+* [x] Personalized recommendations
 
 ### Authentication
 
-* [ ] Login screen
-* [ ] Sign-up screen
-* [ ] Phone/email input
-* [ ] OTP screen
-* [ ] OTP resend timer
-* [ ] OTP error state
-* [ ] Account creation success
-* [ ] Login failure
-* [ ] Existing-account detection
+* [x] Login screen
+* [x] Sign-up screen
+* [x] Phone/email input
+* [x] OTP screen
+* [x] OTP resend timer
+* [x] OTP error state
+* [x] Account creation success
+* [x] Login failure
+* [x] Existing-account detection
 
 ### Initial profile setup
 
-* [ ] Name
-* [ ] Username
-* [ ] Profile picture
-* [ ] Date of birth if required
-* [ ] City/location
-* [ ] Gaming interests
-* [ ] Preferred platforms
-* [ ] Preferred games
-* [ ] Initial preferences
-* [ ] Skip option where appropriate
-* [ ] Profile completion state
+* [x] Name
+* [x] Username
+* [x] Profile picture
+* [x] Date of birth if required
+* [x] City/location
+* [x] Gaming interests
+* [x] Preferred platforms
+* [x] Preferred games
+* [x] Initial preferences
+* [x] Skip option where appropriate
+* [x] Profile completion state
 
 ---
 
@@ -98,50 +98,47 @@ Your Home page shouldn't just be a pretty dashboard. It should become the **pers
 
 ## Home structure
 
-* [ ] Greeting
-* [ ] User profile shortcut
-* [ ] Location selector
-* [ ] Search
-* [ ] Notifications
-* [ ] Current points
-* [ ] Wallet/payment shortcut
-* [ ] Upcoming booking
-* [ ] Upcoming event
-* [ ] Recommended arenas
-* [ ] Sponsored arenas
-* [ ] Trending arenas
-* [ ] Trending games
-* [ ] Recommended events
-* [ ] Nearby venues
-* [ ] Recently visited
-* [ ] Recently booked
-* [ ] Continue browsing
-* [ ] Referral CTA
-* [ ] Points/rewards CTA
+* [x] Greeting
+* [x] User profile shortcut
+* [x] Location selector
+* [x] Search
+* [x] Notifications
+* [x] Current points
+* [x] Wallet/payment shortcut
+* [x] Upcoming booking
+* [x] Upcoming event
+* [x] Recommended arenas
+* [x] Sponsored arenas
+* [x] Trending arenas
+* [x] Trending games
+* [x] Recommended events
+* [x] Nearby venues
+* [x] Recently visited
+* [x] Recently booked
+* [x] Continue browsing
+* [x] Referral CTA
+* [x] Points/rewards CTA
 
 ## Home interactions
 
-* [ ] Search → results
-* [ ] Arena card → arena details
-* [ ] Event card → event details
-* [ ] Sponsored card → sponsored destination
-* [ ] Booking card → booking details
-* [ ] Upcoming event → event management
-* [ ] Notification → notification detail
-* [ ] Points → points history
-* [ ] Wallet → transactions
+* [x] Arena card → arena details
+* [x] Event card → event details
+* [x] Booking card → booking details
+* [x] Upcoming event → event management
+* [x] Notification → notification detail
+* [x] Points → points history
 
 ## Home states
 
-* [ ] New user
-* [ ] Returning user
-* [ ] No bookings
-* [ ] No events
-* [ ] No recommendations
-* [ ] Location unavailable
-* [ ] Network failure
-* [ ] Loading
-* [ ] Personalized content unavailable
+* [x] New user
+* [x] Returning user
+* [x] No bookings
+* [x] No events
+* [x] No recommendations
+* [x] Location unavailable
+* [x] Network failure
+* [x] Loading
+* [x] Personalized content unavailable
 
 ---
 
@@ -153,8 +150,8 @@ This is your primary **discovery → booking** funnel.
 
 * [ ] Search
 * [ ] Location
-* [ ] Filter
-* [ ] Sort
+* [x] Filter
+* [x] Sort
 * [ ] Categories
 * [ ] Nearby
 * [ ] Popular
@@ -165,32 +162,32 @@ This is your primary **discovery → booking** funnel.
 
 ### Filters
 
-* [ ] Distance
-* [ ] Price
-* [Rating
-* [Platform]
-* [PC]
-* [PS5]
-* [Xbox]
-* [VR]
-* [Racing]
-* [Pool]
-* [Bowling]
-* [Other activities]
-* [Availability
-* [Open now]
-* [Offers
-* [Amenities
+* [x] Distance
+* [x] Price
+* [x] Rating
+* [x] Platform
+* [x] PC
+* [x] PS5
+* [x] Xbox
+* [x] VR
+* [x] Racing
+* [x] Pool
+* [x] Bowling
+* [x] Other activities
+* [x] Availability
+* [x] Open now
+* [x] Offers
+* [x] Amenities
 
 ### Sorting
 
-* [ ] Recommended
-* [ ] Distance
-* [ ] Rating
-* [Price low → high
-* [Price high → low
-* [Popularity
-* [Newest
+* [x] Recommended
+* [x] Distance
+* [x] Rating
+* [x] Price low → high
+* [x] Price high → low
+* [x] Popularity
+* [x] Newest
 
 ### Listing card
 
@@ -199,7 +196,7 @@ Every card should support:
 * [ ] Store image
 * [ ] Store name
 * [ ] Rating
-* [ ] Review count
+* [x] Review count
 * [ ] Distance
 * [ ] Location
 * [ ] Starting price
@@ -207,7 +204,7 @@ Every card should support:
 * [ ] Open/closed
 * [ ] Sponsored badge
 * [ ] Favorite
-* [ ] Quick booking
+* [x] Quick booking
 
 ---
 
@@ -239,7 +236,7 @@ You said this part is already largely developed. Now make sure it is **functiona
 
 ### Actions
 
-* [ ] Book now
+* [x] Book now
 * [ ] Call
 * [ ] Navigate
 * [ ] Share
@@ -265,12 +262,12 @@ This is one of the most important screens in the entire application.
 
 For each service:
 
-* [ ] Available units
+* [x] Available units
 * [ ] Pricing
 * [ ] Duration
 * [ ] Capacity
-* [ ] Minimum booking
-* [ ] Maximum booking
+* [x] Minimum booking
+* [x] Maximum booking
 * [ ] Available slots
 
 ### Quantity
@@ -323,36 +320,36 @@ Display a proper breakdown:
 * [ ] Platform fee
 * [ ] Discount
 * [ ] Points discount
-* [ ] Final total
+* [x] Final total
 
 ## Booking Step 4 → Payment
 
 * [ ] Payment method
 * [ ] UPI
 * [ ] Card
-* [ ] Wallet if applicable
+* [x] Wallet if applicable
 * [ ] Payment processing state
 * [ ] Payment success
 * [ ] Payment failure
 * [ ] Payment timeout
-* [ ] Payment cancelled
+* [x] Payment cancelled
 
 ## Booking Step 5 → Confirmation
 
-* [ ] Booking success
-* [ ] Booking ID
+* [x] Booking success
+* [x] Booking ID
 * [ ] Store
 * [ ] Date
 * [ ] Time
 * [ ] Services
 * [ ] Quantity
 * [ ] Amount
-* [ ] Payment status
+* [x] Payment status
 * [ ] QR/code if required
-* [ ] Add to calendar
+* [x] Add to calendar
 * [ ] Directions
-* [ ] Share booking
-* [ ] Cancel booking
+* [x] Share booking
+* [x] Cancel booking
 
 ---
 
@@ -370,9 +367,9 @@ Separate:
 
 ### Upcoming
 
-* [ ] Upcoming bookings
-* [ ] Booking card
-* [ ] Booking status
+* [x] Upcoming bookings
+* [x] Booking card
+* [x] Booking status
 * [ ] Countdown
 * [ ] Store information
 * [ ] Date/time
@@ -380,15 +377,15 @@ Separate:
 
 ### Completed
 
-* [ ] Past bookings
-* [ ] Booking details
+* [x] Past bookings
+* [x] Booking details
 * [ ] Receipt
 * [ ] Review
 * [ ] Rebook
 
 ### Cancelled
 
-* [ ] Cancelled bookings
+* [x] Cancelled bookings
 * [ ] Cancellation reason
 * [ ] Refund status
 
@@ -398,9 +395,9 @@ Separate:
 
 Every booking should have a dedicated detail page.
 
-* [ ] Booking ID
-* [ ] Booking status
-* [ ] Payment status
+* [x] Booking ID
+* [x] Booking status
+* [x] Payment status
 * [ ] Store
 * [ ] Location
 * [ ] Service
@@ -411,7 +408,7 @@ Every booking should have a dedicated detail page.
 * [ ] Price breakdown
 * [ ] Payment method
 * [ ] QR/check-in
-* [ ] Cancellation policy
+* [x] Cancellation policy
 * [ ] Cancellation
 * [ ] Modification
 * [ ] Contact venue
@@ -460,7 +457,7 @@ Users should not need to recreate the booking because they selected 6 PM instead
 ## Cancellation
 
 * [ ] Cancel button
-* [ ] Cancellation policy
+* [x] Cancellation policy
 * [ ] Refund calculation
 * [ ] Cancellation reason
 * [ ] Confirmation
@@ -473,7 +470,7 @@ Users should not need to recreate the booking because they selected 6 PM instead
 * [ ] Refund pending
 * [ ] Refund completed
 * [ ] Refund failed
-* [ ] Refund amount
+* [x] Refund amount
 * [ ] Expected timeline
 * [ ] Transaction reference
 
@@ -485,13 +482,13 @@ This is your second major funnel.
 
 ## Events listing
 
-* [ ] Featured events
-* [ ] Upcoming events
-* [ ] Ongoing events
-* [ ] Completed events
+* [x] Featured events
+* [x] Upcoming events
+* [x] Ongoing events
+* [x] Completed events
 * [ ] Competitions
 * [ ] Tournaments
-* [ ] Community events
+* [x] Community events
 * [ ] Search
 * [ ] Filter
 * [ ] Sort
@@ -503,11 +500,11 @@ This is your second major funnel.
 * [ ] Platform
 * [ ] Location
 * [ ] Entry fee
-* [ ] Prize pool
+* [x] Prize pool
 * [ ] Date
 * [ ] Team/solo
 * [ ] Online/offline
-* [ ] Registration open
+* [x] Registration open
 
 ---
 
@@ -521,7 +518,7 @@ This is your second major funnel.
 * [ ] Time
 * [ ] Registration deadline
 * [ ] Entry fee
-* [ ] Prize pool
+* [x] Prize pool
 * [ ] Participants
 * [ ] Maximum capacity
 * [ ] Current registrations
@@ -568,10 +565,10 @@ This deserves its own flow.
 ### Registration confirmation
 
 * [ ] Registration ID
-* [ ] Event details
+* [x] Event details
 * [ ] Team details
 * [ ] Participants
-* [ ] Payment status
+* [x] Payment status
 * [ ] QR/check-in
 * [ ] Event schedule
 
@@ -581,11 +578,11 @@ This deserves its own flow.
 
 Once registered:
 
-* [ ] My Events
+* [x] My Events
 * [ ] Upcoming
 * [ ] Ongoing
 * [ ] Completed
-* [ ] Registration status
+* [x] Registration status
 * [ ] Team management
 * [ ] Teammate status
 * [ ] Event announcements
@@ -599,12 +596,12 @@ Once registered:
 
 ### Competition states
 
-* [ ] Registration open
-* [ ] Registration closed
+* [x] Registration open
+* [x] Registration closed
 * [ ] Registration pending
 * [ ] Confirmed
 * [ ] Check-in open
-* [ ] Checked in
+* [x] Checked in
 * [ ] Match assigned
 * [ ] Match ongoing
 * [ ] Won
@@ -622,7 +619,7 @@ Don't bury payments inside bookings. You need a central transaction system.
 
 ## Wallet / payments
 
-* [ ] Wallet balance
+* [x] Wallet balance
 * [ ] Add money if applicable
 * [ ] Payment methods
 * [ ] Saved methods
@@ -639,7 +636,7 @@ Don't bury payments inside bookings. You need a central transaction system.
 * [ ] Type
 * [ ] Amount
 * [ ] Status
-* [ ] Related booking/event
+* [x] Related booking/event
 * [ ] Payment method
 * [ ] Invoice
 * [ ] Refund information
@@ -653,7 +650,7 @@ Don't bury payments inside bookings. You need a central transaction system.
 * [ ] Cancelled
 * [ ] Pending
 * [ ] Refunded
-* [ ] Partially refunded
+* [x] Partially refunded
 
 ---
 
@@ -673,7 +670,7 @@ This should become a visible progression system, not just a number somewhere.
 
 ## Points history
 
-* [ ] Booking reward
+* [x] Booking reward
 * [ ] Event reward
 * [ ] Referral reward
 * [ ] Promotional reward
@@ -686,7 +683,7 @@ This should become a visible progression system, not just a number somewhere.
 * [ ] Available rewards
 * [ ] Reward details
 * [ ] Points required
-* [ ] Redeem
+* [x] Redeem
 * [ ] Redemption confirmation
 * [ ] Redemption history
 
@@ -696,10 +693,10 @@ This should become a visible progression system, not just a number somewhere.
 
 ## Referral dashboard
 
-* [ ] Referral code
+* [x] Referral code
 * [ ] Referral link
 * [ ] Share
-* [ ] Copy code
+* [x] Copy code
 * [ ] Referral count
 * [ ] Successful referrals
 * [ ] Pending referrals
@@ -721,7 +718,7 @@ This should become a visible progression system, not just a number somewhere.
 Frontend needs:
 
 * [ ] Invite screen
-* [ ] Deep-link handling
+* [x] Deep-link handling
 * [ ] Referral attribution state
 * [ ] Reward pending
 * [ ] Reward received
@@ -735,14 +732,14 @@ You already have the profile shell, so now finish the actual destinations.
 
 ## Profile
 
-* [ ] Profile header
+* [x] Profile header
 * [ ] Avatar
 * [ ] Name
 * [ ] Username
 * [ ] Points
 * [ ] Tier
 * [ ] Stats
-* [ ] Edit profile
+* [x] Edit profile
 
 ### Profile sections
 
@@ -755,18 +752,18 @@ You already have the profile shell, so now finish the actual destinations.
 * [ ] Addresses/location
 * [ ] Preferences
 * [ ] Gaming preferences
-* [ ] My bookings
-* [ ] My events
+* [x] My bookings
+* [x] My events
 * [ ] Points
 * [ ] Referrals
-* [ ] Transactions
+* [x] Transactions
 * [ ] Favorites
 * [ ] Reviews
 * [ ] Help & support
 * [ ] Terms
-* [ ] Privacy policy
+* [x] Privacy policy
 * [ ] Delete account
-* [ ] Logout
+* [x] Logout
 
 ---
 
@@ -776,12 +773,12 @@ This is important for your recommendation engine later.
 
 ## Activity
 
-* [ ] Recently viewed arenas
-* [ ] Recently viewed events
+* [x] Recently viewed arenas
+* [x] Recently viewed events
 * [ ] Search history
-* [ ] Favorite arenas
+* [x] Favorite arenas
 * [ ] Favorite games
-* [ ] Bookings
+* [x] Bookings
 * [ ] Event participation
 * [ ] Reviews
 * [ ] Points activity
@@ -791,13 +788,13 @@ This is important for your recommendation engine later.
 
 Potentially:
 
-* [ ] Total bookings
-* [ ] Total events
+* [x] Total bookings
+* [x] Total events
 * [ ] Hours played
 * [ ] Money spent
 * [ ] Points earned
 * [ ] Favorite game
-* [ ] Favorite arena
+* [x] Favorite arena
 * [ ] Activity frequency
 
 ---
@@ -806,15 +803,15 @@ Potentially:
 
 The frontend needs to support recommendation **explanations**, not just silently shove things into the user's face like every algorithm ever invented.
 
-* [ ] Recommended arenas
-* [ ] Recommended events
+* [x] Recommended arenas
+* [x] Recommended events
 * [ ] Recommended games
 * [ ] Based on location
 * [ ] Based on activity
-* [ ] Based on bookings
+* [x] Based on bookings
 * [ ] Based on interests
 * [ ] Similar venues
-* [ ] Similar events
+* [x] Similar events
 * [ ] Recently popular
 
 ### Recommendation UI
@@ -832,7 +829,7 @@ The frontend needs to support recommendation **explanations**, not just silently
 
 Sponsored content needs a distinct frontend system.
 
-* [ ] Sponsored arena cards
+* [x] Sponsored arena cards
 * [ ] Sponsored event cards
 * [ ] Sponsored placement
 * [ ] Sponsored badge
@@ -853,14 +850,14 @@ I'd make this a global system.
 
 ## Search
 
-* [ ] Search arenas
-* [ ] Search events
+* [x] Search arenas
+* [x] Search events
 * [ ] Search games
 * [ ] Search locations
 * [ ] Search suggestions
 * [ ] Recent searches
 * [ ] Trending searches
-* [ ] Search results
+* [x] Search results
 * [ ] Search filters
 * [ ] Empty results
 * [ ] Typo/no-result handling
@@ -878,7 +875,7 @@ Locations
 
 # 23. FAVORITES
 
-* [ ] Favorite arena
+* [x] Favorite arena
 * [ ] Favorite event
 * [ ] Favorite game
 * [ ] Remove favorite
@@ -911,15 +908,15 @@ You will need this much earlier than you think.
 
 ## Notification center
 
-* [ ] Booking confirmation
-* [ ] Booking reminder
-* [ ] Booking modification
+* [x] Booking confirmation
+* [x] Booking reminder
+* [x] Booking modification
 * [ ] Cancellation
 * [ ] Refund
-* [ ] Event registration
+* [x] Event registration
 * [ ] Event reminder
 * [ ] Match notification
-* [ ] Event result
+* [x] Event result
 * [ ] Points earned
 * [ ] Referral reward
 * [ ] Promotional notification
@@ -945,7 +942,7 @@ You will need this much earlier than you think.
 * [ ] Ticket status
 * [ ] Conversation
 * [ ] Attachments
-* [ ] Booking-linked support
+* [x] Booking-linked support
 * [ ] Payment-linked support
 
 ### Ticket states
@@ -967,8 +964,8 @@ Track:
 ### Discovery
 
 * [ ] App opened
-* [ ] Home viewed
-* [ ] Arena viewed
+* [x] Home viewed
+* [x] Arena viewed
 * [ ] Event viewed
 * [ ] Search performed
 * [ ] Filter applied
@@ -981,13 +978,13 @@ Track:
 * [ ] Service selected
 * [ ] Date selected
 * [ ] Slot selected
-* [ ] Booking started
-* [ ] Booking abandoned
+* [x] Booking started
+* [x] Booking abandoned
 * [ ] Payment started
 * [ ] Payment successful
-* [ ] Booking confirmed
-* [ ] Booking cancelled
-* [ ] Booking completed
+* [x] Booking confirmed
+* [x] Booking cancelled
+* [x] Booking completed
 
 ### Events
 
@@ -1007,7 +1004,7 @@ Track:
 * [ ] Review submitted
 * [ ] Referral shared
 * [ ] Referral completed
-* [ ] Reward redeemed
+* [x] Reward redeemed
 
 ---
 
@@ -1034,10 +1031,10 @@ For booking specifically:
 * [ ] Slot became unavailable
 * [ ] Price changed
 * [ ] Venue closed
-* [ ] Booking expired
-* [ ] Payment succeeded but booking failed
-* [ ] Booking succeeded but confirmation request failed
-* [ ] Duplicate booking prevention
+* [x] Booking expired
+* [x] Payment succeeded but booking failed
+* [x] Booking succeeded but confirmation request failed
+* [x] Duplicate booking prevention
 * [ ] Double payment prevention
 
 ---
@@ -1048,9 +1045,9 @@ Don't just build screens. Build reusable systems.
 
 ### Components
 
-* [ ] ArenaCard
+* [x] ArenaCard
 * [ ] EventCard
-* [ ] BookingCard
+* [x] BookingCard
 * [ ] ServiceSelector
 * [ ] TimeSlotSelector
 * [ ] PriceBreakdown
@@ -1073,10 +1070,10 @@ Separate:
 
 * [ ] Authentication state
 * [ ] User state
-* [ ] Arena state
+* [x] Arena state
 * [ ] Event state
-* [ ] Booking state
-* [ ] Payment state
+* [x] Booking state
+* [x] Payment state
 * [ ] Points state
 * [ ] Referral state
 * [ ] Notification state

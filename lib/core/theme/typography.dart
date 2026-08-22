@@ -29,10 +29,27 @@ class TiermetryTypography {
   /// Large, high-impact display text (Greetings, major headers)
   static TextStyle display({
     required Color color,
-    double fontSize = 32,
+    double fontSize = 26,
     FontWeight fontWeight = FontWeight.w900,
     double letterSpacing = -0.6,
     double height = 1.05,
+  }) {
+    return GoogleFonts.geist(
+      fontWeight: fontWeight,
+      color: color,
+      fontSize: fontSize,
+      letterSpacing: letterSpacing,
+      height: height,
+    );
+  }
+
+  /// Massive, oversized display text for grand page greetings (33px)
+  static TextStyle displayLarge({
+    required Color color,
+    double fontSize = 33,
+    FontWeight fontWeight = FontWeight.w900,
+    double letterSpacing = -1.0,
+    double height = 1.0,
   }) {
     return GoogleFonts.geist(
       fontWeight: fontWeight,
@@ -93,7 +110,7 @@ class TiermetryTypography {
   /// Secondary body text (Inter-based, used for technical labels/stats)
   static TextStyle bodySmall({
     required Color color,
-    double fontSize = 11,
+    double fontSize = 13,
     FontWeight fontWeight = FontWeight.w500,
     double? height,
   }) {
@@ -108,7 +125,7 @@ class TiermetryTypography {
   /// Standard body text / captions
   static TextStyle caption({
     required Color color,
-    double fontSize = 11,
+    double fontSize = 13,
     FontWeight fontWeight = FontWeight.w600,
     double letterSpacing = 0.4,
     double? height,
@@ -125,7 +142,7 @@ class TiermetryTypography {
   /// Interactive elements like buttons
   static TextStyle action({
     required Color color,
-    double fontSize = 13.5,
+    double fontSize = 13,
     FontWeight fontWeight = FontWeight.w800,
     double letterSpacing = 0.4,
   }) {

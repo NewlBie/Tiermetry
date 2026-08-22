@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/skill_entity.dart';
@@ -138,7 +139,7 @@ class FeaturedSkillMorphCard extends StatelessWidget {
             Expanded(
               flex: 45,
               child: Container(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                padding: const EdgeInsets.all(TiermetrySpacing.lg),
                 child: SingleChildScrollView(
                   physics: const NeverScrollableScrollPhysics(),
                   child: Column(
@@ -147,24 +148,23 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                     Text(
                       skill.category.toUpperCase(),
                       style: TiermetryTypography.label(
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.0,
                         color: TiermetryColors.accentNeonGreen,
                       ),
                     ),
-                    const SizedBox(height: 6),
-                    Text((skill.title).toUpperCase(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TiermetryTypography.title(
-                        fontSize: 19,
-                        height: 1.2,
-                        color: Colors.white,
+                    const SizedBox(height: TiermetrySpacing.sm),
+                    SizedBox(
+                      height: 40, // Forces exactly 2 lines of vertical space for 16px font
+                      child: Text((skill.title).toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TiermetryTypography.titleSmall(
+                          color: Colors.white,
+                          height: 1.2,
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: TiermetrySpacing.lg),
 
                     /// Meta & Action Row
                     Row(
@@ -180,7 +180,7 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                                 CupertinoIcons.time,
                                 skill.time,
                               ),
-                              const SizedBox(height: 6),
+                              const SizedBox(height: TiermetrySpacing.sm),
                               _buildInfoItem(
                                 CupertinoIcons.chart_bar_alt_fill,
                                 skill.level,
@@ -224,11 +224,10 @@ class FeaturedSkillMorphCard extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.6)),
-        const SizedBox(width: 6),
+        const SizedBox(width: TiermetrySpacing.sm),
         Text(
           text,
           style: TiermetryTypography.caption(
-            fontSize: 12,
             color: Colors.white.withValues(alpha: 0.6),
           ),
         ),

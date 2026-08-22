@@ -70,7 +70,7 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
           alignment: Alignment.center,
           child: Text((currentGreeting).toUpperCase(),
             textAlign: TextAlign.center,
-            style: TiermetryTypography.display(color: Colors.white),
+            style: TiermetryTypography.displayLarge(color: Colors.white),
           ),
         ),
         const SizedBox(height: TiermetrySpacing.sm),

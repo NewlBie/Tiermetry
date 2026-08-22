@@ -8,6 +8,7 @@ import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
 
@@ -16,7 +17,11 @@ import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
 /// ---------------------------------------------------------------------------
 
 class LiveAroundYouSection extends StatefulWidget {
-  const LiveAroundYouSection({super.key});
+  /// Whether the app has been granted location permission.
+  /// When false, a location-unavailable state is shown instead of activities.
+  final bool isLocationGranted;
+
+  const LiveAroundYouSection({super.key, this.isLocationGranted = true});
 
   @override
   State<LiveAroundYouSection> createState() => _LiveAroundYouSectionState();
@@ -150,7 +155,7 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: TiermetrySpacing.sm),
               Text(('Live Around You').toUpperCase(),
                 style: TiermetryTypography.title(color: Colors.white),
               ),
@@ -160,28 +165,43 @@ class _LiveAroundYouSectionState extends State<LiveAroundYouSection> {
 
         const SizedBox(height: TiermetrySpacing.lg),
 
-        // Horizontally scrollable cards with lightweight fade overlay
-        SizedBox(
-          height: 320,
-          child: Stack(
-            children: [
-              SilkyListView.separated(
-                controller: _scrollController,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: TiermetrySpacing.pagePadding,
-                itemCount: _activities.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 14),
-                itemBuilder: (context, index) {
-                  return RepaintBoundary(
-                    child: _LiveActivityCard(activity: _activities[index]),
-                  );
-                },
-              ),
-              ScrollFadeOverlay(opacity: _rightFadeOpacity),
-            ],
+        // ── Location unavailable state ──
+        if (!widget.isLocationGranted)
+          const AppEmptyState(
+            message:
+                'Location access is needed to show live activity near you.\nEnable it in your device settings.',
+            icon: Icons.location_off_outlined,
+          )
+        // ── No activities / no recommendations state ──
+        else if (_activities.isEmpty)
+          const AppEmptyState(
+            message:
+                'Nothing live nearby right now.\nCheck back in a bit or explore arenas on the map.',
+            icon: Icons.explore_outlined,
+          )
+        // ── Normal horizontally scrollable cards ──
+        else
+          SizedBox(
+            height: 320,
+            child: Stack(
+              children: [
+                SilkyListView.separated(
+                  controller: _scrollController,
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: TiermetrySpacing.pagePadding,
+                  itemCount: _activities.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: TiermetrySpacing.cardGap),
+                  itemBuilder: (context, index) {
+                    return RepaintBoundary(
+                      child: _LiveActivityCard(activity: _activities[index]),
+                    );
+                  },
+                ),
+                ScrollFadeOverlay(opacity: _rightFadeOpacity),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }
@@ -242,34 +262,23 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Main Image with Rounded Corners on All Sides
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                          offset: const Offset(0, 8), // vertical shadow
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        widget.activity.image,
-                        fit: BoxFit.cover,
-                      ),
+                // Main Image with Rounded Corners on Top
+                Container(
+                  decoration: const BoxDecoration(
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Image.asset(
+                      widget.activity.image,
+                      fit: BoxFit.cover,
                     ),
                   ),
                 ),
                 // Top Left Overlay: Animated Temperature Pill -> Circle
                 Positioned(
-                  left: 24,
-                  top: 24,
+                  left: TiermetrySpacing.md,
+                  top: TiermetrySpacing.md,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 600),
                     curve: Curves.fastOutSlowIn,
@@ -326,16 +335,16 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
 
                 // Pagination Dots
                 Positioned(
-                  bottom: 24,
+                  bottom: TiermetrySpacing.md,
                   left: 0,
                   right: 0,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _buildDot(true),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: TiermetrySpacing.xs),
                       _buildDot(false),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: TiermetrySpacing.xs),
                       _buildDot(false),
                     ],
                   ),
@@ -350,7 +359,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
             flex: 35,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.md),
               child: _buildCardContent(),
             ),
           ),
@@ -359,25 +368,24 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
     );
   }
 
-  // Use a helper method for the static content to reduce build nesting clutter
   Widget _buildCardContent() {
-    return Center(
-      child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(),
-        child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: TiermetrySpacing.sm),
+        
         // Title
-        Text((widget.activity.title).toUpperCase(),
-          maxLines: 1,
+        Text(
+          widget.activity.title.toUpperCase(),
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TiermetryTypography.title(
+          style: TiermetryTypography.titleSmall(
             color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+            height: 1.2,
           ),
         ),
+
+        const SizedBox(height: 2),
 
         // Subtitle / Location
         Text(
@@ -390,12 +398,12 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
           ),
         ),
 
-        const SizedBox(height: 8),
+        const Spacer(),
 
         // Stats Pill (Bottom Container)
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: TiermetrySpacing.sm),
           decoration: BoxDecoration(
             color: TiermetryColors.surfaceElement,
             borderRadius: BorderRadius.circular(12),
@@ -422,9 +430,8 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
             ],
           ),
         ),
+        const SizedBox(height: TiermetrySpacing.md),
       ],
-        ),
-      ),
     );
   }
 
@@ -443,7 +450,7 @@ class _LiveActivityCardState extends State<_LiveActivityCard> {
     return Row(
       children: [
         Icon(icon, size: 12, color: Colors.white.withValues(alpha: 0.7)),
-        const SizedBox(width: 4),
+        const SizedBox(width: TiermetrySpacing.xs),
         Text(
           text,
           style: TiermetryTypography.caption(

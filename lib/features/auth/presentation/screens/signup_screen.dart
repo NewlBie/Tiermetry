@@ -7,6 +7,7 @@ import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'otp_verification_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -47,16 +48,12 @@ class _SignupScreenState extends State<SignupScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text(_authCtrl.error!)));
     } else if (mounted) {
-      // On success, Supabase might send a confirmation email or login immediately depending on config
-      // If confirmation is required, show a message.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Account created! Please check your email for confirmation.',
-          ),
+      await Navigator.pushReplacement(
+        context,
+        MaterialPageRoute<void>(
+          builder: (context) => OtpVerificationScreen(email: email),
         ),
       );
-      Navigator.pop(context);
     }
   }
 

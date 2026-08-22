@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/features/arena/presentation/screens/arena_screen.dart';
 import 'package:tiermetry/features/event/presentation/screens/event_browser_screen.dart';
+import 'package:tiermetry/features/quest/presentation/screens/quest_screen.dart';
 
 import 'bento_tile.dart';
 import 'promotion_tile.dart';
@@ -61,8 +62,47 @@ class MetricsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: TiermetrySpacing.gridGap),
-        // Bottom Full Width - Upgrade & Promotion
         const PromotionTile(),
+        const SizedBox(height: TiermetrySpacing.gridGap),
+        // Third Row - Points & Referrals
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder: (_) => const QuestsScreen(),
+                    ),
+                  );
+                },
+                child: const BentoTile(
+                  title: '4,200 Tiergies',
+                  imagePath: 'assets/sticks/starbucks.png', // Temporary generic asset
+                  imageRight: -20,
+                  imageBottom: -20,
+                  imageScale: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(width: TiermetrySpacing.gridGap),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  // Handle Referral tap
+                },
+                child: const BentoTile(
+                  title: 'Refer & Earn',
+                  imagePath: 'assets/arena.png', // Temporary generic asset
+                  imageRight: -30,
+                  imageBottom: -30,
+                  imageScale: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

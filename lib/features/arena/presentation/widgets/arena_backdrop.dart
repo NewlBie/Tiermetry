@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/widgets/dot_grid_background.dart';
 
@@ -54,15 +53,12 @@ class _BlurBlob extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: TiermetryBlur.filter(TiermetryBlur.lg),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: colors),
-        ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: colors),
       ),
     );
   }

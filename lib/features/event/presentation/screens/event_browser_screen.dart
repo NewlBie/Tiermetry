@@ -14,11 +14,14 @@ import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_search_hero.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/section_header.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
 import 'package:tiermetry/features/home/presentation/widgets/upcoming_events_section.dart';
 
 import '../../domain/entities/event_entity.dart';
+import '../widgets/showdown_event_card.dart';
+import '../widgets/upcoming_event_card.dart';
 import 'event_details_screen.dart';
 
 class EventBrowserScreen extends StatefulWidget {
@@ -117,10 +120,9 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                 return false;
               },
               child: ListenableBuilder(
-                listenable: _eventCtrl,
+                listenable: Listenable.merge([_eventCtrl, _searchController]),
                 builder: (context, _) {
-                  final events = _eventCtrl.events;
-
+                  final isSearching = _searchController.text.trim().isNotEmpty;
                   return CustomScrollView(
                     controller: _scrollCtrl,
                     physics: const AlwaysScrollableScrollPhysics(
@@ -131,7 +133,9 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
                             TiermetrySpacing.screenPadding,
-                            topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
+                            topPad +
+                                TiermetrySpacing.topBarHeight +
+                                TiermetrySpacing.sectionGap,
                             TiermetrySpacing.screenPadding,
                             TiermetrySpacing.lg,
                           ),
@@ -153,89 +157,28 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                           ),
                         ),
                       ),
-                      _buildUpcomingEventsSection(),
-                      _buildRewardsSection(),
-
-                      // Main Event Section Header
-                      const SliverToBoxAdapter(
-                        child: SizedBox(height: TiermetrySpacing.sectionGap),
-                      ),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: TiermetrySpacing.pagePadding,
-                          child: SectionHeader(
-                            title:
-                                _eventCtrl.isLoading
-                                    ? 'Searching...'
-                                    : 'Events',
-                          ),
-                        ),
-                      ),
-                      const SliverToBoxAdapter(
-                        child: SizedBox(
-                          height: TiermetrySpacing.headerToContent,
-                        ),
-                      ),
-
-                      if (_eventCtrl.isLoading && events.isEmpty)
-                        const SliverToBoxAdapter(
-                          child: Padding(
-                            padding: EdgeInsets.only(top: 60),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        )
-                      else if (_eventCtrl.error != null && events.isEmpty)
-                        SliverToBoxAdapter(
-                          child: AppErrorState(
-                            message: _eventCtrl.error!,
-                            onRetry:
-                                () => _eventCtrl.loadEvents(isRefresh: true),
-                          ),
-                        )
-                      else if (events.isEmpty)
-                        SliverToBoxAdapter(
-                          child: AppEmptyState(
-                            message: 'No matching events found.',
-                            onAction: _onClearAll,
-                            actionLabel: 'Clear Filters',
-                          ),
-                        )
-                      else
-                        SliverPadding(
-                          padding: TiermetrySpacing.pagePadding,
-                          sliver: SliverList.builder(
-                            itemCount: events.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(
-                                  bottom: TiermetrySpacing.md,
-                                ),
-                                child: _EventResultTile(
-                                  event: events[index],
-                                  onTap: () => _openEvent(events[index]),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-
+                      if (!isSearching) ...[
+                        _buildRadarSection(context),
+                        _buildHeadlinersSection(context),
+                        _buildShowdownsSection(),
+                        _buildDealsSection(),
+                        _buildTheSceneSection(),
+                      ] else ...[
+                        _buildSearchResultsSection(),
+                      ],
+                      
+                      // We can keep the loader if it's paginating
                       if (_eventCtrl.isLoadingMore)
                         const SliverToBoxAdapter(
                           child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                              ),
+                            padding: EdgeInsets.symmetric(
+                              vertical: 24,
+                              horizontal: TiermetrySpacing.screenPadding,
                             ),
+                            child: ShimmerLoadingVerticalList(itemCount: 1),
                           ),
                         ),
 
-                      _buildDealsSection(),
                       const SliverToBoxAdapter(
                         child: SizedBox(
                           height: TiermetrySpacing.bottomSafeArea,
@@ -247,13 +190,21 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
               ),
             ),
           ),
-          ScrollGradientOverlay(scrollController: _scrollCtrl),
+          const ScrollGradientOverlay(),
         ],
       ),
     );
   }
 
-  Widget _buildUpcomingEventsSection() {
+  Widget _buildRadarSection(BuildContext context) {
+    if (!_eventCtrl.isLoading && _eventCtrl.radarEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = (screenWidth * 0.65).clamp(200.0, 240.0);
+    final cardHeight = cardWidth * 1.33; // 3:4 aspect ratio approx
+    
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
@@ -262,12 +213,14 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
             const SizedBox(height: TiermetrySpacing.sectionGap),
             const Padding(
               padding: TiermetrySpacing.pagePadding,
-              child: SectionHeader(title: 'Upcoming Events', onViewMore: null),
+              child: SectionHeader(title: 'Radar', onViewMore: null),
             ),
             const SizedBox(height: TiermetrySpacing.headerToContent),
             UpcomingEventsSection(
-              events: _eventCtrl.events,
+              events: _eventCtrl.radarEvents,
               isLoading: _eventCtrl.isLoading,
+              cardWidth: cardWidth,
+              sectionHeight: cardHeight,
             ),
           ],
         ),
@@ -275,16 +228,135 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
     );
   }
 
-  Widget _buildRewardsSection() {
-    return const SliverToBoxAdapter(
+  Widget _buildHeadlinersSection(BuildContext context) {
+    if (!_eventCtrl.isLoading && _eventCtrl.headlinerEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = (screenWidth * 0.82).clamp(250.0, 300.0);
+    final cardHeight = cardWidth * 1.25;
+    
+    return SliverToBoxAdapter(
       child: RepaintBoundary(
-        child: Padding(
-          padding: TiermetrySpacing.pagePadding,
-          child: _RewardsCard(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: TiermetrySpacing.sectionGap),
+            const Padding(
+              padding: TiermetrySpacing.pagePadding,
+              child: SectionHeader(
+                title: 'Headliners',
+                onViewMore: null,
+                tagLabel: 'Sponsored',
+              ),
+            ),
+            const SizedBox(height: TiermetrySpacing.headerToContent),
+            UpcomingEventsSection(
+              events: _eventCtrl.headlinerEvents,
+              isLoading: _eventCtrl.isLoading,
+              cardWidth: cardWidth,
+              sectionHeight: cardHeight,
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildShowdownsSection() {
+    if (!_eventCtrl.isLoading && _eventCtrl.showdownEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return SliverToBoxAdapter(
+      child: RepaintBoundary(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: TiermetrySpacing.sectionGap),
+            const Padding(
+              padding: TiermetrySpacing.pagePadding,
+              child: SectionHeader(title: 'Showdowns', onViewMore: null),
+            ),
+            const SizedBox(height: TiermetrySpacing.headerToContent),
+            UpcomingEventsSection(
+              events: _eventCtrl.showdownEvents,
+              isLoading: _eventCtrl.isLoading,
+              cardWidth: 280,
+              sectionHeight: 310,
+              cardBuilder: (context, event) => ShowdownEventCard(event: event),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTheSceneSection() {
+    final events = _eventCtrl.sceneEvents;
+
+    return SliverMainAxisGroup(
+      slivers: [
+        const SliverToBoxAdapter(
+          child: SizedBox(height: TiermetrySpacing.sectionGap),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: TiermetrySpacing.pagePadding,
+            child: SectionHeader(
+              title: _eventCtrl.isLoading ? 'Searching...' : 'The Scene',
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: TiermetrySpacing.headerToContent),
+        ),
+        if (_eventCtrl.isLoading && events.isEmpty)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: TiermetrySpacing.md,
+                left: TiermetrySpacing.screenPadding,
+                right: TiermetrySpacing.screenPadding,
+              ),
+              child: ShimmerLoadingVerticalList(),
+            ),
+          )
+        else if (_eventCtrl.error != null && events.isEmpty)
+          SliverToBoxAdapter(
+            child: AppErrorState(
+              message: _eventCtrl.error!,
+              onRetry: () => _eventCtrl.loadEvents(isRefresh: true),
+            ),
+          )
+        else if (events.isEmpty)
+          SliverToBoxAdapter(
+            child: AppEmptyState(
+              message: 'No more events in the scene.',
+              onAction: _onClearAll,
+              actionLabel: 'Clear Filters',
+            ),
+          )
+        else
+          SliverPadding(
+            padding: TiermetrySpacing.pagePadding,
+            sliver: SliverList.builder(
+              itemCount: events.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: TiermetrySpacing.md),
+                  child: _EventResultTile(
+                    event: events[index],
+                    onTap: () => _openEvent(events[index]),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
 
   Widget _buildDealsSection() {
     return SliverToBoxAdapter(
@@ -319,6 +391,61 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
       ),
     );
   }
+
+  Widget _buildSearchResultsSection() {
+    if (_eventCtrl.isLoading && _eventCtrl.events.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: TiermetrySpacing.md,
+            left: TiermetrySpacing.screenPadding,
+            right: TiermetrySpacing.screenPadding,
+          ),
+          child: ShimmerLoadingVerticalList(),
+        ),
+      );
+    }
+    
+    if (_eventCtrl.error != null && _eventCtrl.events.isEmpty) {
+      return SliverToBoxAdapter(
+        child: AppErrorState(
+          message: _eventCtrl.error!,
+          onRetry: () => _eventCtrl.loadEvents(isRefresh: true),
+        ),
+      );
+    }
+    
+    if (_eventCtrl.events.isEmpty) {
+      return SliverToBoxAdapter(
+        child: AppEmptyState(
+          message: 'No events found.',
+          onAction: _onClearAll,
+          actionLabel: 'Clear Filters',
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: TiermetrySpacing.pagePadding.copyWith(top: TiermetrySpacing.md),
+      sliver: SliverList.builder(
+        itemCount: _eventCtrl.events.length,
+        itemBuilder: (context, index) {
+          final event = _eventCtrl.events[index];
+          final isShowdown = _eventCtrl.showdownEvents.any((e) => e.id == event.id);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: TiermetrySpacing.lg),
+            child: AspectRatio(
+              aspectRatio: isShowdown ? 280 / 310 : 225 / 300,
+              child: isShowdown 
+                  ? ShowdownEventCard(event: event) 
+                  : UpcomingEventCard(event: event),
+            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms),
+          );
+        },
+      ),
+    );
+  }
 }
 
 class _ExploreGreeting extends StatelessWidget {
@@ -332,10 +459,10 @@ class _ExploreGreeting extends StatelessWidget {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text(('Explore the scene').toUpperCase(),
-            style: TiermetryTypography.display(
+          child: Text(
+            ('Explore the scene').toUpperCase(),
+            style: TiermetryTypography.displayLarge(
               color: TiermetryColors.white,
-              fontSize: 32,
             ),
           ),
         ),
@@ -354,63 +481,7 @@ class _ExploreGreeting extends StatelessWidget {
   }
 }
 
-class _RewardsCard extends StatelessWidget {
-  const _RewardsCard();
 
-  @override
-  Widget build(BuildContext context) {
-    return AppSurface(
-      padding: const EdgeInsets.all(16),
-      shadows: TiermetryShadows.highEmphasis,
-      child: Row(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  TiermetryColors.gradientStart,
-                  TiermetryColors.gradientEnd,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(
-              Icons.stars_rounded,
-              color: TiermetryColors.white,
-            ),
-          ),
-          const SizedBox(width: TiermetrySpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(('240 points available').toUpperCase(),
-                  style: TiermetryTypography.title(
-                    color: TiermetryColors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Redeem on tickets, passes, and partner deals.',
-                  style: TiermetryTypography.caption(
-                    color: TiermetryColors.white.withValues(alpha: 0.62),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: TiermetryColors.white),
-        ],
-      ),
-    );
-  }
-}
 
 class _EventResultTile extends StatelessWidget {
   final EventEntity event;
@@ -445,7 +516,8 @@ class _EventResultTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text((event.title).toUpperCase(),
+                  Text(
+                    (event.title).toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
@@ -529,7 +601,8 @@ class _DealCard extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Text((data.title).toUpperCase(),
+          Text(
+            (data.title).toUpperCase(),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TiermetryTypography.title(

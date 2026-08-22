@@ -13,6 +13,7 @@ import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 import '../../domain/entities/booking_entity.dart';
 import '../../domain/entities/reservation_hold_entity.dart';
@@ -117,10 +118,10 @@ class _BookingScreenState extends State<BookingScreen> with RefreshRateMixin {
                       _bookingCtrl.bookings.isEmpty &&
                       _bookingCtrl.activeHolds.isEmpty) {
                     return const SliverToBoxAdapter(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: TiermetryColors.accentNeonGreen,
-                        ),
+                      child: ShimmerLoadingVerticalList(
+                        itemHeight: 220,
+                        itemCount: 4,
+                        spacing: TiermetrySpacing.lg,
                       ),
                     );
                   }
@@ -400,10 +401,14 @@ class _BookingCardState extends State<_BookingCard> {
                         color: TiermetryColors.textMuted,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        booking.location,
-                        style: TiermetryTypography.bodySmall(
-                          color: TiermetryColors.textMuted,
+                      Expanded(
+                        child: Text(
+                          booking.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TiermetryTypography.bodySmall(
+                            color: TiermetryColors.textMuted,
+                          ),
                         ),
                       ),
                     ],
@@ -418,10 +423,14 @@ class _BookingCardState extends State<_BookingCard> {
                           color: TiermetryColors.textMuted,
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          'Assigned station: ${booking.assignedAssetName}',
-                          style: TiermetryTypography.bodySmall(
-                            color: TiermetryColors.textMuted,
+                        Expanded(
+                          child: Text(
+                            'Assigned station: ${booking.assignedAssetName}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TiermetryTypography.bodySmall(
+                              color: TiermetryColors.textMuted,
+                            ),
                           ),
                         ),
                       ],

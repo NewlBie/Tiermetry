@@ -54,6 +54,8 @@ class ArenaDeviceModel extends ArenaDevice {
     required super.price,
     required super.image,
     super.isOccupied,
+    super.occupiedTill,
+    super.nextBookingAt,
   });
 
   factory ArenaDeviceModel.fromJson(Map<String, dynamic> json) {
@@ -64,6 +66,8 @@ class ArenaDeviceModel extends ArenaDevice {
       price: (json['price'] as num? ?? 0).toInt(),
       image: json['image'] as String? ?? '',
       isOccupied: json['is_occupied'] as bool? ?? false,
+      occupiedTill: json['occupied_till'] != null ? DateTime.tryParse(json['occupied_till'] as String) : null,
+      nextBookingAt: json['next_booking_at'] != null ? DateTime.tryParse(json['next_booking_at'] as String) : null,
     );
   }
 }

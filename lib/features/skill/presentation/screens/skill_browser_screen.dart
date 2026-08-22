@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
 // Widgets
 import '../widgets/featured_skill_morph_card.dart';
@@ -132,7 +133,11 @@ class _SkillBrowserScreenState extends State<SkillBrowserScreen>
                 listenable: _skillCtrl,
                 builder: (context, child) {
                   if (_skillCtrl.isLoading) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const ShimmerLoadingVerticalList(
+                      itemHeight: 160,
+                      itemCount: 4,
+                      spacing: 20,
+                    );
                   }
                   if (_skillCtrl.skills.isEmpty) {
                     return const Center(

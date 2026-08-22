@@ -9,6 +9,11 @@ class ProfileEntity {
   final String joinedDate;
   final int? age;
   final String? image;
+  final String? username;
+  final String? dob;
+  final List<String> platforms;
+  final List<String> interests;
+  final List<String> preferredGames;
   final String tierName;
   final double tierProgress;
   final double tiergies;
@@ -33,6 +38,11 @@ class ProfileEntity {
     required this.wallet,
     this.age,
     this.image,
+    this.username,
+    this.dob,
+    this.platforms = const [],
+    this.interests = const [],
+    this.preferredGames = const [],
   });
 
   ProfileEntity copyWith({
@@ -40,6 +50,11 @@ class ProfileEntity {
     String? location,
     int? age,
     String? image,
+    String? username,
+    String? dob,
+    List<String>? platforms,
+    List<String>? interests,
+    List<String>? preferredGames,
     double? tiergies,
   }) {
     return ProfileEntity(
@@ -51,6 +66,11 @@ class ProfileEntity {
       joinedDate: joinedDate,
       age: age ?? this.age,
       image: image ?? this.image,
+      username: username ?? this.username,
+      dob: dob ?? this.dob,
+      platforms: platforms ?? this.platforms,
+      interests: interests ?? this.interests,
+      preferredGames: preferredGames ?? this.preferredGames,
       tierName: tierName,
       tierProgress: tierProgress,
       tiergies: tiergies ?? this.tiergies,

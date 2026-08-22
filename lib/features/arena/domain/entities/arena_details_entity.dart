@@ -39,6 +39,8 @@ class ArenaDevice {
   final int price;
   final String image;
   final bool isOccupied;
+  final DateTime? occupiedTill;
+  final DateTime? nextBookingAt;
 
   ArenaDevice({
     required this.id,
@@ -47,6 +49,8 @@ class ArenaDevice {
     required this.price,
     required this.image,
     this.isOccupied = false,
+    this.occupiedTill,
+    this.nextBookingAt,
   });
 }
 

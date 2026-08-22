@@ -1,10 +1,12 @@
 import 'dart:ui';
+
 import 'package:amazing_icons/amazing_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
-import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/features/notification/presentation/screens/notifications_screen.dart';
 
 class TopBar extends StatelessWidget {
   final Animation<double>? menuAnimationProgress;
@@ -73,28 +75,76 @@ class _TopBarSurface extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(('TIERMETRY').toUpperCase(),
-                style: TiermetryTypography.title(
-                  color: TiermetryColors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                ),
-              ),
-              _TopBarButton(
-                onTap: onMenuTap,
-                child: menuAnimationProgress == null
-                    ? const Icon(
-                        AmazingIconOutlined.menu,
-                        color: Colors.white,
-                        size: 20,
-                      )
-                    : AnimatedIcon(
-                        icon: AnimatedIcons.menu_close,
-                        progress: menuAnimationProgress!,
-                        color: Colors.white,
-                        size: 20,
+              // Left Side: Logo & Location
+              Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/logo/HomiesTrans.svg',
+                    height: 42,
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      // Location selector tap
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      child: Row(
+                        children: [
+                          AmazingIconBulk.location(
+                            size: 14,
+                            color: TiermetryColors.primary,
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'New York',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Right Side: Actions
+              Row(
+                children: [
+                  _TopBarButton(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NotificationsScreen(),
+                        ),
+                      );
+                    },
+                    child: AmazingIconBulk.notification(
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _TopBarButton(
+                    onTap: onMenuTap,
+                    child: ShaderMask(
+                      blendMode: BlendMode.srcIn,
+                      shaderCallback: (bounds) =>
+                          TiermetryColors.brandGradient.createShader(bounds),
+                      child: AmazingIconBulk.category(
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

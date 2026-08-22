@@ -31,21 +31,52 @@ class AppSearchHero extends StatelessWidget {
             Expanded(
               child: _SearchField(controller: controller, hintText: hintText),
             ),
-            if (onClear != null) ...[
-              const SizedBox(width: TiermetrySpacing.sm),
-              GestureDetector(
-                onTap: onClear,
-                child: AppSurface(
-                  width: 48,
-                  height: 48,
-                  color: TiermetryColors.surfaceElement,
-                  borderRadius: TiermetryRadii.md,
-                  border: Border.all(color: Colors.transparent),
-                  shadows: const [],
-                  child: const Icon(Icons.close_rounded, color: Colors.white70),
-                ),
-              ),
-            ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeInBack,
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  alignment: Alignment.centerRight,
+                  children: <Widget>[
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
+              transitionBuilder: (child, animation) {
+                return SizeTransition(
+                  sizeFactor: animation,
+                  axis: Axis.horizontal,
+                  axisAlignment: 1.0, // Anchor to the right edge
+                  child: FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: animation,
+                      child: child,
+                    ),
+                  ),
+                );
+              },
+              child: onClear != null
+                  ? Padding(
+                      key: const ValueKey('clear_btn'),
+                      padding: const EdgeInsets.only(left: TiermetrySpacing.sm),
+                      child: GestureDetector(
+                        onTap: onClear,
+                        child: AppSurface(
+                          width: 48,
+                          height: 48,
+                          color: TiermetryColors.surfaceElement,
+                          borderRadius: TiermetryRadii.md,
+                          border: Border.all(color: Colors.transparent),
+                          shadows: const [],
+                          child: const Icon(Icons.close_rounded, color: Colors.white70),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('empty')),
+            ),
           ],
         ),
       ),

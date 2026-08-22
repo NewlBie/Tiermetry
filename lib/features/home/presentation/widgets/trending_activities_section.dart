@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:silky_scroll/silky_scroll.dart';
@@ -51,18 +51,16 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
     }
   }
 
-  IconData _getActivityIcon(String iconKey) {
+  Widget _buildActivityIcon(String iconKey, double size, Color color) {
     switch (iconKey) {
       case 'bowling':
-        return CupertinoIcons.sportscourt;
-      case 'gokart':
-        return CupertinoIcons.car_detailed;
       case 'football':
-        return CupertinoIcons.sportscourt_fill;
       case 'gaming':
-        return CupertinoIcons.game_controller;
+        return AmazingIconBulk.game(size: size, color: color);
+      case 'gokart':
+        return AmazingIconBulk.discover(size: size, color: color);
       default:
-        return CupertinoIcons.star;
+        return AmazingIconBulk.category(size: size, color: color);
     }
   }
 
@@ -99,13 +97,13 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
         padding: const EdgeInsets.only(
           left: TiermetrySpacing.listInset,
           right: TiermetrySpacing.listInset,
-          top: 4,
+          top: TiermetrySpacing.xs,
           bottom: 0,
         ),
         itemCount: _activities.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: TiermetrySpacing.cardGap),
             child: _buildCapsuleCard(_activities[index], index),
           );
         },
@@ -122,13 +120,13 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
         padding: const EdgeInsets.only(
           left: TiermetrySpacing.listInset,
           right: TiermetrySpacing.listInset,
-          top: 4,
+          top: TiermetrySpacing.xs,
           bottom: 0,
         ),
         itemCount: 4,
         itemBuilder:
             (_, __) => Padding(
-              padding: const EdgeInsets.only(right: TiermetrySpacing.lg),
+              padding: const EdgeInsets.only(right: TiermetrySpacing.cardGap),
               child: AppSurface(
                 width: 100,
                 borderRadius: TiermetryRadii.md,
@@ -165,13 +163,13 @@ class _TrendingActivitiesSectionState extends State<TrendingActivitiesSection> {
                     isSelected: isSelected, // true by default visually
                     activeColor: activityColor,
                     inactiveColor: activityColor, // Always colored
-                    child: Icon(
-                      _getActivityIcon(activity.icon),
-                      color: Colors.black,
-                      size: 26,
+                    child: _buildActivityIcon(
+                      activity.icon,
+                      26.0,
+                      Colors.black,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: TiermetrySpacing.md),
                   // Text
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 0),
@@ -331,6 +329,7 @@ class _MaterialMorphingShapeState extends State<MaterialMorphingShape>
             return Container(
               width: 58,
               height: 58,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Color.lerp(widget.inactiveColor, widget.activeColor, selectValue),
                 borderRadius: finalRadius,

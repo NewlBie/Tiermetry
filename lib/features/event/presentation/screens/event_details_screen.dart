@@ -1,15 +1,19 @@
 import 'dart:async';
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/event_entity.dart';
 
@@ -28,6 +32,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
   bool _isRegistered = false;
   bool _isLoadingStatus = true;
   bool _isRegistering = false;
+  bool isDescExpanded = false;
 
   @override
   void initState() {
@@ -90,256 +95,483 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
+    const scaffoldColor = TiermetryColors.background;
+    const accentColor = TiermetryColors.primary;
     final event = widget.event;
+
     return Scaffold(
-      backgroundColor: TiermetryColors.background,
+      backgroundColor: scaffoldColor,
+      extendBody: true,
       body: Stack(
         children: [
-          // Background image
-          Hero(
-            tag: event.id,
-            child:
-                event.image != null && !event.image!.startsWith('assets/')
-                    ? Image.network(
-                      event.image!,
-                      height: 300,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder:
-                          (context, error, stackTrace) => Container(
-                            height: 300,
-                            width: double.infinity,
-                            color: TiermetryColors.surfaceUnderlay,
-                            child: const Icon(
-                              Icons.broken_image,
-                              color: Colors.white24,
-                              size: 50,
-                            ),
-                          ),
-                    )
-                    : Image.asset(
-                      event.image ?? 'assets/Hackathon.jpg',
-                      height: 300,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
-          ),
-
-          // Back button
-          Positioned(
-            top: 40,
-            left: 20,
-            child: CircleAvatar(
-              backgroundColor: Colors.transparent,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: TiermetryColors.white,
-                ),
-                onPressed: () => Navigator.pop(context),
+          // Ambient blurred background glow
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: Image.network(
+                event.image ?? '',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox(),
               ),
             ),
           ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(color: Colors.transparent),
+            ),
+          ),
+          // Main content
+          CustomScrollView(
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: _buildCoverImage(context, event),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: TiermetrySpacing.screenPadding,
+                    vertical: TiermetrySpacing.xl,
+                  ),
+                  child: _buildDetailsContent(context, event, accentColor),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomCTA(context, event),
+    );
+  }
 
-          // Draggable Sheet
-          DraggableScrollableSheet(
-            initialChildSize: 0.685,
-            minChildSize: 0.685,
-            maxChildSize: 0.95,
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(color: TiermetryColors.surface),
-                child: Column(
-                  children: [
-                    // ✅ Top SVG
-                    SvgPicture.asset(
-                      'assets/ticket_cut.svg',
-                      width: MediaQuery.of(context).size.width,
-                      fit: BoxFit.fitWidth,
-                      colorFilter: const ColorFilter.mode(
-                        TiermetryColors.primary,
-                        BlendMode.srcIn,
-                      ),
+  Widget _buildCoverImage(BuildContext context, EventEntity event) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            left: TiermetrySpacing.lg,
+            right: TiermetrySpacing.lg,
+            top: 60, // Padding for status bar
+            bottom: TiermetrySpacing.sm,
+          ),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const FaIcon(
+              FontAwesomeIcons.chevronLeft,
+              color: TiermetryColors.white,
+              size: 22,
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: TiermetrySpacing.screenPadding,
+          ),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Hero(
+                  tag: event.id,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+                    child: event.image != null && !event.image!.startsWith('assets/')
+                        ? Image.network(
+                            event.image!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Container(
+                              color: TiermetryColors.surfaceUnderlay,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.white24,
+                                size: 50,
+                              ),
+                            ),
+                          )
+                        : Image.asset(
+                            event.image ?? 'assets/Hackathon.jpg',
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 12,
+                  left: 12,
+                  child: AppSurface(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-
-                    // ✅ Scrollable Content
-                    Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 18,
-                        ),
+                    color: TiermetryColors.primary,
+                    borderRadius: TiermetryRadii.pill,
+                    shadows: const [],
+                    child: Text(
+                      event.status.toUpperCase(),
+                      style: TiermetryTypography.label(
+                        color: TiermetryColors.white,
+                      ).copyWith(fontSize: 10, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                if (event.points > 0)
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: AppSurface(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      color: TiermetryColors.surfaceUnderlay,
+                      borderRadius: TiermetryRadii.pill,
+                      shadows: const [],
+                      child: Row(
                         children: [
-                          Text((event.title).toUpperCase(),
-                            style: TiermetryTypography.title(
-                              fontSize: 26,
-                              color: TiermetryColors.textPrimary,
-                            ),
+                          const FaIcon(
+                            FontAwesomeIcons.solidStar,
+                            size: 12,
+                            color: Colors.amber,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(width: 4),
                           Text(
-                            event.location,
-                            style: TiermetryTypography.bodySmall(
-                              fontSize: 15,
-                              color: TiermetryColors.textSecondary,
-                            ),
+                            '${event.points} PTS',
+                            style: TiermetryTypography.label(
+                              color: Colors.amber,
+                            ).copyWith(fontSize: 10),
                           ),
-                          const SizedBox(height: 20),
-
-                          // Info rows
-                          _buildInfoRow(
-                            Icons.calendar_today,
-                            'Date',
-                            DateFormat(
-                              'EEEE, MMM d, y',
-                            ).format(event.startTime),
-                          ),
-                          _buildInfoRow(
-                            Icons.access_time,
-                            'Time',
-                            '${DateFormat('hh:mm a').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.endTime)}',
-                          ),
-                          _buildInfoRow(
-                            Icons.location_on_outlined,
-                            'Location',
-                            event.location,
-                          ),
-                          _buildInfoRow(
-                            Icons.monetization_on_outlined,
-                            'Cost',
-                            event.cost,
-                          ),
-                          _buildInfoRow(
-                            Icons.stars,
-                            'Points',
-                            '${event.points} pts',
-                          ),
-                          const SizedBox(height: 20),
-
-                          // 📊 Total Enrollments
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(('Total Enrollments').toUpperCase(),
-                                style: TiermetryTypography.titleSmall(
-                                  fontSize: 16,
-                                  color: TiermetryColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  RollingCounter(number: event.enrollments),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'joined',
-                                    style: TiermetryTypography.bodySmall(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w500,
-                                      color: TiermetryColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Text(('Time Remaining').toUpperCase(),
-                            style: TiermetryTypography.titleSmall(
-                              fontSize: 16,
-                              color: TiermetryColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          CountdownTimer(eventDate: event.startTime),
-                          const SizedBox(height: 30),
-
-                          Text(('Event Perks').toUpperCase(),
-                            style: TiermetryTypography.titleSmall(
-                              fontSize: 16,
-                              color: TiermetryColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          event.perks.isEmpty
-                              ? Text(
-                                'No specific perks listed for this event.',
-                                style: TiermetryTypography.bodySmall(
-                                  color: TiermetryColors.textSecondary,
-                                ),
-                              )
-                              : Wrap(
-                                spacing: 12,
-                                runSpacing: 12,
-                                children:
-                                    event.perks
-                                        .map(
-                                          (perk) => _perkTile(
-                                            _getIconData(perk.icon),
-                                            perk.name,
-                                          ),
-                                        )
-                                        .toList(),
-                              ),
-                          const SizedBox(height: 24),
-
-                          Text(('Description').toUpperCase(),
-                            style: TiermetryTypography.titleSmall(
-                              fontSize: 16,
-                              color: TiermetryColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            event.description ?? 'No description available.',
-                            style: TiermetryTypography.bodySmall(
-                              fontSize: 14,
-                              height: 1.6,
-                              color: TiermetryColors.textSecondary,
-                            ),
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 8,
-                            children:
-                                event.tags
-                                    .map(
-                                      (tag) => AppPill(
-                                        text: tag,
-                                        color: TiermetryColors.violet300,
-                                        textColor: TiermetryColors.white,
-                                      ),
-                                    )
-                                    .toList(),
-                          ),
-
-                          const SizedBox(height: 30),
-
-                          // CTA BUTTON
-                          _buildCTAButton(event),
                         ],
                       ),
                     ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailsContent(
+    BuildContext context,
+    EventEntity event,
+    Color accentColor,
+  ) {
+    const textColorPrimary = TiermetryColors.white;
+    const textColorSecondary = TiermetryColors.textMuted;
+    const cardBackgroundColor = TiermetryColors.surfaceUnderlay;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Massive Title
+        Text(
+          event.title.toUpperCase(),
+          style: TiermetryTypography.displayLarge(
+            color: textColorPrimary,
+          ).copyWith(
+            height: 1.1,
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Tags
+        if (event.tags.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: event.tags.map((tag) => AppPill(
+              text: tag,
+              color: cardBackgroundColor,
+              textColor: TiermetryColors.white,
+            )).toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
+
+        // Unified Info Dashboard
+        AppSurface(
+          padding: const EdgeInsets.all(TiermetrySpacing.lg),
+          color: cardBackgroundColor,
+          borderRadius: TiermetryRadii.lg,
+          child: Column(
+            children: [
+              _infoRow(
+                FontAwesomeIcons.calendarDay,
+                DateFormat('EEEE, MMM d, y').format(event.startTime),
+                textColorSecondary,
+              ),
+              const SizedBox(height: 16),
+              _infoRow(
+                FontAwesomeIcons.clock,
+                '${DateFormat('hh:mm a').format(event.startTime)} - ${DateFormat('hh:mm a').format(event.endTime)}',
+                textColorSecondary,
+              ),
+              const SizedBox(height: 16),
+              _buildLocationCard(
+                context,
+                event,
+                textColorSecondary,
+                cardBackgroundColor,
+                accentColor,
+              ),
+              const SizedBox(height: 16),
+              _infoRow(
+                FontAwesomeIcons.ticket,
+                event.cost,
+                TiermetryColors.positive,
+                isBold: true,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Event Status / Stats Card
+        Row(
+          children: [
+            Expanded(
+              child: AppSurface(
+                padding: const EdgeInsets.all(TiermetrySpacing.lg),
+                color: cardBackgroundColor,
+                borderRadius: TiermetryRadii.lg,
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TOTAL JOINED',
+                      style: TiermetryTypography.label(
+                        color: textColorSecondary,
+                      ).copyWith(fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        RollingCounter(number: event.enrollments),
+                        const SizedBox(width: 8),
+                        Text(
+                          'users',
+                          style: TiermetryTypography.bodySmall(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: textColorSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-              );
-            },
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: AppSurface(
+                padding: const EdgeInsets.all(TiermetrySpacing.lg),
+                color: cardBackgroundColor,
+                borderRadius: TiermetryRadii.lg,
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'STARTS IN',
+                      style: TiermetryTypography.label(
+                        color: textColorSecondary,
+                      ).copyWith(fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    CountdownTimerCompact(eventDate: event.startTime),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: TiermetrySpacing.xl),
+
+        // Quick Perks
+        if (event.perks.isNotEmpty) ...[
+          Wrap(
+            spacing: TiermetrySpacing.lg,
+            runSpacing: TiermetrySpacing.md,
+            children: event.perks.map((perk) => _featureIcon(
+              _getFaIconData(perk.icon),
+              perk.name,
+              textColorSecondary,
+            )).toList(),
           ),
+          const SizedBox(height: TiermetrySpacing.xl),
         ],
+
+        // Description
+        Text(
+          event.description ?? 'No description available.',
+          maxLines: isDescExpanded ? null : 4,
+          overflow: isDescExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+          style: TiermetryTypography.bodySmall(
+            height: 1.5,
+            fontSize: 14,
+            color: textColorSecondary,
+          ),
+        ),
+        GestureDetector(
+          onTap: () => setState(() => isDescExpanded = !isDescExpanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: TiermetrySpacing.sm),
+            child: Text(
+              isDescExpanded ? 'Read Less' : 'Read More',
+              style: TiermetryTypography.bodySmall(
+                color: TiermetryColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 120), // Bottom padding for CTA
+      ],
+    );
+  }
+
+  Widget _buildLocationCard(
+    BuildContext context,
+    EventEntity event,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+    Color accentColor,
+  ) {
+    return GestureDetector(
+      onTap: () async {
+        final query = Uri.encodeComponent(event.location);
+        final url = Uri.parse('https://maps.google.com/?q=$query');
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open map.')),
+            );
+          }
+        }
+      },
+      child: AppSurface(
+        padding: const EdgeInsets.all(TiermetrySpacing.md),
+        color: TiermetryColors.background, // contrast against card background
+        borderRadius: TiermetryRadii.md,
+        child: Row(
+          children: [
+            AppSurface(
+              padding: const EdgeInsets.all(TiermetrySpacing.md),
+              color: accentColor.withValues(alpha: 0.1),
+              borderRadius: TiermetryRadii.pill,
+              child: Icon(
+                Icons.location_on_rounded,
+                size: 20,
+                color: accentColor,
+              ),
+            ),
+            const SizedBox(width: TiermetrySpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Location',
+                    style: TiermetryTypography.bodySmall(
+                      color: textColorSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  Text(
+                    event.location,
+                    style: TiermetryTypography.bodySmall(
+                      color: TiermetryColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: textColorSecondary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoRow(FaIconData icon, String text, Color color, {bool isBold = false}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        FaIcon(icon, size: 16, color: TiermetryColors.white.withValues(alpha: 0.5)),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            text,
+            style: TiermetryTypography.bodySmall(
+              fontSize: 15,
+              color: color,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _featureIcon(FaIconData icon, String label, Color textColor) {
+    return Column(
+      children: [
+        AppSurface(
+          padding: const EdgeInsets.all(TiermetrySpacing.md),
+          color: TiermetryColors.surfaceUnderlay,
+          borderRadius: 16,
+          child: FaIcon(icon, color: TiermetryColors.white, size: 20),
+        ),
+        const SizedBox(height: TiermetrySpacing.xs),
+        Text(
+          label,
+          style: TiermetryTypography.label(color: textColor).copyWith(fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomCTA(BuildContext context, EventEntity event) {
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          padding: const EdgeInsets.only(
+            left: TiermetrySpacing.screenPadding,
+            right: TiermetrySpacing.screenPadding,
+            top: TiermetrySpacing.md,
+            bottom: 32,
+          ),
+          decoration: BoxDecoration(
+            color: TiermetryColors.background.withValues(alpha: 0.75),
+          ),
+          child: _buildCTAButton(event),
+        ),
       ),
     );
   }
 
   Widget _buildCTAButton(EventEntity event) {
     if (_isLoadingStatus) {
-      return const Center(
-        child: CircularProgressIndicator(color: TiermetryColors.primary),
+      return const SizedBox(
+        height: 56,
+        child: Center(
+          child: CircularProgressIndicator(color: TiermetryColors.primary),
+        ),
       );
     }
 
@@ -349,15 +581,14 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
         style: ElevatedButton.styleFrom(
           backgroundColor: TiermetryColors.surfaceElement,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+            borderRadius: BorderRadius.circular(TiermetryRadii.md),
           ),
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          minimumSize: const Size.fromHeight(50),
+          minimumSize: const Size.fromHeight(56),
         ),
         child: Text(
           'Already Registered',
           style: TiermetryTypography.action(
-            fontSize: 15,
+            fontSize: 16,
             color: TiermetryColors.white.withValues(alpha: 0.5),
           ),
         ),
@@ -371,8 +602,7 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     if (!isOpen) {
       final now = DateTime.now();
       if (now.isBefore(event.registrationStart)) {
-        label =
-            'Registration Opens ${DateFormat('MMM d').format(event.registrationStart)}';
+        label = 'Opens ${DateFormat('MMM d').format(event.registrationStart)}';
       } else {
         label = 'Registration Closed';
       }
@@ -381,127 +611,67 @@ class _EventDetailsScreenState extends State<EventDetailsScreen>
     }
 
     return ElevatedButton(
-      onPressed:
-          (isOpen && !isFull && !_isRegistering) ? _handleRegister : null,
+      onPressed: (isOpen && !isFull && !_isRegistering) ? _handleRegister : null,
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-            isOpen && !isFull
-                ? TiermetryColors.primary
-                : TiermetryColors.surfaceElement,
+        backgroundColor: isOpen && !isFull ? TiermetryColors.primary : TiermetryColors.surfaceElement,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        minimumSize: const Size.fromHeight(50),
+        minimumSize: const Size.fromHeight(56),
       ),
-      child:
-          _isRegistering
-              ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: TiermetryColors.white,
-                  strokeWidth: 2,
-                ),
-              )
-              : Text(
-                label,
-                style: TiermetryTypography.action(
-                  fontSize: 15,
-                  color:
-                      isOpen && !isFull
-                          ? TiermetryColors.white
-                          : TiermetryColors.white.withValues(alpha: 0.5),
-                ),
+      child: _isRegistering
+          ? const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: TiermetryColors.white,
+                strokeWidth: 2,
               ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: TiermetryColors.textSecondary, size: 20),
-          const SizedBox(width: 12),
-          Text(
-            '$title: ',
-            style: TiermetryTypography.bodySmall(
-              fontWeight: FontWeight.w600,
-              color: TiermetryColors.textPrimary,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TiermetryTypography.bodySmall(
-                color: TiermetryColors.textSecondary,
+            )
+          : Text(
+              label,
+              style: TiermetryTypography.action(
+                fontSize: 16,
+                color: isOpen && !isFull ? TiermetryColors.white : TiermetryColors.white.withValues(alpha: 0.5),
               ),
             ),
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _perkTile(IconData icon, String label) {
-    return AppSurface(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      color: TiermetryColors.violet300.withValues(alpha: 0.2),
-      borderRadius: 12,
-      border: Border.all(color: Colors.transparent),
-      shadows: const [],
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: TiermetryColors.positive),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TiermetryTypography.bodySmall(
-              fontSize: 13,
-              color: TiermetryColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getIconData(String iconName) {
+  FaIconData _getFaIconData(String iconName) {
     switch (iconName) {
       case 'fastfood':
-        return Icons.fastfood;
+        return FontAwesomeIcons.burger;
       case 'stars':
-        return Icons.stars;
+        return FontAwesomeIcons.solidStar;
       case 'emoji_events':
-        return Icons.emoji_events;
+        return FontAwesomeIcons.trophy;
       case 'verified_user':
-        return Icons.verified_user;
+        return FontAwesomeIcons.shieldHalved;
       case 'chair':
-        return Icons.chair;
+        return FontAwesomeIcons.chair;
       case 'people':
-        return Icons.people;
+        return FontAwesomeIcons.users;
       case 'wifi':
-        return Icons.wifi;
+        return FontAwesomeIcons.wifi;
       case 'notifications':
-        return Icons.notifications;
+        return FontAwesomeIcons.bell;
       default:
-        return Icons.star_border_rounded;
+        return FontAwesomeIcons.circleCheck;
     }
   }
 }
 
-class CountdownTimer extends StatefulWidget {
+class CountdownTimerCompact extends StatefulWidget {
   final DateTime eventDate;
 
-  const CountdownTimer({required this.eventDate, super.key});
+  const CountdownTimerCompact({required this.eventDate, super.key});
 
   @override
-  State<CountdownTimer> createState() => _CountdownTimerState();
+  State<CountdownTimerCompact> createState() => _CountdownTimerCompactState();
 }
 
-class _CountdownTimerState extends State<CountdownTimer> {
+class _CountdownTimerCompactState extends State<CountdownTimerCompact> {
   late Duration _timeLeft;
   late Timer _timer;
 
@@ -516,6 +686,9 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final now = DateTime.now();
     setState(() {
       _timeLeft = widget.eventDate.difference(now);
+      if (_timeLeft.isNegative) {
+        _timeLeft = Duration.zero;
+      }
     });
   }
 
@@ -530,11 +703,21 @@ class _CountdownTimerState extends State<CountdownTimer> {
     final days = _timeLeft.inDays;
     final hours = _timeLeft.inHours % 24;
     final minutes = _timeLeft.inMinutes % 60;
+    
+    if (days == 0 && hours == 0 && minutes == 0) {
+      return Text('STARTED',
+        style: TiermetryTypography.title(
+          fontSize: 18,
+          color: TiermetryColors.primary,
+        ),
+      );
+    }
 
-    return Text(('$days Days : $hours Hrs : $minutes Min').toUpperCase(),
-      style: TiermetryTypography.titleSmall(
-        fontSize: 20,
-        color: TiermetryColors.textSecondary,
+    return Text(
+      '${days}D : ${hours}H : ${minutes}M',
+      style: TiermetryTypography.title(
+        fontSize: 18,
+        color: TiermetryColors.white,
       ),
     );
   }
@@ -555,12 +738,12 @@ class _RollingDigitState extends State<RollingDigit> {
   @override
   void initState() {
     super.initState();
-
-    // Delay the animation slightly so user sees it after page loads
     Future.delayed(const Duration(milliseconds: 300), () {
-      setState(() {
-        animatedValue = widget.digit.toDouble();
-      });
+      if (mounted) {
+        setState(() {
+          animatedValue = widget.digit.toDouble();
+        });
+      }
     });
   }
 
@@ -568,22 +751,23 @@ class _RollingDigitState extends State<RollingDigit> {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 10, end: animatedValue),
-      duration: const Duration(milliseconds: 1200), // Slower scroll
+      duration: const Duration(milliseconds: 1200),
       curve: Curves.easeOutQuart,
       builder: (context, value, child) {
         return ClipRect(
           child: SizedBox(
-            height: 40,
-            width: 24,
+            height: 24,
+            width: 14,
             child: Stack(
               alignment: Alignment.center,
               children: List.generate(10, (i) {
                 return Positioned(
-                  top: (i - value) * 40,
-                  child: Text(('$i').toUpperCase(),
+                  top: (i - value) * 24,
+                  child: Text(
+                    '$i',
                     style: TiermetryTypography.title(
-                      fontSize: 30,
-                      color: TiermetryColors.positive,
+                      fontSize: 20,
+                      color: TiermetryColors.white,
                     ),
                   ),
                 );
@@ -604,13 +788,9 @@ class RollingCounter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final digits = number.toString().split('').map(int.parse).toList();
-
     return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children:
-          digits.map((digit) {
-            return RollingDigit(digit: digit);
-          }).toList(),
+      mainAxisSize: MainAxisSize.min,
+      children: digits.map((digit) => RollingDigit(digit: digit)).toList(),
     );
   }
 }

@@ -42,7 +42,10 @@ class ArenaCtrl extends ChangeNotifier {
   String _activity = 'All';
   double? _maxDistance;
   int? _maxPriceTier;
+  double? _minRating;
+  Set<String> _platforms = {};
   bool? _onlyOpenNow;
+  bool? _hasOffers;
   String? _sortBy;
 
   Timer? _searchDebounce;
@@ -73,7 +76,10 @@ class ArenaCtrl extends ChangeNotifier {
         activity: _activity,
         maxDistance: _maxDistance,
         maxPriceTier: _maxPriceTier,
+        minRating: _minRating,
+        platforms: _platforms,
         onlyOpenNow: _onlyOpenNow,
+        hasOffers: _hasOffers,
         sortBy: _sortBy,
         page: _currentPage,
         pageSize: _pageSize,
@@ -118,12 +124,18 @@ class ArenaCtrl extends ChangeNotifier {
   void setFilters({
     double? maxDistance,
     int? maxPriceTier,
-    bool? onlyOpenNow,
+    double? minRating,
+    Set<String> platforms = const {},
+    bool onlyOpenNow = false,
+    bool hasOffers = false,
     String? sortBy,
   }) {
     _maxDistance = maxDistance;
     _maxPriceTier = maxPriceTier;
-    _onlyOpenNow = onlyOpenNow;
+    _minRating = minRating;
+    _platforms = Set.from(platforms);
+    _onlyOpenNow = onlyOpenNow ? true : null;
+    _hasOffers = hasOffers ? true : null;
     _sortBy = sortBy;
     loadArenas(isRefresh: true);
   }
@@ -133,7 +145,10 @@ class ArenaCtrl extends ChangeNotifier {
     _activity = 'All';
     _maxDistance = null;
     _maxPriceTier = null;
+    _minRating = null;
+    _platforms = {};
     _onlyOpenNow = null;
+    _hasOffers = null;
     _sortBy = null;
     loadArenas(isRefresh: true);
   }

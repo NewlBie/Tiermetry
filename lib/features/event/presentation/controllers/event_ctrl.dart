@@ -16,6 +16,41 @@ class EventCtrl extends ChangeNotifier {
   List<EventEntity> _myRegistrations = [];
   List<EventEntity> get myRegistrations => _myRegistrations;
 
+  List<EventEntity> get radarEvents => _events.take(2).toList();
+
+  List<EventEntity> get headlinerEvents =>
+      _events
+          .where(
+            (e) =>
+                e.points >= 150 || e.cost != 'Free' || e.title.contains('Pro'),
+          )
+          .toList();
+
+  List<EventEntity> get showdownEvents =>
+      _events
+          .where(
+            (e) =>
+                e.tags.any(
+                  (t) =>
+                      t.toLowerCase() == 'tournament' ||
+                      t.toLowerCase() == 'competitive' ||
+                      t.toLowerCase() == 'hackathon',
+                ) ||
+                e.title.toLowerCase().contains('clash') ||
+                e.title.toLowerCase().contains('cup'),
+          )
+          .toList();
+
+  List<EventEntity> get sceneEvents {
+    final excludedIds = {
+      ...radarEvents.map((e) => e.id),
+      ...headlinerEvents.map((e) => e.id),
+      ...showdownEvents.map((e) => e.id),
+    };
+
+    return _events.where((e) => !excludedIds.contains(e.id)).toList();
+  }
+
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 

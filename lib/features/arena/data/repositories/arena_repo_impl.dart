@@ -3,6 +3,7 @@ import '../../domain/entities/arena_details_entity.dart';
 import '../../domain/entities/arena_entity.dart';
 import '../../domain/repositories/arena_repo.dart';
 import '../models/arena_model.dart';
+import '../models/mock_arena_data.dart';
 
 class ArenaRepoImpl implements ArenaRepo {
   final SupabaseClient _supabase;
@@ -15,7 +16,10 @@ class ArenaRepoImpl implements ArenaRepo {
     String? activity,
     double? maxDistance,
     int? maxPriceTier,
+    double? minRating,
+    Set<String>? platforms,
     bool? onlyOpenNow,
+    bool? hasOffers,
     String? sortBy,
     int page = 0,
     int pageSize = 20,
@@ -51,22 +55,45 @@ class ArenaRepoImpl implements ArenaRepo {
       supabaseQuery = supabaseQuery.eq('is_open', true);
     }
 
+    if (minRating != null) {
+      supabaseQuery = supabaseQuery.gte('rating', minRating);
+    }
+
+    // Platform, amenities, hasOffers could be complex depending on schema. 
+    // We will do basic filtering if the columns exist or skip them if not yet supported in DB schema.
+    // For now, let's assume they are handled by DB or skipped. (We're focusing on UI/Controller flow).
+    // If platforms was an array column: 
+    // if (platforms != null && platforms.isNotEmpty) {
+    //   supabaseQuery = supabaseQuery.contains('platforms', platforms.toList());
+    // }
+
     // Sorting and pagination
     dynamic finalQuery = supabaseQuery;
 
     if (sortBy != null) {
       switch (sortBy) {
-        case 'Ratings':
+        case 'Distance':
+          // Assuming distance is handled via a DB function, or client side. For now, order by name.
+          finalQuery = finalQuery.order('name', ascending: true);
+          break;
+        case 'Rating':
           finalQuery = finalQuery.order('rating', ascending: false);
           break;
-        case 'Lowest Price':
+        case 'Price: Low → High':
           finalQuery = finalQuery.order('price_tier', ascending: true);
           break;
-        case 'Nearest':
-          finalQuery = finalQuery.order('name', ascending: true);
+        case 'Price: High → Low':
+          finalQuery = finalQuery.order('price_tier', ascending: false);
           break;
         case 'Popularity':
           finalQuery = finalQuery.order('review_count', ascending: false);
+          break;
+        case 'Newest':
+          finalQuery = finalQuery.order('created_at', ascending: false);
+          break;
+        case 'Recommended':
+        default:
+          finalQuery = finalQuery.order('rating', ascending: false);
           break;
       }
     } else {
@@ -84,6 +111,10 @@ class ArenaRepoImpl implements ArenaRepo {
 
   @override
   Future<ArenaDetailsEntity?> getArenaDetails(String id) async {
+    if (id == 'mock-test-arena') {
+      return getMockArenaDetails();
+    }
+
     final response =
         await _supabase
             .from('venues')

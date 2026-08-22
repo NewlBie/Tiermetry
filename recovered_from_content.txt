@@ -1,0 +1,706 @@
+Created At: 2026-08-22T02:42:06+05:30
+Completed At: 2026-08-22T02:42:06+05:30
+File Path: `file:///c:/Users/Neal/StudioProjects/tiermetry/lib/features/arena/presentation/screens/arena_screen.dart`
+Total Lines: 698
+Total Bytes: 25716
+Showing lines 1 to 698
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import 'package:flutter/material.dart';
+2: import 'package:flutter_animate/flutter_animate.dart';
+3: import 'package:google_fonts/google_fonts.dart';
+4: import 'package:silky_scroll/silky_scroll.dart';
+5: import 'package:tiermetry/core/locator.dart';
+6: import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+7: import 'package:tiermetry/core/theme/colors.dart';
+8: import 'package:tiermetry/core/theme/shadows.dart';
+9: import 'package:tiermetry/core/theme/spacing.dart';
+10: import 'package:tiermetry/core/theme/typography.dart';
+11: import 'package:tiermetry/core/widgets/app_empty_state.dart';
+12: import 'package:tiermetry/core/widgets/app_error_state.dart';
+13: import 'package:tiermetry/core/widgets/app_search_hero.dart';
+14: import 'package:tiermetry/core/widgets/section_header.dart';
+15: import 'package:tiermetry/core/widgets/shimmer_loading.dart';
+16: import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
+17: 
+18: import '../../domain/entities/arena_entity.dart';
+19: import '../widgets/arena_backdrop.dart';
+20: import '../widgets/arena_card.dart';
+21: import '../widgets/arena_greeting.dart';
+22: import 'all_arenas_screen.dart';
+23: 
+24: class ArenaScreen extends StatefulWidget {
+25:   const ArenaScreen({super.key});
+26: 
+27:   @override
+28:   State<ArenaScreen> createState() => _ArenaScreenState();
+29: }
+30: 
+31: class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
+32:   final _arenaCtrl = locator.arenaCtrl;
+33:   final _searchController = TextEditingController();
+34:   late final ScrollController _scrollCtrl;
+35: 
+36:   String _selectedActivity = 'All';
+37: 
+38:   static const List<_ActivityChoice> _activityChoices = [
+39:     _ActivityChoice('All', Icons.grid_view_rounded),
+40:     _ActivityChoice('Gaming cafes', Icons.sports_esports_rounded),
+41:     _ActivityChoice('Turfs', Icons.sports_soccer_rounded),
+42:     _ActivityChoice('Paintball', Icons.center_focus_strong_rounded),
+43:     _ActivityChoice('Karting', Icons.sports_motorsports_rounded),
+44:   ];
+45: 
+46:   static const List<_SponsoredCardData> _sponsoredCards = [
+47:     _SponsoredCardData(
+48:       offerValue: '50% OFF',
+49:       title: 'Squad night deals',
+50:       subtitle: 'Gaming cafes, turf slots, and group bookings for tonight.',
+51:       label: 'Sponsored',
+52:     ),
+53:     _SponsoredCardData(
+54:       offerValue: '₹73',
+55:       title: 'Weekend turf rush',
+56:       subtitle: 'Late slots, floodlights, and quick bookings near you.',
+57:       label: 'Promoted',
+58:     ),
+59:   ];
+60: 
+61:   @override
+62:   void initState() {
+63:     super.initState();
+64:     _scrollCtrl = ScrollController();
+65:     _searchController.addListener(_onSearchChanged);
+66:     Future.microtask(() => _arenaCtrl.loadArenas());
+67:   }
+68: 
+69:   @override
+70:   void dispose() {
+71:     _searchController
+72:       ..removeListener(_onSearchChanged)
+73:       ..dispose();
+74:     _scrollCtrl.dispose();
+75:     super.dispose();
+76:   }
+77: 
+78:   void _onSearchChanged() {
+79:     _arenaCtrl.search(_searchController.text.trim());
+80:   }
+81: 
+82:   void _onActivityChanged(String label) {
+83:     setState(() => _selectedActivity = label);
+84:     _arenaCtrl.setActivity(label);
+85:   }
+86: 
+87:   void _onClearAll() {
+88:     _searchController.clear();
+89:     setState(() => _selectedActivity = 'All');
+90:     _arenaCtrl.clearFilters();
+91:   }
+92: 
+93:   void _openAllArenas() {
+94:     Navigator.push(
+95:       context,
+96:       MaterialPageRoute<void>(builder: (_) => const AllArenasScreen()),
+97:     );
+98:   }
+99: 
+100:   @override
+101:   Widget build(BuildContext context) {
+102:     final topPad = MediaQuery.of(context).padding.top;
+103: 
+104:     return Scaffold(
+105:       backgroundColor: TiermetryColors.background,
+106:       body: Stack(
+107:         children: [
+108:           const ArenaBackdrop(),
+109:           RefreshIndicator(
+110:             onRefresh: () => _arenaCtrl.loadArenas(isRefresh: true),
+111:             backgroundColor: TiermetryColors.surface,
+112:             color: TiermetryColors.accentNeonGreen,
+113:             edgeOffset: topPad + TiermetrySpacing.topBarHeight,
+114:             child: NotificationListener<ScrollNotification>(
+115:               onNotification: (ScrollNotification scrollInfo) {
+116:                 if (scrollInfo.metrics.pixels >=
+117:                         scrollInfo.metrics.maxScrollExtent - 200 &&
+118:                     !_arenaCtrl.isLoadingMore) {
+119:                   _arenaCtrl.loadArenas();
+120:                 }
+121:                 return false;
+122:               },
+123:               child: ListenableBuilder(
+124:                 listenable: _arenaCtrl,
+125:                 builder: (context, _) {
+126:                   final arenas = _arenaCtrl.arenas;
+127:                   final isSearching = _searchController.text.trim().isNotEmpty;
+128:                   final featured = [...arenas]
+129:                     ..sort((a, b) => b.rating.compareTo(a.rating));
+130: 
+131:                   return SilkyCustomScrollView(
+132:                     controller: _scrollCtrl,
+133:                     physics: const AlwaysScrollableScrollPhysics(
+134:                       parent: BouncingScrollPhysics(),
+135:                     ),
+136:                     slivers: [
+137:                       SliverToBoxAdapter(
+138:                         child: Padding(
+139:                           padding: EdgeInsets.fromLTRB(
+140:                             TiermetrySpacing.screenPadding,
+141:                             topPad +
+142:                                 TiermetrySpacing.topBarHeight +
+143:                                 TiermetrySpacing.sectionGap,
+144:                             TiermetrySpacing.screenPadding,
+145:                             TiermetrySpacing.lg,
+146:                           ),
+147:                           child: const ArenaGreeting(),
+148:                         ),
+149:                       ),
+150:                       SliverToBoxAdapter(
+151:                         child: RepaintBoundary(
+152:                           child: Padding(
+153:                             padding: TiermetrySpacing.pagePadding,
+154:                             child: AppSearchHero(
+155:                               controller: _searchController,
+156:                               hintText:
+157:                                   'Search gaming cafes, turfs, paintball...',
+158:                               onClear:
+159:                                   _searchController.text.isEmpty
+160:                                       ? null
+161:                                       : _searchController.clear,
+162:                             ),
+163:                           ),
+164:                         ),
+165:                       ),
+166:                       _buildActivityStrip(),
+167:                       const SliverToBoxAdapter(
+168:                         child: SizedBox(height: TiermetrySpacing.sectionGap),
+169:                       ),
+170:                       _buildSponsoredSection(isSearching),
+171:                       _buildFeaturedSection(isSearching, featured),
+172: 
+173:                       // Main Venue Section Header
+174:                       SliverToBoxAdapter(
+175:                         child: Padding(
+176:                           padding: TiermetrySpacing.pagePadding,
+177:                           child: SectionHeader(
+178:                             title:
+179:                                 _arenaCtrl.isLoading
+180:                                     ? 'Searching...'
+181:                                     : 'Venues',
+182:                             onViewMore: _openAllArenas,
+183:                           ),
+184:                         ),
+185:                       ),
+186:                       const SliverToBoxAdapter(
+187:                         child: SizedBox(
+188:                           height: TiermetrySpacing.headerToContent,
+189:                         ),
+190:                       ),
+191: 
+192:                       if (_arenaCtrl.isLoading && arenas.isEmpty)
+193:                         const SliverPadding(
+194:                           padding: EdgeInsets.fromLTRB(
+195:                             TiermetrySpacing.screenPadding,
+196:                             TiermetrySpacing.topBarHeight,
+197:                             TiermetrySpacing.screenPadding,
+198:                             TiermetrySpacing.screenPadding,
+199:                           ),
+200:                           sliver: SliverToBoxAdapter(
+201:                             child: ShimmerLoadingVerticalList(
+202:                               itemHeight: 240,
+203:                               itemCount: 4,
+204:                               spacing: TiermetrySpacing.md,
+205:                             ),
+206:                           ),
+207:                         )
+208:                       else if (_arenaCtrl.error != null && arenas.isEmpty)
+209:                         SliverToBoxAdapter(
+210:                           child: AppErrorState(
+211:                             message: _arenaCtrl.error!,
+212:                             onRetry:
+213:                                 () => _arenaCtrl.loadArenas(isRefresh: true),
+214:                           ),
+215:                         )
+216:                       else if (arenas.isEmpty)
+217:                         SliverToBoxAdapter(
+218:                           child: AppEmptyState(
+219:                             message: 'No matching places found.',
+220:                             onAction: _onClearAll,
+221:                             actionLabel: 'Clear Filters',
+222:                           ),
+223:                         )
+224:                       else
+225:                         SliverPadding(
+226:                           padding: TiermetrySpacing.pagePadding,
+227:                           sliver: SliverList.builder(
+228:                             itemCount: arenas.length,
+229:                             itemBuilder: (context, index) {
+230:                               return Padding(
+231:                                 padding: const EdgeInsets.only(
+232:                                   bottom: TiermetrySpacing.md,
+233:                                 ),
+234:                                 child: ArenaCard(arena: arenas[index]),
+235:                               );
+236:                             },
+237:                           ),
+238:                         ),
+239: 
+240:                       if (_arenaCtrl.isLoadingMore)
+241:                         const SliverPadding(
+242:                           padding: EdgeInsets.symmetric(
+243:                             horizontal: TiermetrySpacing.screenPadding,
+244:                             vertical: TiermetrySpacing.xl,
+245:                           ),
+246:                           sliver: SliverToBoxAdapter(
+247:                             child: ShimmerLoadingVerticalList(
+248:                               itemHeight: 240,
+249:                               itemCount: 1,
+250:                             ),
+251:                           ),
+252:                         ),
+253: 
+254:                       const SliverToBoxAdapter(
+255:                         child: SizedBox(
+256:                           height: TiermetrySpacing.bottomSafeArea,
+257:                         ),
+258:                       ),
+259:                     ],
+260:                   );
+261:                 },
+262:               ),
+263:             ),
+264:           ),
+265:           const ScrollGradientOverlay(),
+266:         ],
+267:       ),
+268:     );
+269:   }
+270: 
+271:   Widget _buildActivityStrip() {
+272:     return SliverToBoxAdapter(
+273:       child: RepaintBoundary(
+274:         child: Column(
+275:           crossAxisAlignment: CrossAxisAlignment.start,
+276:           children: [
+277:             const SizedBox(height: TiermetrySpacing.md),
+278:             SizedBox(
+279:               height: 48,
+280:               child: ListView.builder(
+281:                 clipBehavior: Clip.none,
+282:                 scrollDirection: Axis.horizontal,
+283:                 physics: const BouncingScrollPhysics(),
+284:                 padding: const EdgeInsets.only(
+285:                   left: TiermetrySpacing.listInset,
+286:                   right: TiermetrySpacing.listInset,
+287:                   top: 4,
+288:                 ),
+289:                 itemCount: _activityChoices.length,
+290:                 itemBuilder: (context, index) {
+291:                   final choice = _activityChoices[index];
+292:                   return Padding(
+293:                     padding: const EdgeInsets.only(right: TiermetrySpacing.lg),
+294:                     child: _ActivityCapsule(
+295:                       choice: choice,
+296:                       isSelected: _selectedActivity == choice.label,
+297:                       onTap: () => _onActivityChanged(choice.label),
+298:                     ),
+299:                   );
+300:                 },
+301:               ),
+302:             ),
+303:           ],
+304:         ),
+305:       ),
+306:     );
+307:   }
+308: 
+309:   Widget _buildSponsoredSection(bool isSearching) {
+310:     return SliverToBoxAdapter(
+311:       child: AnimatedSize(
+312:         duration: const Duration(milliseconds: 300),
+313:         curve: Curves.easeOutCubic,
+314:         child:
+315:             isSearching
+316:                 ? const SizedBox.shrink()
+317:                 : RepaintBoundary(
+318:                   child: Column(
+319:                     crossAxisAlignment: CrossAxisAlignment.start,
+320:                     children: [
+321:                       const Padding(
+322:                         padding: TiermetrySpacing.pagePadding,
+323:                         child: SectionHeader(title: 'Offers and spotlights'),
+324:                       ),
+325:                       const SizedBox(height: TiermetrySpacing.headerToContent),
+326:                       SizedBox(
+327:                         height: 120,
+328:                         child: ListView.separated(
+329:                           scrollDirection: Axis.horizontal,
+330:                           physics: const BouncingScrollPhysics(),
+331:                           padding: TiermetrySpacing.listPadding,
+332:                           itemCount: _sponsoredCards.length,
+333:                           separatorBuilder:
+334:                               (_, __) => const SizedBox(width: 8.0),
+335:                           itemBuilder: (context, index) {
+336:                             return _SponsoredVenueTile(
+337:                                   data: _sponsoredCards[index],
+338:                                 )
+339:                                 .animate()
+340:                                 .fadeIn(duration: 400.ms)
+341:                                 .slideX(begin: 0.08);
+342:                           },
+343:                         ),
+344:                       ),
+345:                       const SizedBox(height: TiermetrySpacing.sectionGap),
+346:                     ],
+347:                   ),
+348:                 ),
+349:       ),
+350:     );
+351:   }
+352: 
+353:   Widget _buildFeaturedSection(bool isSearching, List<ArenaEntity> featured) {
+354:     final bool showSection = !isSearching || featured.isNotEmpty;
+355: 
+356:     return SliverToBoxAdapter(
+357:       child: AnimatedSize(
+358:         duration: const Duration(milliseconds: 300),
+359:         curve: Curves.easeOutCubic,
+360:         child:
+361:             !showSection
+362:                 ? const SizedBox.shrink()
+363:                 : RepaintBoundary(
+364:                   child: Column(
+365:                     crossAxisAlignment: CrossAxisAlignment.start,
+366:                     children: [
+367:                       const Padding(
+368:                         padding: TiermetrySpacing.pagePadding,
+369:                         child: SectionHeader(
+370:                           title: 'Featured Arenas',
+371:                           onViewMore: null,
+372:                           tagLabel: 'Sponsored',
+373:                         ),
+374:                       ),
+375:                       const SizedBox(height: TiermetrySpacing.headerToContent),
+376:                       if (featured.isNotEmpty)
+377:                         SizedBox(
+378:                           height: 330,
+379:                           child: ListView.separated(
+380:                             scrollDirection: Axis.horizontal,
+381:                             physics: const BouncingScrollPhysics(),
+382:                             padding: TiermetrySpacing.listPadding,
+383:                             itemCount:
+384:                                 featured.length > 5 ? 5 : featured.length,
+385:                             separatorBuilder:
+386:                                 (_, __) => const SizedBox(
+387:                                   width: TiermetrySpacing.cardGap,
+388:                                 ),
+389:                             itemBuilder: (context, index) {
+390:                               return SizedBox(
+391:                                 width: 320,
+392:                                 child: ArenaCard(
+393:                                   arena: featured[index],
+394:                                   isFeatured: true,
+395:                                 ),
+396:                               );
+397:                             },
+398:                           ),
+399:                         )
+400:                       else if (!_arenaCtrl.isLoading)
+401:                         const AppEmptyState(message: 'No top picks found.'),
+402:                       const SizedBox(height: TiermetrySpacing.sectionGap),
+403:                     ],
+404:                   ),
+405:                 ),
+406:       ),
+407:     );
+408:   }
+409: }
+410: 
+411: class _ActivityCapsule extends StatelessWidget {
+412:   final _ActivityChoice choice;
+413:   final bool isSelected;
+414:   final VoidCallback onTap;
+415: 
+416:   const _ActivityCapsule({
+417:     required this.choice,
+418:     required this.isSelected,
+419:     required this.onTap,
+420:   });
+421: 
+422:   @override
+423:   Widget build(BuildContext context) {
+424:     const primaryColor = TiermetryColors.accentNeonGreen;
+425: 
+426:     return GestureDetector(
+427:       onTap: onTap,
+428:       child: AnimatedContainer(
+429:         duration: const Duration(milliseconds: 250),
+430:         curve: Curves.easeOutCubic,
+431:         padding: const EdgeInsets.symmetric(
+432:           horizontal: TiermetrySpacing.lg,
+433:           vertical: TiermetrySpacing.sm,
+434:         ),
+435:         decoration: BoxDecoration(
+436:           color:
+437:               isSelected
+438:                   ? primaryColor.withValues(alpha: 0.15)
+439:                   : TiermetryColors.surfaceElement,
+440:           borderRadius: BorderRadius.circular(30),
+441:           border: Border.all(
+442:             color: isSelected ? primaryColor : TiermetryColors.cardBorder,
+443:             width: isSelected ? 1.5 : 1,
+444:           ),
+445:           boxShadow: isSelected ? TiermetryShadows.capsule : null,
+446:         ),
+447:         child: Row(
+448:           mainAxisSize: MainAxisSize.min,
+449:           crossAxisAlignment: CrossAxisAlignment.center,
+450:           children: [
+451:             Icon(
+452:               choice.icon,
+453:               color:
+454:                   isSelected
+455:                       ? primaryColor
+456:                       : TiermetryColors.white.withValues(alpha: 0.7),
+457:               size: 18,
+458:             ),
+459:             const SizedBox(width: TiermetrySpacing.sm),
+460:             Text(
+461:               choice.label,
+462:               style: TiermetryTypography.label(
+463:                 color:
+464:                     isSelected
+465:                         ? TiermetryColors.white
+466:                         : TiermetryColors.white.withValues(alpha: 0.7),
+467:               ).copyWith(
+468:                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+469:                 letterSpacing: 0.5,
+470:               ),
+471:             ),
+472:           ],
+473:         ),
+474:       ),
+475:     ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1);
+476:   }
+477: }
+478: 
+479: class _SponsoredVenueTile extends StatelessWidget {
+480:   final _SponsoredCardData data;
+481: 
+482:   const _SponsoredVenueTile({required this.data});
+483: 
+484:   @override
+485:   Widget build(BuildContext context) {
+486:     return AspectRatio(
+487:       aspectRatio: 1.55,
+488:       child: Container(
+489:         decoration: BoxDecoration(
+490:           color: const Color(0xFFFF4E00), // Vibrant neon orange
+491:           borderRadius: BorderRadius.circular(16),
+492:           boxShadow: const [
+493:             BoxShadow(
+494:               color: Colors.black,
+495:               offset: Offset(3, 3),
+496:               blurRadius: 0, // Hard shadow
+497:             ),
+498:           ],
+499:         ),
+500:         child: Stack(
+501:           children: [
+502:             // The custom black shape
+503:             Positioned.fill(
+504:               child: CustomPaint(
+505:                 painter: _TicketPainter(color: Colors.black),
+506:               ),
+507:             ),
+508:             
+509:             // Top Left Logo
+510:             Positioned(
+511:               left: 14,
+512:               top: 14,
+513:               child: Column(
+514:                 mainAxisSize: MainAxisSize.min,
+515:                 children: [
+516:                   Container(
+517:                     width: 20,
+518:                     height: 4,
+519:                     decoration: BoxDecoration(
+520:                       color: Colors.white,
+521:                       borderRadius: BorderRadius.circular(2),
+522:                     ),
+523:                   ),
+524:                   const SizedBox(height: 2),
+525:                   const Icon(
+526:                     Icons.keyboard_arrow_up_rounded,
+527:                     color: Colors.white,
+528:                     size: 28,
+529:                   ),
+530:                 ],
+531:               ),
+532:             ),
+533:             
+534:             // Offer Value (Center)
+535:             Positioned.fill(
+536:               child: Center(
+537:                 child: Padding(
+538:                   padding: const EdgeInsets.only(left: 30, bottom: 16),
+539:                   child: FractionallySizedBox(
+540:                     widthFactor: 0.65,
+541:                     heightFactor: 0.5,
+542:                     child: FittedBox(
+543:                       fit: BoxFit.contain,
+544:                       alignment: Alignment.center,
+545:                       child: Text(
+546:                         data.offerValue.replaceAll(' OFF', ''),
+547:                         style: GoogleFonts.inter(
+548:                           fontWeight: FontWeight.w900,
+549:                           color: Colors.white,
+550:                           height: 1.0,
+551:                           letterSpacing: -2,
+552:                         ),
+553:                       ),
+554:                     ),
+555:                   ),
+556:                 ),
+557:               ),
+558:             ),
+559:             
+560:             // Bottom Left Text
+561:             Positioned(
+562:               left: 14,
+563:               bottom: 12,
+564:               child: Column(
+565:                 crossAxisAlignment: CrossAxisAlignment.start,
+566:                 mainAxisSize: MainAxisSize.min,
+567:                 children: [
+568:                   Text(
+569:                     data.title.split(' ').first.toLowerCase(),
+570:                     style: GoogleFonts.inter(
+571:                       fontSize: 14,
+572:                       fontWeight: FontWeight.w900,
+573:                       color: Colors.white,
+574:                       height: 1.0,
+575:                       letterSpacing: -0.5,
+576:                     ),
+577:                   ),
+578:                   Text(
+579:                     data.title.split(' ').skip(1).join(' ').toLowerCase(),
+580:                     style: GoogleFonts.inter(
+581:                       fontSize: 14,
+582:                       fontWeight: FontWeight.w900,
+583:                       color: Colors.black,
+584:                       height: 1.0,
+585:                       letterSpacing: -0.5,
+586:                     ),
+587:                   ),
+588:                 ],
+589:               ),
+590:             ),
+591:           ],
+592:         ),
+593:       ),
+594:     );
+595:   }
+596: }
+597: 
+598: class _TicketPainter extends CustomPainter {
+599:   final Color color;
+600:   
+601:   _TicketPainter({required this.color});
+602: 
+603:   @override
+604:   void paint(Canvas canvas, Size size) {
+605:     final paint = Paint()..color = color;
+606:     const double r = 12.0; // Corner radius for the black shape
+607:     const double p = 8.0; // Orange border thickness
+608:     
+609:     // Intrusions based on proportions of the card
+610:     final double tlW = size.width * 0.18;
+611:     final double tlH = size.height * 0.35;
+612:     
+613:     final double blW = size.width * 0.48;
+614:     final double blH = size.height * 0.40;
+615: 
+616:     final path = Path()
+617:       // 1. Top edge, start after top-left intrusion
+618:       ..moveTo(tlW + r, p)
+619:       ..lineTo(size.width - p - r, p)
+620:       
+621:       // 2. Top-right corner (convex)
+622:       ..arcToPoint(Offset(size.width - p, p + r), radius: const Radius.circular(r), clockwise: true)
+623:       
+624:       // 3. Right edge
+625:       ..lineTo(size.width - p, size.height - p - r)
+626:       
+627:       // 4. Bottom-right corner (convex)
+628:       ..arcToPoint(Offset(size.width - p - r, size.height - p), radius: const Radius.circular(r), clockwise: true)
+629:       
+630:       // 5. Bottom edge (right of bottom-left intrusion)
+631:       ..lineTo(blW + r, size.height - p)
+632:       
+633:       // 6. Corner turning UP (convex)
+634:       ..arcToPoint(Offset(blW, size.height - p - r), radius: const Radius.circular(r), clockwise: true)
+635:       
+636:       // 7. Right edge of bottom-left intrusion
+637:       ..lineTo(blW, size.height - blH + r)
+638:       
+639:       // 8. Corner turning LEFT (concave)
+640:       ..arcToPoint(Offset(blW - r, size.height - blH), radius: const Radius.circular(r), clockwise: false)
+641:       
+642:       // 9. Top edge of bottom-left intrusion
+643:       ..lineTo(p + r, size.height - blH)
+644:       
+645:       // 10. Corner turning UP (convex)
+646:       ..arcToPoint(Offset(p, size.height - blH - r), radius: const Radius.circular(r), clockwise: true)
+647:       
+648:       // 11. Left edge (between bottom-left and top-left intrusions)
+649:       ..lineTo(p, tlH + r)
+650:       
+651:       // 12. Corner turning RIGHT (convex)
+652:       ..arcToPoint(Offset(p + r, tlH), radius: const Radius.circular(r), clockwise: true)
+653:       
+654:       // 13. Bottom edge of top-left intrusion
+655:       ..lineTo(tlW - r, tlH)
+656:       
+657:       // 14. Corner turning UP (concave)
+658:       ..arcToPoint(Offset(tlW, tlH - r), radius: const Radius.circular(r), clockwise: false)
+659:       
+660:       // 15. Right edge of top-left intrusion
+661:       ..lineTo(tlW, p + r)
+662:       
+663:       // 16. Corner turning RIGHT (convex)
+664:       ..arcToPoint(Offset(tlW + r, p), radius: const Radius.circular(r), clockwise: true)
+665:       
+666:       ..close();
+667:       
+668:     canvas.drawPath(path, paint);
+669:   }
+670: 
+671:   @override
+672:   bool shouldRepaint(covariant _TicketPainter oldDelegate) {
+673:     return oldDelegate.color != color;
+674:   }
+675: }
+676: 
+677: class _ActivityChoice {
+678:   final String label;
+679:   final IconData icon;
+680: 
+681:   const _ActivityChoice(this.label, this.icon);
+682: }
+683: 
+684: class _SponsoredCardData {
+685:   final String title;
+686:   final String subtitle;
+687:   final String offerValue;
+688:   final String label;
+689: 
+690:   const _SponsoredCardData({
+691:     required this.title,
+692:     required this.subtitle,
+693:     required this.offerValue,
+694:     required this.label,
+695:   });
+696: }
+697: 
+698: 
+The above content shows the entire, complete file contents of the requested file.

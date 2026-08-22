@@ -8,6 +8,7 @@ import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 
+import 'forgot_password_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -102,7 +103,28 @@ class _LoginScreenState extends State<LoginScreen> {
                           hint: 'Enter your password',
                           obscureText: true,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (context) => const ForgotPasswordScreen(),
+                                ),
+                              );
+                            },
+                            child: Text(
+                              'Forgot Password?',
+                              style: TiermetryTypography.caption(
+                                color: TiermetryColors.accentNeonGreen,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         if (_authCtrl.isLoading)
                           const Center(
                             child: CircularProgressIndicator(

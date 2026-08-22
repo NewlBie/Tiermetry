@@ -1,12 +1,12 @@
 // File: main.dart
 import 'package:flutter/material.dart';
-
 import 'package:flutter_refresh_rate_control/flutter_refresh_rate_control.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/constants/supabase_config.dart';
 import 'package:tiermetry/core/theme/tiermetry_theme.dart';
+import 'package:tiermetry/core/widgets/deep_link_handler.dart';
+import 'package:tiermetry/core/widgets/network_offline_banner.dart';
 import 'package:tiermetry/features/auth/presentation/screens/auth_wrapper.dart';
 
 void main() async {
@@ -47,11 +47,15 @@ class MyApp extends StatelessWidget {
       );
     }
 
-    return MaterialApp(
-      title: 'Tiermetry',
-      debugShowCheckedModeBanner: false,
-      theme: TiermetryTheme.dark(),
-      home: const AuthWrapper(),
+    return NetworkOfflineBanner(
+      child: DeepLinkHandler(
+        child: MaterialApp(
+          title: 'Tiermetry',
+          debugShowCheckedModeBanner: false,
+          theme: TiermetryTheme.dark(),
+          home: const AuthWrapper(),
+        ),
+      ),
     );
   }
 }

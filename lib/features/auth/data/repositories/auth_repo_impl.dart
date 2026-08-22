@@ -56,6 +56,20 @@ class AuthRepoImpl implements AuthRepo {
     );
     debugPrint('-------------------------------');
   }
+  @override
+  Future<void> verifyOTP({required String email, required String token}) async {
+    await _supabase.auth.verifyOTP(type: OtpType.signup, email: email, token: token);
+  }
+
+  @override
+  Future<void> resendOTP({required String email}) async {
+    await _supabase.auth.resend(type: OtpType.signup, email: email);
+  }
+
+  @override
+  Future<void> resetPasswordForEmail({required String email}) async {
+    await _supabase.auth.resetPasswordForEmail(email);
+  }
 
   @override
   Future<void> signOut() async {

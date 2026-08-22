@@ -7,11 +7,13 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final VoidCallback? onViewMore;
   final String viewMoreText;
+  final String? tagLabel;
 
   const SectionHeader({
     required this.title,
     this.onViewMore,
     this.viewMoreText = 'View More',
+    this.tagLabel,
     super.key,
   });
 
@@ -20,9 +22,37 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          (title).toUpperCase(),
-          style: TiermetryTypography.title(color: Colors.white),
+        Row(
+          children: [
+            Text(
+              (title).toUpperCase(),
+              style: TiermetryTypography.title(color: Colors.white),
+            ),
+            if (tagLabel != null) ...[
+              const SizedBox(width: 8), // TiermetrySpacing.sm
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2, // TiermetrySpacing.xs / 2
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(
+                    0xFFD4FF00,
+                  ).withValues(alpha: 0.15), // TiermetryColors.accentNeonGreen
+                  border: Border.all(
+                    color: const Color(0xFFD4FF00).withValues(alpha: 0.5),
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  tagLabel!,
+                  style: TiermetryTypography.label(
+                    color: const Color(0xFFD4FF00),
+                  ).copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ],
         ),
         if (onViewMore != null)
           TextButton(

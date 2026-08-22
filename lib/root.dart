@@ -1,5 +1,6 @@
 import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
@@ -8,7 +9,7 @@ import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/bottom_nav.dart';
 import 'package:tiermetry/core/widgets/deferred_page.dart';
-import 'package:tiermetry/core/widgets/drawer.dart';
+import 'package:tiermetry/core/widgets/fullscreen_dropdown_menu.dart';
 import 'package:tiermetry/core/widgets/top_bar.dart';
 
 import 'features/arena/presentation/screens/arena_screen.dart';
@@ -35,8 +36,16 @@ class _RootState extends State<Root>
   final _authCtrl = locator.authCtrl;
 
   int _selectedIndex = 0;
+  bool _isMenuOpen = false;
 
   late final AnimationController _menuAnimationController;
+
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+  ];
 
   final List<BottomNavItem> navItems = [
     BottomNavItem(
@@ -72,104 +81,42 @@ class _RootState extends State<Root>
     super.dispose();
   }
 
-  List<DrawerItem> _buildDrawerItems() {
-    return [
-      DrawerItem(
-        icon: Icons.person_outline_rounded,
-        text: 'Account & Privacy',
-        subtitle: 'Profile, phone, email',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const AccountPrivacyScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.receipt_long_rounded,
-        text: 'My Transactions',
-        subtitle: 'Wallet activity',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const TransactionsScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.bookmark_added_outlined,
-        text: 'My Bookings',
-        subtitle: 'Arena reservations',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const BookingScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.confirmation_number_outlined,
-        text: 'My Events',
-        subtitle: 'Tickets and registrations',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const MyEventsScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.help_outline,
-        text: 'Help & Support',
-        subtitle: 'FAQs and contact',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const HelpAndSupportScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.description_outlined,
-        text: 'Legal & Policies',
-        subtitle: 'Terms and privacy',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute<void>(
-              builder: (context) => const LegalPoliciesScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.logout_rounded,
-        text: 'Logout',
-        subtitle: 'Sign out of this device',
-        color: Colors.redAccent,
-        onTap: _showLogoutSheet,
-      ),
-    ];
+  void _toggleMenu() {
+    if (_isMenuOpen) {
+      _menuAnimationController.reverse();
+    } else {
+      _menuAnimationController.forward();
+    }
+    setState(() {
+      _isMenuOpen = !_isMenuOpen;
+    });
+  }
+
+  void _handleMenuRoute(String route) {
+    // We navigate to existing screens
+    Widget? target;
+    switch(route) {
+      case 'booking': target = const BookingScreen(); break;
+      case 'my_events': target = const MyEventsScreen(); break;
+      case 'wallet': target = const TransactionsScreen(); break;
+      case 'account': target = const AccountPrivacyScreen(); break;
+      case 'support': target = const HelpAndSupportScreen(); break;
+      case 'legal': target = const LegalPoliciesScreen(); break;
+    }
+    
+    if (target != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (context) => target!,
+        ),
+      );
+    }
   }
 
   void _showLogoutSheet() {
-    Navigator.pop(context);
+    // If the menu was open, the overlay will disappear because _isMenuOpen is toggled false inside FullscreenDropdownMenu.
+    // Wait, the menu calls onClose before onLogout.
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -240,22 +187,25 @@ class _RootState extends State<Root>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: AppDrawer(
-        userName: _authCtrl.user?.name ?? 'Gamer',
-        userHandle:
-            '@${(_authCtrl.user?.name ?? 'gamer').toLowerCase().replaceAll(' ', '_')}',
-        userAvatarAsset: 'assets/Seller.png',
-        items: _buildDrawerItems(),
-      ),
-      onDrawerChanged: (isOpened) {
-        if (isOpened) {
-          _menuAnimationController.forward();
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (_isMenuOpen) {
+          _toggleMenu();
+          return;
+        }
+        final innerNav = _navigatorKeys[_selectedIndex].currentState;
+        if (innerNav != null && innerNav.canPop()) {
+          innerNav.pop();
+        } else if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
         } else {
-          _menuAnimationController.reverse();
+          await SystemNavigator.pop();
         }
       },
+      child: Scaffold(
+        key: _scaffoldKey,
       backgroundColor: TiermetryColors.black,
       body: Stack(
         children: [
@@ -265,34 +215,47 @@ class _RootState extends State<Root>
               DeferredPage(
                 index: 0,
                 currentIndex: _selectedIndex,
-                child: HomeScreen(userName: _authCtrl.user?.name ?? 'Gamer'),
+                child: Navigator(
+                  key: _navigatorKeys[0],
+                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
+                    builder: (context) => HomeScreen(userName: _authCtrl.user?.name ?? 'Gamer'),
+                  ),
+                ),
               ),
               DeferredPage(
                 index: 1,
                 currentIndex: _selectedIndex,
-                child: const ArenaScreen(),
+                child: Navigator(
+                  key: _navigatorKeys[1],
+                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
+                    builder: (context) => const ArenaScreen(),
+                  ),
+                ),
               ),
               DeferredPage(
                 index: 2,
                 currentIndex: _selectedIndex,
-                child: const EventBrowserScreen(),
+                child: Navigator(
+                  key: _navigatorKeys[2],
+                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
+                    builder: (context) => const EventBrowserScreen(),
+                  ),
+                ),
               ),
               DeferredPage(
                 index: 3,
                 currentIndex: _selectedIndex,
-                child: const ProfileScreen(),
+                child: Navigator(
+                  key: _navigatorKeys[3],
+                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                ),
               ),
             ],
           ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: TopBar(
-              menuAnimationProgress: _menuAnimationController,
-              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-          ),
+          
+          // BottomNav
           Positioned(
             left: 0,
             right: 0,
@@ -310,8 +273,37 @@ class _RootState extends State<Root>
               ),
             ),
           ),
+
+          // Overlay Fullscreen Menu
+          if (_isMenuOpen || _menuAnimationController.isAnimating)
+            Positioned.fill(
+              child: FullscreenDropdownMenu(
+                animation: _menuAnimationController,
+                onClose: _toggleMenu,
+                onNavigateIndex: (index) {
+                  setState(() => _selectedIndex = index);
+                },
+                onPushRoute: _handleMenuRoute,
+                onLogout: _showLogoutSheet,
+                userName: _authCtrl.user?.name ?? 'Gamer',
+                userHandle: '@${(_authCtrl.user?.name ?? 'gamer').toLowerCase().replaceAll(' ', '_')}',
+                userAvatarAsset: 'assets/Seller.png',
+                isOpen: _isMenuOpen,
+              ),
+            ),
+
+          // TopBar
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: TopBar(
+              menuAnimationProgress: _menuAnimationController,
+              onMenuTap: _toggleMenu,
+            ),
+          ),
         ],
       ),
-    );
+    ));
   }
 }

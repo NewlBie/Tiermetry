@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:amazing_icons/bulk.dart';
+import 'package:amazing_icons/outlined.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
@@ -13,6 +15,7 @@ import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
+import 'package:tiermetry/features/wallet/presentation/screens/reward_store_screen.dart';
 import 'package:tiermetry/features/wallet/presentation/widgets/wallet_flip_card.dart';
 
 import '../../../../features/booking/presentation/screens/booking_screen.dart';
@@ -90,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> with RefreshRateMixin {
               );
             },
           ),
-          ScrollGradientOverlay(scrollController: _scrollController),
+          const ScrollGradientOverlay(),
         ],
       ),
     );
@@ -220,20 +223,23 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
               actions: [
                 _QuickAction(
                   title: 'Bookings',
-                  subtitle: 'My reservations',
-                  icon: Icons.bookmark_added_outlined,
+                  subtitle: 'Active',
+                  value: '12',
+                  iconBuilder: (size, color) => AmazingIconBulk.bookmark(size: size, color: color),
                   onTap: () => _openRoute(const BookingScreen()),
                 ),
                 _QuickAction(
                   title: 'Events',
-                  subtitle: 'My tickets',
-                  icon: Icons.confirmation_number_outlined,
+                  subtitle: 'Active',
+                  value: '4',
+                  iconBuilder: (size, color) => AmazingIconBulk.ticket(size: size, color: color),
                   onTap: () => _openRoute(const MyEventsScreen()),
                 ),
                 _QuickAction(
                   title: 'Transactions',
-                  subtitle: 'View history',
-                  icon: Icons.receipt_long_rounded,
+                  subtitle: 'Active',
+                  value: '28',
+                  iconBuilder: (size, color) => AmazingIconBulk.wallet(size: size, color: color),
                   onTap: () => _openRoute(const TransactionsScreen()),
                 ),
               ],
@@ -251,6 +257,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
             child: WalletFlipCard(
               walletData: animatedWallet,
               onEarnPressed: () => _openRoute(const ReferAndEarnScreen()),
+              onRedeemPressed: () => _openRoute(const RewardStoreScreen()),
             ),
           ),
         ),
@@ -317,8 +324,7 @@ class _ProfileHeaderCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        borderRadius: BorderRadius.circular(TiermetryRadii.md),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.34),
@@ -365,9 +371,9 @@ class _ProfileHeaderCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.white70,
+                              AmazingIconOutlined.edit,
                               size: 18,
+                              color: Colors.white70,
                             ),
                           ),
                         ),
@@ -390,13 +396,13 @@ class _ProfileHeaderCard extends StatelessWidget {
                       runSpacing: TiermetrySpacing.sm,
                       children: [
                         _MetaPill(
-                          icon: Icons.military_tech_rounded,
+                          iconBuilder: (size, color) => Icon(AmazingIconOutlined.star, size: size, color: color),
                           label: profile.level,
                           isPrimary: true,
                         ),
                         if (profile.age != null)
                           _MetaPill(
-                            icon: Icons.cake_outlined,
+                            iconBuilder: (size, color) => Icon(AmazingIconOutlined.profile, size: size, color: color),
                             label: '${profile.age}',
                           ),
                       ],
@@ -407,24 +413,18 @@ class _ProfileHeaderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: TiermetrySpacing.lg),
-          Row(
+          const Row(
             children: [
               Expanded(
-                child: _ProfileStat(value: profile.tierName, label: 'Tier'),
+                child: _ProfileStat(value: '12th', label: 'Leaderboard'),
               ),
-              const SizedBox(width: TiermetrySpacing.sm),
+              SizedBox(width: TiermetrySpacing.sm),
               Expanded(
-                child: _ProfileStat(
-                  value: profile.tiergies.toInt().toString(),
-                  label: 'Tiergies',
-                ),
+                child: _ProfileStat(value: '24', label: 'Favourites'),
               ),
-              const SizedBox(width: TiermetrySpacing.sm),
+              SizedBox(width: TiermetrySpacing.sm),
               Expanded(
-                child: _ProfileStat(
-                  value: '${profile.openedBadges}',
-                  label: 'Badges',
-                ),
+                child: _ProfileStat(value: '38', label: 'Check-ins'),
               ),
             ],
           ),
@@ -456,6 +456,7 @@ class _ProfileAvatar extends StatelessWidget {
           Container(
             width: 92,
             height: 92,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: TiermetryColors.surfaceElement,
               borderRadius: BorderRadius.circular(24),
@@ -469,11 +470,10 @@ class _ProfileAvatar extends StatelessWidget {
             ),
             child:
                 imageProvider == null
-                    ? const Icon(
-                      Icons.person_rounded,
-                      color: Colors.white54,
-                      size: 42,
-                    )
+                    ? AmazingIconBulk.profile(
+                        size: 42,
+                        color: Colors.white54,
+                      )
                     : null,
           ),
           Positioned(
@@ -487,9 +487,9 @@ class _ProfileAvatar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.black,
+                AmazingIconOutlined.camera,
                 size: 15,
+                color: Colors.black,
               ),
             ),
           ),
@@ -516,12 +516,12 @@ class _ProfileAvatar extends StatelessWidget {
 }
 
 class _MetaPill extends StatelessWidget {
-  final IconData icon;
+  final Widget Function(double, Color) iconBuilder;
   final String label;
   final bool isPrimary;
 
   const _MetaPill({
-    required this.icon,
+    required this.iconBuilder,
     required this.label,
     this.isPrimary = false,
   });
@@ -548,10 +548,9 @@ class _MetaPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: color.withValues(alpha: isPrimary ? 1 : 0.62),
-            size: 13,
+          iconBuilder(
+            13.0,
+            color.withValues(alpha: isPrimary ? 1 : 0.62),
           ),
           const SizedBox(width: 5),
           Text(
@@ -584,22 +583,26 @@ class _ProfileStat extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text((value).toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.title(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text((value).toUpperCase(),
+              style: TiermetryTypography.title(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            label,
-            style: TiermetryTypography.caption(
-              color: Colors.white.withValues(alpha: 0.48),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TiermetryTypography.caption(
+                color: Colors.white.withValues(alpha: 0.48),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -643,12 +646,10 @@ class _QuickActionTile extends StatelessWidget {
     return GestureDetector(
       onTap: action.onTap,
       child: Container(
-        height: 112,
-        padding: const EdgeInsets.all(12),
+        height: 140, // Increased height for the image layout
         decoration: BoxDecoration(
           color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.24),
@@ -657,44 +658,74 @@ class _QuickActionTile extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: TiermetryColors.accentNeonGreen,
-                borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title
+              Text(
+                action.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TiermetryTypography.title(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ).copyWith(letterSpacing: -0.3),
               ),
-              child: Icon(
-                action.icon,
-                color: Colors.black.withAlpha(220),
-                size: 19,
+              
+              const Spacer(),
+              
+              // Bottom Section
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Glass Circle Icon
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: TiermetryColors.accentNeonGreen,
+                    ),
+                    child: Center(
+                      child: action.iconBuilder(24.0, Colors.black.withAlpha(220)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  
+                  // Active + Value
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          action.subtitle,
+                          style: TiermetryTypography.caption(
+                            color: Colors.white.withValues(alpha: 0.52),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          action.value,
+                          style: TiermetryTypography.title(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const Spacer(),
-            Text((action.title).toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.title(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              action.subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.52),
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -704,13 +735,15 @@ class _QuickActionTile extends StatelessWidget {
 class _QuickAction {
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String value;
+  final Widget Function(double, Color) iconBuilder;
   final VoidCallback onTap;
 
   const _QuickAction({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.value,
+    required this.iconBuilder,
     required this.onTap,
   });
 }
@@ -737,7 +770,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             height: 216,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
             ),
           ),
           const SizedBox(height: TiermetrySpacing.lg),
@@ -746,13 +779,13 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
               3,
               (index) => Expanded(
                 child: Container(
-                  height: 112,
+                  height: 140, // Match the new QuickActionTile height
                   margin: EdgeInsets.only(
                     right: index == 2 ? 0 : TiermetrySpacing.sm,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(TiermetryRadii.md),
                   ),
                 ),
               ),
@@ -764,7 +797,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(TiermetryRadii.md),
               ),
             ),
           ),
@@ -773,7 +806,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             height: 280,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
             ),
           ),
         ],

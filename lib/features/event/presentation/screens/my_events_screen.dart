@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tiermetry/core/locator.dart';
@@ -9,6 +10,8 @@ import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_error_state.dart';
 import 'package:tiermetry/core/widgets/app_pill.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
+
 import '../../domain/entities/event_entity.dart';
 import 'event_details_screen.dart';
 
@@ -50,10 +53,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   if (_eventCtrl.isLoading &&
                       _eventCtrl.myRegistrations.isEmpty) {
                     return const SliverToBoxAdapter(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: TiermetryColors.accentAppleBlue,
-                        ),
+                      child: ShimmerLoadingVerticalList(
+                        itemHeight: 240,
+                        itemCount: 3,
+                        spacing: TiermetrySpacing.lg,
                       ),
                     );
                   }
@@ -219,10 +222,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                           color: TiermetryColors.textMuted,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          event.location,
-                          style: TiermetryTypography.bodySmall(
-                            color: TiermetryColors.textMuted,
+                        Expanded(
+                          child: Text(
+                            event.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TiermetryTypography.bodySmall(
+                              color: TiermetryColors.textMuted,
+                            ),
                           ),
                         ),
                       ],

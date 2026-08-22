@@ -1,6 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/blurs.dart';
@@ -16,6 +20,7 @@ import 'package:tiermetry/features/arena/domain/entities/arena_entity.dart';
 import 'package:tiermetry/features/booking/presentation/screens/booking_screen.dart';
 import 'package:tiermetry/features/payment/domain/entities/payment_status.dart';
 import 'package:tiermetry/features/payment/presentation/screens/mock_payment_screen.dart';
+
 import '../widgets/booking_sheet.dart';
 import '../widgets/booking_status_overlay.dart';
 import 'arena_map_screen.dart';
@@ -70,6 +75,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
 
     return Scaffold(
       backgroundColor: scaffoldColor,
+      extendBody: true,
       body: FutureBuilder<ArenaDetailsEntity?>(
         future: _detailsFuture,
         builder: (context, snapshot) {
@@ -96,22 +102,44 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
 
           final arenaDetails = snapshot.data!;
 
-          return CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              _buildSliverAppBar(context, arenaDetails),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: TiermetrySpacing.screenPadding,
-                    vertical: TiermetrySpacing.xl,
-                  ),
-                  child: _buildDetailsContent(
-                    context,
-                    arenaDetails,
-                    accentColor,
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.15,
+                  child: Image.asset(
+                    arenaDetails.image,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(),
                   ),
                 ),
+              ),
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+              CustomScrollView(
+                physics: const ClampingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _buildCoverImage(context, arenaDetails),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: TiermetrySpacing.screenPadding,
+                        vertical: TiermetrySpacing.xl,
+                      ),
+                      child: _buildDetailsContent(
+                        context,
+                        arenaDetails,
+                        accentColor,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           );
@@ -210,93 +238,97 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
-  Widget _buildSliverAppBar(BuildContext context, ArenaDetailsEntity arena) {
-    return SliverAppBar(
-      expandedHeight: 320.0,
-      backgroundColor: TiermetryColors.background,
-      pinned: true,
-      stretch: true,
-      elevation: 0,
-      automaticallyImplyLeading: false,
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [
-          StretchMode.zoomBackground,
-          StretchMode.blurBackground,
-        ],
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            Hero(
-              tag: 'arena_${arena.id}',
-              child: Image.asset(arena.image, fit: BoxFit.cover),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.transparent,
-                    TiermetryColors.background,
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
-              ),
-            ),
-            if (arena.isVerified)
-              Positioned(
-                bottom: 16,
-                left: 20,
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/verified.svg',
-                      height: 22,
-                      width: 22,
-                      colorFilter: const ColorFilter.mode(
-                        TiermetryColors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: TiermetrySpacing.sm),
-                    Text(
-                      'Verified Partner',
-                      style: TiermetryTypography.bodySmall(
-                        color: TiermetryColors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 16.0, top: 12.0),
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: AppSurface(
-            borderRadius: TiermetryRadii.pill,
-            color: TiermetryColors.black.withValues(alpha: 0.3),
-            border: Border.all(color: Colors.transparent),
-            shadows: const [],
-            clipBehavior: Clip.antiAlias,
-            child: BackdropFilter(
-              filter: TiermetryBlur.filter(TiermetryBlur.sm),
-              child: const Center(
-                child: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: TiermetryColors.white,
-                  size: 18,
-                ),
-              ),
+  Widget _buildCoverImage(BuildContext context, ArenaDetailsEntity arena) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Simple back button at the top
+        Padding(
+          padding: const EdgeInsets.only(
+            left: TiermetrySpacing.lg,
+            right: TiermetrySpacing.lg,
+            top: 60, // Padding for status bar
+            bottom: TiermetrySpacing.sm,
+          ),
+          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const FaIcon(
+              FontAwesomeIcons.chevronLeft,
+              color: TiermetryColors.white,
+              size: 22,
             ),
           ),
         ),
-      ),
+        // Embedded rounded image
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: TiermetrySpacing.screenPadding,
+          ),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Hero(
+                  tag: 'arena_${arena.id}',
+                  child: Image.asset(arena.image, fit: BoxFit.cover),
+                ),
+                if (arena.isVerified)
+                  Positioned(
+                    bottom: 12,
+                    left: 12,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/logo/HomiesTrans.svg',
+                          height: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'HOMIE CHECKED',
+                          style: TiermetryTypography.label(
+                            color: TiermetryColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Positioned(
+                  bottom: 12,
+                  right: 12,
+                  child: AppSurface(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    color: TiermetryColors.surfaceUnderlay,
+                    borderRadius: TiermetryRadii.pill,
+                    border: Border.all(color: Colors.transparent),
+                    shadows: const [],
+                    child: Row(
+                      children: [
+                        const FaIcon(
+                          FontAwesomeIcons.solidStar,
+                          size: 12,
+                          color: Colors.amber,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          arena.rating.toString(),
+                          style: TiermetryTypography.label(
+                            color: Colors.amber,
+                          ).copyWith(fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -312,64 +344,23 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Title and Rating Row
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text((arena.name).toUpperCase(),
-                    style: TiermetryTypography.title(
-                      fontSize: 26,
-                      color: textColorPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: TiermetrySpacing.xs),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_rounded,
-                        size: 14,
-                        color: TiermetryColors.positive,
-                      ),
-                      const SizedBox(width: TiermetrySpacing.xs),
-                      Text(
-                        arena.shortAddress,
-                        style: TiermetryTypography.bodySmall(
-                          color: textColorSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            AppSurface(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              color: Colors.amber.withValues(alpha: 0.1),
-              borderRadius: TiermetryRadii.sm,
-              border: Border.all(color: Colors.transparent),
-              shadows: const [],
-              child: Row(
-                children: [
-                  const Icon(Icons.star_rounded, size: 16, color: Colors.amber),
-                  const SizedBox(width: 4),
-                  Text(
-                    arena.rating.toString(),
-                    style: const TextStyle(
-                      color: Colors.amber,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        Text(
+          (arena.name).toUpperCase(),
+          style: TiermetryTypography.displayLarge(
+            color: textColorPrimary,
+          ).copyWith(
+            height: 1.1,
+            fontSize: 32, // Reduced from 44
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildLocationCard(
+          context,
+          arena,
+          textColorSecondary,
+          cardBackgroundColor,
+          accentColor,
         ),
         const SizedBox(height: 20),
 
@@ -387,7 +378,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
               overflow:
                   isDescExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
               style: TiermetryTypography.bodySmall(
-                fontSize: 14,
                 height: 1.5,
                 color: textColorSecondary,
               ),
@@ -400,11 +390,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                 ),
                 child: Text(
                   isDescExpanded ? 'Read Less' : 'Read More',
-                  style: TiermetryTypography.bodySmall(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: accentColor,
-                  ),
+                  style: TiermetryTypography.bodySmall(color: accentColor),
                 ),
               ),
             ),
@@ -427,22 +413,30 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
 
         _infoTitle('Reserve Your Experience'),
         const SizedBox(height: TiermetrySpacing.lg),
-        ...arena.devices.map(
-          (deviceGroup) => _unitRow(
+        ...arena.devices.map((deviceGroup) {
+          final sortedUnits = List.of(deviceGroup.units)..sort((a, b) {
+            if (a.isOccupied == b.isOccupied) return 0;
+            return a.isOccupied ? 1 : -1;
+          });
+
+          return _unitRow(
             deviceGroup.name,
-            deviceGroup.units
+            sortedUnits
+                .asMap()
+                .entries
                 .map(
-                  (unit) => _unitCard(
+                  (entry) => _unitCard(
                     deviceGroup.id,
-                    unit,
+                    entry.value,
+                    entry.key,
                     accentColor,
                     cardBackgroundColor,
                   ),
                 )
                 .toList(),
-          ),
-        ),
-        const SizedBox(height: 80),
+          );
+        }),
+        const SizedBox(height: 140),
       ],
     );
   }
@@ -451,27 +445,28 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     ArenaDetailsEntity arena,
     Color textColorSecondary,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Wrap(
+      spacing: TiermetrySpacing.lg,
+      runSpacing: TiermetrySpacing.md,
       children: [
-        _featureIcon(Icons.ac_unit_rounded, 'AC', arena.hasAC),
-        _featureIcon(Icons.bolt_rounded, 'UPS', arena.hasPowerBackup),
-        _featureIcon(Icons.wifi_rounded, 'Fiber', true),
+        _featureIcon(FontAwesomeIcons.snowflake, 'AC', arena.hasAC),
+        _featureIcon(FontAwesomeIcons.bolt, 'UPS', arena.hasPowerBackup),
+        _featureIcon(FontAwesomeIcons.wifi, 'Fiber', true),
         _featureIcon(
-          Icons.restaurant_rounded,
+          FontAwesomeIcons.utensils,
           'Food',
           arena.amenity.toLowerCase().contains('cafe'),
         ),
-        _featureIcon(Icons.verified_user_rounded, 'Safety', true),
+        _featureIcon(FontAwesomeIcons.shieldHalved, 'Safety', true),
       ],
     );
   }
 
-  Widget _featureIcon(IconData icon, String label, bool active) {
+  Widget _featureIcon(FaIconData icon, String label, bool active) {
     return Column(
       children: [
         AppSurface(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(TiermetrySpacing.md),
           color:
               active
                   ? TiermetryColors.accentAppleBlue.withValues(alpha: 0.1)
@@ -479,7 +474,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           borderRadius: TiermetryRadii.pill,
           border: Border.all(color: Colors.transparent),
           shadows: const [],
-          child: Icon(
+          child: FaIcon(
             icon,
             size: 20,
             color:
@@ -492,7 +487,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         Text(
           label,
           style: TiermetryTypography.bodySmall(
-            fontSize: 11,
             color:
                 active
                     ? TiermetryColors.white.withValues(alpha: 0.7)
@@ -504,49 +498,30 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
   }
 
   Widget _buildTabsHeader(Color accentColor) {
-    return AppSurface(
-      height: 48,
-      padding: const EdgeInsets.all(4),
-      color: TiermetryColors.surfaceUnderlay,
-      borderRadius: TiermetryRadii.sm,
-      border: Border.all(color: Colors.transparent),
-      shadows: const [],
-      child: Row(
-        children: [
-          _tabItem(0, 'Overview', accentColor),
-          _tabItem(1, 'Hardware', accentColor),
-          _tabItem(2, 'Policies', accentColor),
-        ],
-      ),
+    return Row(
+      children: [
+        _tabItem(0, 'Overview', accentColor),
+        const SizedBox(width: 24),
+        _tabItem(1, 'Hardware', accentColor),
+        const SizedBox(width: 24),
+        _tabItem(2, 'Policies', accentColor),
+      ],
     );
   }
 
   Widget _tabItem(int index, String label, Color accentColor) {
     final bool isSelected = activeTab == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => activeTab = index),
-        child: AppSurface(
-          duration: const Duration(milliseconds: 200),
-          borderRadius: 10,
-          color:
-              isSelected ? TiermetryColors.surfaceElement : Colors.transparent,
-          border: Border.all(color: Colors.transparent),
-          shadows: const [],
-          child: Center(
-            child: Text(
-              label,
-              style: TiermetryTypography.bodySmall(
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color:
-                    isSelected
-                        ? TiermetryColors.white
-                        : TiermetryColors.textMuted,
-              ),
-            ),
-          ),
+    return GestureDetector(
+      onTap: () => setState(() => activeTab = index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedDefaultTextStyle(
+        duration: const Duration(milliseconds: 200),
+        style: TiermetryTypography.title(
+          color: isSelected ? TiermetryColors.white : TiermetryColors.textMuted,
+          fontSize: 22,
+          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
         ),
+        child: Text(label),
       ),
     );
   }
@@ -563,14 +538,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildOverviewGrid(arena, textColorSecondary, cardBackgroundColor),
-            const SizedBox(height: 24),
-            _buildLocationCard(
-              context,
-              arena,
-              textColorSecondary,
-              cardBackgroundColor,
-              accentColor,
-            ),
           ],
         );
       case 1:
@@ -605,7 +572,10 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
   }
 
   Widget _gameBadge(String label) => AppSurface(
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    padding: const EdgeInsets.symmetric(
+      horizontal: TiermetrySpacing.md,
+      vertical: TiermetrySpacing.sm,
+    ),
     color: TiermetryColors.surfaceUnderlay,
     borderRadius: TiermetryRadii.sm,
     border: Border.all(color: TiermetryColors.borderSubtle, width: 0.5),
@@ -613,7 +583,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     child: Text(
       label,
       style: TiermetryTypography.bodySmall(
-        fontSize: 12,
         color: TiermetryColors.white.withValues(alpha: 0.7),
       ),
     ),
@@ -630,7 +599,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           children: [
             Expanded(
               child: _specChip(
-                Icons.access_time_filled_rounded,
+                FontAwesomeIcons.clock,
                 'Hours',
                 arena.hours,
                 textColorSecondary,
@@ -640,7 +609,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
             const SizedBox(width: 12),
             Expanded(
               child: _specChip(
-                Icons.speed_rounded,
+                FontAwesomeIcons.gaugeHigh,
                 'Internet',
                 arena.internet,
                 textColorSecondary,
@@ -651,7 +620,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         ),
         const SizedBox(height: 12),
         _specChip(
-          Icons.chair_rounded,
+          FontAwesomeIcons.chair,
           'Amenities',
           arena.amenity,
           textColorSecondary,
@@ -671,28 +640,28 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       final gs = arena.specs as GamingSpecs;
       specs = [
         _specChip(
-          Icons.monitor_rounded,
+          FontAwesomeIcons.desktop,
           'Monitor',
           gs.refreshRate,
           textColorSecondary,
           cardBackgroundColor,
         ),
         _specChip(
-          Icons.videogame_asset_rounded,
+          FontAwesomeIcons.gamepad,
           'GPU',
           gs.graphicsCard,
           textColorSecondary,
           cardBackgroundColor,
         ),
         _specChip(
-          Icons.memory_rounded,
+          FontAwesomeIcons.microchip,
           'Processor',
           gs.processor,
           textColorSecondary,
           cardBackgroundColor,
         ),
         _specChip(
-          Icons.keyboard_rounded,
+          FontAwesomeIcons.keyboard,
           'Peripherals',
           'Pro-grade',
           textColorSecondary,
@@ -703,14 +672,14 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       final ts = arena.specs as TurfSpecs;
       specs = [
         _specChip(
-          Icons.grass_rounded,
+          FontAwesomeIcons.leaf,
           'Surface',
           ts.surface,
           textColorSecondary,
           cardBackgroundColor,
         ),
         _specChip(
-          Icons.lightbulb_rounded,
+          FontAwesomeIcons.lightbulb,
           'Lighting',
           ts.lighting,
           textColorSecondary,
@@ -740,14 +709,14 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _policyItem(
-          Icons.cancel_rounded,
+          FontAwesomeIcons.ban,
           'Cancellation',
           arena.cancellationPolicy,
           textColorSecondary,
         ),
         const SizedBox(height: 16),
         _policyItem(
-          Icons.phone_rounded,
+          FontAwesomeIcons.phone,
           'Contact',
           arena.contactPhone,
           textColorSecondary,
@@ -755,7 +724,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         const SizedBox(height: 16),
         ...arena.rules.map(
           (rule) => _policyItem(
-            Icons.gavel_rounded,
+            FontAwesomeIcons.gavel,
             'Rule',
             rule,
             textColorSecondary,
@@ -766,7 +735,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
   }
 
   Widget _policyItem(
-    IconData icon,
+    FaIconData icon,
     String title,
     String value,
     Color textColorSecondary,
@@ -774,7 +743,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: TiermetryColors.accentAppleBlue, size: 18),
+        FaIcon(icon, color: TiermetryColors.accentAppleBlue, size: 18),
         const SizedBox(width: TiermetrySpacing.md),
         Expanded(
           child: Column(
@@ -783,18 +752,13 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
               Text(
                 title,
                 style: TiermetryTypography.bodySmall(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
                   color: TiermetryColors.white,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: TiermetryTypography.bodySmall(
-                  fontSize: 13,
-                  color: textColorSecondary,
-                ),
+                style: TiermetryTypography.bodySmall(color: textColorSecondary),
               ),
             ],
           ),
@@ -821,17 +785,21 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         padding: const EdgeInsets.all(TiermetrySpacing.lg),
         color: cardBackgroundColor,
         borderRadius: TiermetryRadii.md,
-        border: Border.all(color: accentColor.withValues(alpha: 0.2), width: 1),
+        border: Border.all(color: Colors.transparent),
         shadows: const [],
         child: Row(
           children: [
             AppSurface(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(TiermetrySpacing.md),
               color: accentColor.withValues(alpha: 0.1),
               borderRadius: TiermetryRadii.pill,
               border: Border.all(color: Colors.transparent),
               shadows: const [],
-              child: Icon(Icons.map_rounded, color: accentColor),
+              child: Icon(
+                Icons.location_on_rounded,
+                size: 24,
+                color: accentColor,
+              ),
             ),
             const SizedBox(width: TiermetrySpacing.lg),
             Expanded(
@@ -841,23 +809,20 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                   Text(
                     'Location',
                     style: TiermetryTypography.bodySmall(
-                      fontSize: 12,
                       color: textColorSecondary,
                     ),
                   ),
                   Text(
                     arena.shortAddress,
                     style: TiermetryTypography.bodySmall(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
                       color: TiermetryColors.white,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios_rounded,
+            FaIcon(
+              FontAwesomeIcons.chevronRight,
               color: textColorSecondary,
               size: 14,
             ),
@@ -874,8 +839,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         Text(
           label,
           style: TiermetryTypography.bodySmall(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
             color: TiermetryColors.textMuted,
           ),
         ),
@@ -902,185 +865,236 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
   Widget _unitCard(
     String serviceId,
     ArenaDevice unit,
+    int index,
     Color accentColor,
     Color cardBackgroundColor,
   ) {
     final bool isSelected = _selectedDevices.contains(unit.id);
 
+    String formatTime(DateTime time) {
+      final h = time.hour;
+      final m = time.minute.toString().padLeft(2, '0');
+      final ampm = h >= 12 ? 'PM' : 'AM';
+      final hour12 = h > 12 ? h - 12 : (h == 0 ? 12 : h);
+      return '$hour12:$m $ampm';
+    }
+
     return GestureDetector(
       onTap: () {
         if (!unit.isOccupied) toggleSelection(serviceId, unit.id);
       },
-      child: AppSurface(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeInOut,
-        width: 170,
-        height: 220,
-        borderRadius: TiermetryRadii.xl,
-        border: Border.all(
-          color: isSelected ? accentColor : Colors.transparent,
-          width: 2.5,
-        ),
-        shadows:
-            isSelected
-                ? [
-                  BoxShadow(
-                    color: accentColor.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    spreadRadius: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 170,
+            height: 220,
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
+              border: Border.all(color: Colors.transparent, width: 2.5),
+              boxShadow: null,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              clipBehavior: Clip.antiAlias,
+              children: [
+                // 0a. In-Use Red Gradient Overlay
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  opacity: unit.isOccupied ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(TiermetryRadii.md),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xFFFF0000), // Pure Red
+                          Color(0x00FF0000), // Transparent Red
+                        ],
+                      ),
+                    ),
                   ),
-                ]
-                : TiermetryShadows.card,
-        padding: EdgeInsets.zero,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              unit.image,
-              fit: BoxFit.cover,
-              color:
-                  unit.isOccupied
-                      ? TiermetryColors.black.withValues(alpha: 0.5)
-                      : null,
-              colorBlendMode:
-                  unit.isOccupied ? BlendMode.darken : BlendMode.dst,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    TiermetryColors.black.withValues(alpha: 0.8),
-                    TiermetryColors.black.withValues(alpha: 0.2),
-                  ],
-                  stops: const [0.0, 0.7],
                 ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Padding(
-                padding: const EdgeInsets.all(TiermetrySpacing.lg),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      unit.name,
-                      style: TiermetryTypography.bodySmall(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: TiermetryColors.white,
+
+                // 0b. Selected Blue/Accent Gradient Overlay
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(TiermetryRadii.md),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          accentColor.withValues(alpha: 0.6),
+                          accentColor.withValues(alpha: 0.0),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      unit.desc,
-                      style: TiermetryTypography.bodySmall(
-                        fontSize: 12,
-                        color: TiermetryColors.white.withValues(alpha: 0.7),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '₹${unit.price}/hr',
-                      style: TiermetryTypography.bodySmall(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: TiermetryColors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (unit.isOccupied)
-              Center(
-                child: AppSurface(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
                   ),
-                  color: TiermetryColors.black.withValues(alpha: 0.7),
-                  borderRadius: TiermetryRadii.sm,
-                  border: Border.all(color: Colors.transparent),
-                  shadows: const [],
+                ),
+                Positioned(
+                  left: -10,
+                  top: -20,
                   child: Text(
-                    'IN USE',
-                    style: TiermetryTypography.bodySmall(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: TiermetryColors.negative,
+                    '${index + 1}',
+                    textScaler: TextScaler.noScaling,
+                    style: GoogleFonts.inter(
+                      fontSize: 180,
+                      height: 1.0,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                   ),
                 ),
-              ),
-            if (isSelected)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: AppSurface(
-                  borderRadius: TiermetryRadii.pill,
-                  color: accentColor,
-                  border: Border.all(color: Colors.transparent),
-                  shadows: const [],
-                  padding: const EdgeInsets.all(4),
-                  child: const Icon(
-                    Icons.check,
-                    color: TiermetryColors.white,
-                    size: 16,
+                Center(
+                  child: Image.asset(
+                    unit.image,
+                    fit: BoxFit.contain,
+                    color:
+                        unit.isOccupied
+                            ? TiermetryColors.black.withValues(alpha: 0.5)
+                            : null,
+                    colorBlendMode:
+                        unit.isOccupied ? BlendMode.darken : BlendMode.dst,
                   ),
                 ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        TiermetryColors.black.withValues(alpha: 0.7),
+                        TiermetryColors.black.withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.4],
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(TiermetrySpacing.md),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          unit.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textScaler: TextScaler.noScaling,
+                          style: GoogleFonts.inter(
+                            color: TiermetryColors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            letterSpacing: -0.5,
+                            height: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '₹${unit.price}',
+                          textScaler: TextScaler.noScaling,
+                          style: GoogleFonts.inter(
+                            color: TiermetryColors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: AppSurface(
+                      borderRadius: TiermetryRadii.pill,
+                      color: accentColor,
+                      border: Border.all(color: Colors.transparent),
+                      shadows: const [],
+                      padding: const EdgeInsets.all(TiermetrySpacing.xs),
+                      child: const FaIcon(
+                        FontAwesomeIcons.check,
+                        color: TiermetryColors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: TiermetrySpacing.sm),
+          if (unit.isOccupied)
+            Text(
+              unit.occupiedTill != null
+                  ? 'IN USE TILL ${formatTime(unit.occupiedTill!)}'
+                  : 'IN USE',
+              style: TiermetryTypography.label(color: TiermetryColors.negative),
+            )
+          else if (unit.nextBookingAt != null)
+            Text(
+              'NEXT AT ${formatTime(unit.nextBookingAt!)}',
+              style: TiermetryTypography.label(color: Colors.amber),
+            )
+          else
+            Text(
+              'AVAILABLE',
+              style: TiermetryTypography.label(
+                color: TiermetryColors.accentNeonGreen,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
   Widget _buildBottomBookingBar(BuildContext context, Color accentColor) {
-    return AppSurface(
-      borderRadius: 0,
-      color: Colors.transparent,
-      border: Border.all(color: Colors.transparent),
-      shadows: const [],
-      clipBehavior: Clip.antiAlias,
-      child: BackdropFilter(
-        filter: TiermetryBlur.filter(TiermetryBlur.md),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 12,
-          ).copyWith(bottom: MediaQuery.of(context).padding.bottom + 12),
-          decoration: BoxDecoration(
-            color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.8),
-            border: const Border(
-              top: BorderSide(color: TiermetryColors.borderSubtle, width: 0.5),
-            ),
-          ),
-          child: ElevatedButton(
-            onPressed:
-                _selectedDevices.isEmpty
-                    ? null
-                    : () => _showBookingSheet(context, accentColor),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accentColor,
-              disabledBackgroundColor: TiermetryColors.surfaceElement,
-              disabledForegroundColor: TiermetryColors.gray100,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+    if (_selectedDevices.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        bottom: MediaQuery.of(context).padding.bottom + 20,
+      ),
+      child: AppSurface(
+        borderRadius: 100, // Pill shape
+        color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.85),
+        border: Border.all(color: TiermetryColors.borderSubtle),
+        shadows: TiermetryShadows.highEmphasis,
+        clipBehavior: Clip.antiAlias,
+        child: BackdropFilter(
+          filter: TiermetryBlur.filter(TiermetryBlur.md),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            child: ElevatedButton(
+              onPressed: () => _showBookingSheet(context, accentColor),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                elevation: 0,
               ),
-              elevation: 5,
-              shadowColor: accentColor.withValues(alpha: 0.4),
-            ),
-            child: Text(
-              'Book Selected (${_selectedDevices.length})',
-              style: TiermetryTypography.bodySmall(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: TiermetryColors.white,
+              child: Text(
+                'BOOK SELECTED (${_selectedDevices.length})',
+                style: TiermetryTypography.action(
+                  color: TiermetryColors.white,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
@@ -1144,30 +1158,33 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
-  Widget _infoTitle(String label) => Text((label).toUpperCase(),
+  Widget _infoTitle(String label) => Text(
+    (label).toUpperCase(),
     style: TiermetryTypography.title(
-      fontSize: 18,
       color: TiermetryColors.white.withValues(alpha: 0.9),
       height: 1.2,
     ),
   );
 
   Widget _specChip(
-    IconData icon,
+    FaIconData icon,
     String label,
     String value,
     Color textColorSecondary,
     Color cardBackgroundColor,
   ) => AppSurface(
     height: 56,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    padding: const EdgeInsets.symmetric(
+      horizontal: TiermetrySpacing.md,
+      vertical: TiermetrySpacing.sm,
+    ),
     color: cardBackgroundColor,
     borderRadius: TiermetryRadii.sm,
     border: Border.all(color: Colors.transparent),
     shadows: const [],
     child: Row(
       children: [
-        Icon(icon, color: textColorSecondary, size: 20),
+        FaIcon(icon, color: textColorSecondary, size: 20),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -1176,18 +1193,13 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
             children: [
               Text(
                 label,
-                style: TiermetryTypography.bodySmall(
-                  fontSize: 11,
-                  color: textColorSecondary,
-                ),
+                style: TiermetryTypography.bodySmall(color: textColorSecondary),
                 overflow: TextOverflow.ellipsis,
               ),
               Text(
                 value,
                 style: TiermetryTypography.bodySmall(
-                  fontSize: 13,
                   color: TiermetryColors.white,
-                  fontWeight: FontWeight.w500,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),

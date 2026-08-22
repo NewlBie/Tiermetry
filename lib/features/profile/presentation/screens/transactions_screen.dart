@@ -1,4 +1,5 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -6,6 +7,7 @@ import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 import 'package:tiermetry/features/payment/domain/entities/payment_entity.dart';
 import 'package:tiermetry/features/payment/domain/entities/payment_status.dart';
 
@@ -121,10 +123,10 @@ class _TransactionsScreenState extends State<TransactionsScreen>
             sliver:
                 _isLoading
                     ? const SliverToBoxAdapter(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: TiermetryColors.accentNeonGreen,
-                        ),
+                      child: ShimmerLoadingVerticalList(
+                        itemHeight: 76,
+                        itemCount: 5,
+                        spacing: 12,
                       ),
                     )
                     : _payments.isEmpty && _credits.isEmpty
@@ -188,6 +190,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text((payment.bookingId != null ? 'Arena Booking' : 'Event Ticket').toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.title(
                     color: Colors.white,
                     fontSize: 16,
@@ -196,6 +200,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 ),
                 Text(
                   '${DateFormat('MMM d, yyyy').format(payment.createdAt)} • ${payment.status.name.toUpperCase()}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.bodySmall(
                     color: Colors.white54,
                     fontSize: 13,
@@ -233,6 +239,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(('Service recovery credit').toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.title(
                     color: Colors.white,
                     fontSize: 16,
@@ -241,6 +249,8 @@ class _TransactionsScreenState extends State<TransactionsScreen>
                 ),
                 Text(
                   DateFormat('MMM d, yyyy').format(credit.createdAt),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TiermetryTypography.bodySmall(
                     color: Colors.white54,
                     fontSize: 13,

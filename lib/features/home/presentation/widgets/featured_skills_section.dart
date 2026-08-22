@@ -71,7 +71,7 @@ class _FeaturedSkillsSectionState extends State<FeaturedSkillsSection> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 330, // Reduced from 380 to remove extra vertical space
+      height: 340, // Increased slightly to ensure full text layout fits
       child:
           widget.isLoading
               ? const ShimmerLoadingList(itemWidth: 280, itemCount: 2)

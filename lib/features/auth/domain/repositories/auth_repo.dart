@@ -9,5 +9,8 @@ abstract class AuthRepo {
     required String password,
     String? name,
   });
+  Future<void> verifyOTP({required String email, required String token});
+  Future<void> resendOTP({required String email});
+  Future<void> resetPasswordForEmail({required String email});
   Future<void> signOut();
 }

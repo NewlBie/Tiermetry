@@ -13,6 +13,7 @@ class AppSurface extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final List<BoxShadow>? shadows;
   final Color? color;
+  final Gradient? gradient;
   final Border? border;
   final double? width;
   final double? height;
@@ -28,6 +29,7 @@ class AppSurface extends StatelessWidget {
     this.padding,
     this.shadows,
     this.color,
+    this.gradient,
     this.border,
     this.width,
     this.height,
@@ -41,9 +43,10 @@ class AppSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveRadius = borderRadius ?? TiermetryRadii.md;
     final decoration = BoxDecoration(
-      color: color ?? TiermetryColors.surface,
+      color: gradient != null ? null : (color ?? TiermetryColors.surface),
+      gradient: gradient,
       borderRadius: BorderRadius.circular(effectiveRadius),
-      border: border ?? Border.all(color: TiermetryColors.cardBorder, width: 1),
+      border: border,
       boxShadow: shadows ?? TiermetryShadows.card,
     );
 
