@@ -1,20 +1,25 @@
-import 'dart:async';
-import 'dart:io';
-
+import 'package:amazing_icons/outlined.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
-
+import 'package:tiermetry/core/constants/app_avatars.dart';
+import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
+import 'package:tiermetry/core/widgets/app_island_notice.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
+import 'package:tiermetry/features/wallet/domain/entities/loyalty_account_entity.dart';
+import 'package:tiermetry/features/wallet/presentation/screens/reward_store_screen.dart';
 import 'package:tiermetry/features/wallet/presentation/widgets/wallet_flip_card.dart';
 
 import '../../domain/entities/profile_entity.dart';
+import '../widgets/avatar_selection_sheet.dart';
 import '../widgets/profile_settings_section.dart';
 import '../widgets/tier_and_badge_card.dart';
 import 'account_privacy_screen.dart';
@@ -22,72 +27,85 @@ import 'refer_and_earn_screen.dart';
 import 'transactions_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final ScrollController? controller;
+
+  const ProfileScreen({super.key, this.controller});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final _profileCtrl = locator.profileCtrl;
+class _ProfileScreenState extends State<ProfileScreen> with RefreshRateMixin {
+  late final _profileCtrl = locator.profileCtrl;
   late final ScrollController _scrollController;
 
   @override
   void initState() {
     super.initState();
-    _scrollController = ScrollController();
-    Future.microtask(() {
-      if (_profileCtrl.profile == null) {
+    _scrollController = widget.controller ?? ScrollController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _profileCtrl.profile == null) {
         _profileCtrl.loadProfile();
+      }
+      if (!FeatureFlags.disableFinancialRewards) {
+        locator.loyaltyCtrl.refreshAll();
       }
     });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    if (widget.controller == null) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
-  Future<void> _refreshProfile() => _profileCtrl.loadProfile();
+  Future<void> _refreshProfile() async {
+    await Future.wait([
+      _profileCtrl.loadProfile(),
+      if (!FeatureFlags.disableFinancialRewards)
+        locator.loyaltyCtrl.refreshAll(),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       backgroundColor: TiermetryColors.background,
       body: Stack(
         children: [
           const HomeBackdrop(),
-          SafeArea(
-            bottom: false,
-            child: ListenableBuilder(
-              listenable: _profileCtrl,
-              builder: (context, child) {
-                if (_profileCtrl.isLoading && _profileCtrl.profile == null) {
-                  return const _ProfileShimmerPlaceholder();
-                }
+          ListenableBuilder(
+            listenable: _profileCtrl,
+            builder: (context, child) {
+              if (_profileCtrl.isLoading && _profileCtrl.profile == null) {
+                return const _ProfileShimmerPlaceholder();
+              }
 
-                if (_profileCtrl.profile == null) {
-                  return _ProfileErrorState(
-                    message:
-                        _profileCtrl.errorMessage ?? 'Profile is unavailable.',
-                    onRetry: _refreshProfile,
-                  );
-                }
-
-                return RefreshIndicator(
-                  backgroundColor: TiermetryColors.surface,
-                  color: TiermetryColors.accentNeonGreen,
-                  onRefresh: _refreshProfile,
-                  child: _ProfileContentView(
-                    controller: _scrollController,
-                    profile: _profileCtrl.profile!,
-                  ),
+              if (_profileCtrl.profile == null) {
+                return AppErrorState(
+                  message:
+                      _profileCtrl.errorMessage ?? 'Profile is unavailable.',
+                  onRetry: _refreshProfile,
                 );
-              },
-            ),
+              }
+
+              return RefreshIndicator(
+                backgroundColor: TiermetryColors.surface,
+                color: TiermetryColors.accentNeonGreen,
+                edgeOffset: topPad + TiermetrySpacing.topBarHeight,
+                onRefresh: _refreshProfile,
+                child: _ProfileContentView(
+                  controller: _scrollController,
+                  profile: _profileCtrl.profile!,
+                ),
+              );
+            },
           ),
-          ScrollGradientOverlay(scrollController: _scrollController),
+          const ScrollGradientOverlay(),
         ],
       ),
     );
@@ -105,87 +123,90 @@ class _ProfileContentView extends StatefulWidget {
 }
 
 class _ProfileContentViewState extends State<_ProfileContentView> {
-  File? _selectedImage;
-  String _animatedBalanceText = '';
-  Timer? _balanceTimer;
+  Future<void> _openAvatarPicker() async {
+    final newId = await showAvatarSelectionSheet(
+      context,
+      currentAvatarId: widget.profile.avatarId,
+    );
+    if (newId == null || newId == widget.profile.avatarId || !mounted) return;
 
-  @override
-  void initState() {
-    super.initState();
-    _startBalanceAnimation();
-  }
-
-  @override
-  void didUpdateWidget(covariant _ProfileContentView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.profile.wallet.balance != widget.profile.wallet.balance) {
-      _startBalanceAnimation();
+    try {
+      await locator.profileCtrl.updateProfile(avatarId: newId);
+      if (mounted) {
+        AppIslandNotice.show(
+          context,
+          title: 'Avatar updated',
+          tone: AppIslandNoticeTone.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppIslandNotice.show(
+          context,
+          title: 'Could not update avatar',
+          message: e.toString().replaceFirst('Exception: ', ''),
+          tone: AppIslandNoticeTone.error,
+        );
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _balanceTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 82,
-    );
-    if (pickedFile == null || !mounted) return;
-    setState(() => _selectedImage = File(pickedFile.path));
-  }
-
-  void _startBalanceAnimation() {
-    const frameDuration = Duration(milliseconds: 33);
-    const totalDuration = Duration(milliseconds: 500);
-    const scrambleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    final target = widget.profile.wallet.balance;
-    final startedAt = DateTime.now();
-
-    _balanceTimer?.cancel();
-    _animatedBalanceText = target;
-
-    _balanceTimer = Timer.periodic(frameDuration, (timer) {
-      final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
-      final percent = elapsedMs / totalDuration.inMilliseconds;
-      final revealCount =
-          (target.length * percent).clamp(0, target.length).floor();
-
-      final scrambled =
-          List.generate(target.length, (index) {
-            if (index < revealCount) return target[index];
-            final charIndex =
-                (DateTime.now().microsecondsSinceEpoch + index * 17) %
-                scrambleChars.length;
-            return scrambleChars[charIndex];
-          }).join();
-
-      if (mounted) setState(() => _animatedBalanceText = scrambled);
-
-      if (revealCount >= target.length) {
-        timer.cancel();
-        if (mounted) setState(() => _animatedBalanceText = target);
-      }
-    });
-  }
-
   void _openRoute(Widget screen) {
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   @override
   Widget build(BuildContext context) {
-    final profile = widget.profile;
-    final animatedWallet = profile.wallet.copyWith(
-      balance:
-          _animatedBalanceText.isEmpty
-              ? profile.wallet.balance
-              : _animatedBalanceText,
+    final profile = locator.profileCtrl.profile ?? widget.profile;
+
+    if (FeatureFlags.disableFinancialRewards) {
+      return _buildContent(context, profile, null);
+    }
+
+    return ListenableBuilder(
+      listenable: locator.loyaltyCtrl,
+      builder: (context, _) {
+        final loyaltyAccount = locator.loyaltyCtrl.account;
+        if (loyaltyAccount == null) {
+          return _buildContent(
+            context,
+            profile,
+            null,
+            loyaltyFallback: _LoyaltyUnavailableCard(
+              isLoading: locator.loyaltyCtrl.isLoading,
+              message: locator.loyaltyCtrl.errorMessage,
+              onRetry: locator.loyaltyCtrl.refreshAll,
+            ),
+          );
+        }
+        final liveTiergies = loyaltyAccount.availableTiergies;
+        final animatedWallet = profile.wallet.copyWith(
+          balance: liveTiergies.toString(),
+          earned: loyaltyAccount.totalEarnedTiergies.toString(),
+        );
+
+        return _buildContent(
+          context,
+          profile,
+          loyaltyAccount,
+          animatedWallet: animatedWallet,
+        );
+      },
     );
+  }
+
+  Widget _buildContent(
+    BuildContext context,
+    ProfileEntity profile,
+    LoyaltyAccountEntity? loyaltyAccount, {
+    WalletEntity? animatedWallet,
+    Widget? loyaltyFallback,
+  }) {
+    final topPad = MediaQuery.of(context).padding.top;
+    const showRewards = !FeatureFlags.disableFinancialRewards;
 
     return CustomScrollView(
       controller: widget.controller,
@@ -195,81 +216,68 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               TiermetrySpacing.screenPadding,
-              92,
+              topPad +
+                  TiermetrySpacing.topBarHeight +
+                  TiermetrySpacing.sectionGap,
               TiermetrySpacing.screenPadding,
               TiermetrySpacing.lg,
             ),
             child: _ProfileHeaderCard(
               profile: profile,
-              selectedImage: _selectedImage,
-              onImageTap: _pickImage,
+              loyaltyAccount: loyaltyAccount,
+              onImageTap: _openAvatarPicker,
               onEditTap: () => _openRoute(const AccountPrivacyScreen()),
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: TiermetrySpacing.pagePadding,
-            child: _QuickActionsRow(
-              actions: [
-                _QuickAction(
-                  title: 'Wallet',
-                  subtitle: '${profile.wallet.balance} pts',
-                  icon: Icons.account_balance_wallet_rounded,
-                  onTap: () => _openRoute(const TransactionsScreen()),
-                ),
-                _QuickAction(
-                  title: 'Rewards',
-                  subtitle:
-                      '${profile.openedBadges}/${profile.totalBadges} badges',
-                  icon: Icons.emoji_events_rounded,
-                  onTap: () => _openRoute(const ReferAndEarnScreen()),
-                ),
-                _QuickAction(
-                  title: 'Account',
-                  subtitle: 'Privacy',
-                  icon: Icons.verified_user_rounded,
-                  onTap: () => _openRoute(const AccountPrivacyScreen()),
-                ),
-              ],
+        if (showRewards && loyaltyAccount == null && loyaltyFallback != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                TiermetrySpacing.screenPadding,
+                TiermetrySpacing.sm,
+                TiermetrySpacing.screenPadding,
+                0,
+              ),
+              child: loyaltyFallback,
             ),
           ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              TiermetrySpacing.screenPadding,
-              TiermetrySpacing.sectionGap,
-              TiermetrySpacing.screenPadding,
-              0,
-            ),
-            child: WalletFlipCard(
-              walletData: animatedWallet,
-              onEarnPressed: () => _openRoute(const ReferAndEarnScreen()),
-            ),
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              TiermetrySpacing.screenPadding,
-              TiermetrySpacing.xl,
-              TiermetrySpacing.screenPadding,
-              0,
-            ),
-            child: TierAndBadgeCard(
-              tierName: profile.tierName,
-              tierProgress: profile.tierProgress.clamp(0, 1),
-              openedBadges: profile.openedBadges,
-              totalBadges: profile.totalBadges,
-              totalUniqueBadges: profile.totalBadges,
-              badgeTitles: profile.badges.map((badge) => badge.title).toList(),
-              badgeColors: profile.badges.map((badge) => badge.color).toList(),
+        if (showRewards &&
+            loyaltyAccount != null &&
+            animatedWallet != null) ...[
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                TiermetrySpacing.screenPadding,
+                TiermetrySpacing.sm,
+                TiermetrySpacing.screenPadding,
+                0,
+              ),
+              child: WalletFlipCard(
+                walletData: animatedWallet,
+                pendingTiergies: loyaltyAccount.pendingTiergies,
+                onEarnPressed: () => _openRoute(const ReferAndEarnScreen()),
+                onRedeemPressed: () => _openRoute(const TransactionsScreen()),
+              ),
             ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                TiermetrySpacing.screenPadding,
+                TiermetrySpacing.sm,
+                TiermetrySpacing.screenPadding,
+                0,
+              ),
+              child: TierAndBadgeCard(
+                account: loyaltyAccount,
+                onStatusTap: () => _openRoute(const RewardStoreScreen()),
+              ),
+            ),
+          ),
+        ],
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -282,7 +290,7 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Settings',
+                  ('Settings').toUpperCase(),
                   style: TiermetryTypography.title(color: Colors.white),
                 ),
                 const SizedBox(height: TiermetrySpacing.headerToContent),
@@ -296,34 +304,86 @@ class _ProfileContentViewState extends State<_ProfileContentView> {
   }
 }
 
+class _LoyaltyUnavailableCard extends StatelessWidget {
+  const _LoyaltyUnavailableCard({
+    required this.isLoading,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final bool isLoading;
+  final String? message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 112),
+      padding: const EdgeInsets.all(TiermetrySpacing.lg),
+      decoration: BoxDecoration(
+        color: TiermetryColors.surfaceUnderlay,
+        borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+      ),
+      child:
+          isLoading
+              ? const Center(
+                child: CircularProgressIndicator(
+                  color: TiermetryColors.accentNeonGreen,
+                ),
+              )
+              : Row(
+                children: [
+                  const Icon(
+                    Icons.sync_problem_rounded,
+                    color: TiermetryColors.accentNeonGreen,
+                  ),
+                  const SizedBox(width: TiermetrySpacing.md),
+                  Expanded(
+                    child: Text(
+                      message ?? 'Your Tiergies and status are unavailable.',
+                      style: TiermetryTypography.bodySmall(
+                        color: TiermetryColors.textMuted,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: onRetry,
+                    tooltip: 'Retry rewards sync',
+                    icon: const Icon(Icons.refresh_rounded),
+                  ),
+                ],
+              ),
+    );
+  }
+}
+
 class _ProfileHeaderCard extends StatelessWidget {
   final ProfileEntity profile;
-  final File? selectedImage;
+  final LoyaltyAccountEntity? loyaltyAccount;
   final VoidCallback onImageTap;
   final VoidCallback onEditTap;
 
   const _ProfileHeaderCard({
     required this.profile,
-    required this.selectedImage,
+    required this.loyaltyAccount,
     required this.onImageTap,
     required this.onEditTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final liveStatus = loyaltyAccount?.statusDisplayName ?? 'SYNCING STATUS';
+    final rank =
+        loyaltyAccount == null
+            ? null
+            : 'RANK ${loyaltyAccount!.status.rank + 1}';
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(TiermetrySpacing.lg),
       decoration: BoxDecoration(
         color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.34),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(TiermetryRadii.lg),
       ),
       child: Column(
         children: [
@@ -331,8 +391,8 @@ class _ProfileHeaderCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _ProfileAvatar(
-                imagePath: profile.image,
-                selectedImage: selectedImage,
+                avatarId: profile.avatarId,
+                imagePath: profile.image ?? '',
                 onTap: onImageTap,
               ),
               const SizedBox(width: TiermetrySpacing.md),
@@ -344,12 +404,12 @@ class _ProfileHeaderCard extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            profile.name,
+                            (profile.name).toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TiermetryTypography.display(
                               color: Colors.white,
-                              fontSize: 28,
+                              fontSize: 26,
                               height: 1,
                             ),
                           ),
@@ -364,13 +424,26 @@ class _ProfileHeaderCard extends StatelessWidget {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.white70,
+                              AmazingIconOutlined.edit,
                               size: 18,
+                              color: Colors.white70,
                             ),
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      profile.username?.isNotEmpty == true
+                          ? '@${profile.username}'
+                          : 'Username not set',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TiermetryTypography.caption(
+                        color: TiermetryColors.accentNeonGreen,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -383,48 +456,76 @@ class _ProfileHeaderCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: TiermetrySpacing.sm,
-                      runSpacing: TiermetrySpacing.sm,
-                      children: [
-                        _MetaPill(
-                          icon: Icons.military_tech_rounded,
-                          label: profile.level,
-                          isPrimary: true,
-                        ),
-                        _MetaPill(
-                          icon: Icons.cake_outlined,
-                          label: '${profile.age}',
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: TiermetrySpacing.lg),
-          Row(
-            children: [
-              Expanded(
-                child: _ProfileStat(value: profile.tierName, label: 'Tier'),
-              ),
-              const SizedBox(width: TiermetrySpacing.sm),
-              Expanded(
-                child: _ProfileStat(
-                  value: profile.wallet.balance,
-                  label: 'Tiergies',
+          const SizedBox(height: TiermetrySpacing.md),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(TiermetrySpacing.md),
+            decoration: BoxDecoration(
+              color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: TiermetryColors.accentNeonGreen,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        AmazingIconOutlined.crown,
+                        size: 18,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: TiermetrySpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'YOUR STATUS',
+                            style: TiermetryTypography.label(
+                              color: TiermetryColors.textMuted,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            liveStatus,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TiermetryTypography.titleSmall(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (rank != null)
+                      _MetaPill(
+                        iconBuilder:
+                            (size, color) => Icon(
+                              AmazingIconOutlined.crown,
+                              size: size,
+                              color: color,
+                            ),
+                        label: rank,
+                      ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: TiermetrySpacing.sm),
-              Expanded(
-                child: _ProfileStat(
-                  value: '${profile.openedBadges}',
-                  label: 'Badges',
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -433,19 +534,20 @@ class _ProfileHeaderCard extends StatelessWidget {
 }
 
 class _ProfileAvatar extends StatelessWidget {
+  final int avatarId;
   final String imagePath;
-  final File? selectedImage;
   final VoidCallback onTap;
 
   const _ProfileAvatar({
+    required this.avatarId,
     required this.imagePath,
-    required this.selectedImage,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final imageProvider = _resolveImageProvider();
+    final resolvedId = AppAvatar.idFromAssetOrString(imagePath) ?? avatarId;
+    final asset = AppAvatar.assetForId(resolvedId);
 
     return GestureDetector(
       onTap: onTap,
@@ -454,29 +556,20 @@ class _ProfileAvatar extends StatelessWidget {
           Container(
             width: 92,
             height: 92,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: TiermetryColors.surfaceElement,
-              borderRadius: BorderRadius.circular(24),
-              image:
-                  imageProvider == null
-                      ? null
-                      : DecorationImage(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
-                      ),
+              borderRadius: BorderRadius.circular(26),
+              border: Border.all(color: Colors.white12),
+              image: DecorationImage(
+                image: AssetImage(asset),
+                fit: BoxFit.cover,
+              ),
             ),
-            child:
-                imageProvider == null
-                    ? const Icon(
-                      Icons.person_rounded,
-                      color: Colors.white54,
-                      size: 42,
-                    )
-                    : null,
           ),
           Positioned(
-            right: 6,
-            bottom: 6,
+            right: 4,
+            bottom: 4,
             child: Container(
               width: 28,
               height: 28,
@@ -484,10 +577,10 @@ class _ProfileAvatar extends StatelessWidget {
                 color: TiermetryColors.accentNeonGreen,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.black.withAlpha(220),
+              child: const Icon(
+                AmazingIconOutlined.edit,
                 size: 15,
+                color: Colors.black,
               ),
             ),
           ),
@@ -495,67 +588,33 @@ class _ProfileAvatar extends StatelessWidget {
       ),
     );
   }
-
-  ImageProvider? _resolveImageProvider() {
-    if (selectedImage != null) {
-      return FileImage(selectedImage!);
-    }
-
-    final trimmedPath = imagePath.trim();
-    if (trimmedPath.isEmpty) return null;
-
-    if (trimmedPath.startsWith('http://') ||
-        trimmedPath.startsWith('https://')) {
-      return NetworkImage(trimmedPath);
-    }
-
-    return AssetImage(trimmedPath);
-  }
 }
 
 class _MetaPill extends StatelessWidget {
-  final IconData icon;
+  final Widget Function(double, Color) iconBuilder;
   final String label;
-  final bool isPrimary;
 
-  const _MetaPill({
-    required this.icon,
-    required this.label,
-    this.isPrimary = false,
-  });
+  const _MetaPill({required this.iconBuilder, required this.label});
 
   @override
   Widget build(BuildContext context) {
-    final color = isPrimary ? TiermetryColors.accentNeonGreen : Colors.white;
+    const color = Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            isPrimary
-                ? color.withValues(alpha: 0.15)
-                : TiermetryColors.surfaceElement,
+        color: TiermetryColors.surfaceElement,
         borderRadius: BorderRadius.circular(TiermetryRadii.pill),
-        border: Border.all(
-          color:
-              isPrimary
-                  ? color.withValues(alpha: 0.28)
-                  : Colors.white.withValues(alpha: 0.04),
-        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: color.withValues(alpha: isPrimary ? 1 : 0.62),
-            size: 13,
-          ),
+          iconBuilder(13.0, color.withValues(alpha: 0.62)),
           const SizedBox(width: 5),
           Text(
             label,
             style: TiermetryTypography.caption(
-              color: color.withValues(alpha: isPrimary ? 1 : 0.74),
+              color: color.withValues(alpha: 0.74),
               fontSize: 11.5,
               fontWeight: FontWeight.w800,
             ),
@@ -566,6 +625,8 @@ class _MetaPill extends StatelessWidget {
   }
 }
 
+// Kept as a shared private visual primitive for the profile shimmer transition.
+// ignore: unused_element
 class _ProfileStat extends StatelessWidget {
   final String value;
   final String label;
@@ -582,23 +643,27 @@ class _ProfileStat extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.title(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              (value).toUpperCase(),
+              style: TiermetryTypography.title(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 3),
-          Text(
-            label,
-            style: TiermetryTypography.caption(
-              color: Colors.white.withValues(alpha: 0.48),
-              fontSize: 10.5,
-              fontWeight: FontWeight.w700,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: TiermetryTypography.caption(
+                color: Colors.white.withValues(alpha: 0.48),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -607,6 +672,9 @@ class _ProfileStat extends StatelessWidget {
   }
 }
 
+// Kept for when live account activity counts are added; it is intentionally
+// hidden until its values come from the server rather than placeholder zeroes.
+// ignore: unused_element
 class _QuickActionsRow extends StatelessWidget {
   final List<_QuickAction> actions;
 
@@ -614,6 +682,10 @@ class _QuickActionsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final titleGroup = AutoSizeGroup();
+    final subtitleGroup = AutoSizeGroup();
+    final valueGroup = AutoSizeGroup();
+
     return Row(
       children:
           actions
@@ -623,7 +695,12 @@ class _QuickActionsRow extends StatelessWidget {
                     padding: EdgeInsets.only(
                       right: action == actions.last ? 0 : TiermetrySpacing.sm,
                     ),
-                    child: _QuickActionTile(action: action),
+                    child: _QuickActionTile(
+                      action: action,
+                      titleGroup: titleGroup,
+                      subtitleGroup: subtitleGroup,
+                      valueGroup: valueGroup,
+                    ),
                   ),
                 ),
               )
@@ -634,20 +711,25 @@ class _QuickActionsRow extends StatelessWidget {
 
 class _QuickActionTile extends StatelessWidget {
   final _QuickAction action;
+  final AutoSizeGroup titleGroup;
+  final AutoSizeGroup subtitleGroup;
+  final AutoSizeGroup valueGroup;
 
-  const _QuickActionTile({required this.action});
+  const _QuickActionTile({
+    required this.action,
+    required this.titleGroup,
+    required this.subtitleGroup,
+    required this.valueGroup,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: action.onTap,
       child: Container(
-        height: 112,
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.24),
@@ -656,108 +738,94 @@ class _QuickActionTile extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: TiermetryColors.accentNeonGreen,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                action.icon,
-                color: Colors.black.withAlpha(220),
-                size: 19,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              action.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.title(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              action.subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.52),
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _QuickAction {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _QuickAction({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.onTap,
-  });
-}
-
-class _ProfileErrorState extends StatelessWidget {
-  final String message;
-  final Future<void> Function() onRetry;
-
-  const _ProfileErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: TiermetrySpacing.pagePadding,
-        child: Container(
-          padding: const EdgeInsets.all(TiermetrySpacing.xl),
-          decoration: BoxDecoration(
-            color: TiermetryColors.surface,
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.cloud_off_rounded,
-                color: Colors.white38,
-                size: 40,
-              ),
-              const SizedBox(height: TiermetrySpacing.md),
-              Text(
-                message,
-                textAlign: TextAlign.center,
+              // Title
+              AutoSizeText(
+                action.title,
+                maxLines: 1,
+                group: titleGroup,
+                minFontSize: 8,
                 style: TiermetryTypography.title(
                   color: Colors.white,
-                  fontSize: 17,
-                ),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ).copyWith(letterSpacing: 0),
               ),
-              const SizedBox(height: TiermetrySpacing.lg),
-              ElevatedButton(
-                onPressed: onRetry,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: TiermetryColors.accentNeonGreen,
-                  foregroundColor: Colors.black,
-                ),
-                child: const Text('Retry'),
+
+              const SizedBox(height: 16),
+
+              // Bottom Section
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final iconContainerSize = (constraints.maxWidth * 0.4).clamp(
+                    24.0,
+                    44.0,
+                  );
+                  final iconInnerSize = (iconContainerSize * 0.55).clamp(
+                    14.0,
+                    24.0,
+                  );
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Glass Circle Icon
+                      Container(
+                        width: iconContainerSize,
+                        height: iconContainerSize,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: TiermetryColors.accentNeonGreen,
+                        ),
+                        child: Center(
+                          child: action.iconBuilder(
+                            iconInnerSize,
+                            Colors.black.withAlpha(220),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Active + Value
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AutoSizeText(
+                              action.subtitle,
+                              group: subtitleGroup,
+                              maxLines: 1,
+                              minFontSize: 6,
+                              style: TiermetryTypography.caption(
+                                color: Colors.white.withValues(alpha: 0.52),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            AutoSizeText(
+                              action.value,
+                              group: valueGroup,
+                              maxLines: 1,
+                              minFontSize: 10,
+                              style: TiermetryTypography.title(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                height: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -767,19 +835,36 @@ class _ProfileErrorState extends StatelessWidget {
   }
 }
 
+class _QuickAction {
+  final String title;
+  final String subtitle;
+  final String value;
+  final Widget Function(double, Color) iconBuilder;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.iconBuilder,
+    required this.onTap,
+  });
+}
+
 class _ProfileShimmerPlaceholder extends StatelessWidget {
   const _ProfileShimmerPlaceholder();
 
   @override
   Widget build(BuildContext context) {
+    final topPad = MediaQuery.of(context).padding.top;
     return Shimmer.fromColors(
       baseColor: Colors.grey[900]!,
       highlightColor: Colors.grey[800]!,
       child: ListView(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           TiermetrySpacing.screenPadding,
-          92,
+          topPad + TiermetrySpacing.topBarHeight + TiermetrySpacing.sectionGap,
           TiermetrySpacing.screenPadding,
           TiermetrySpacing.bottomSafeArea,
         ),
@@ -788,7 +873,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             height: 216,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
             ),
           ),
           const SizedBox(height: TiermetrySpacing.lg),
@@ -797,13 +882,13 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
               3,
               (index) => Expanded(
                 child: Container(
-                  height: 112,
+                  height: 140, // Match the new QuickActionTile height
                   margin: EdgeInsets.only(
                     right: index == 2 ? 0 : TiermetrySpacing.sm,
                   ),
                   decoration: BoxDecoration(
                     color: Colors.black,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(TiermetryRadii.md),
                   ),
                 ),
               ),
@@ -815,7 +900,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(TiermetryRadii.md),
               ),
             ),
           ),
@@ -824,7 +909,7 @@ class _ProfileShimmerPlaceholder extends StatelessWidget {
             height: 280,
             decoration: BoxDecoration(
               color: Colors.black,
-              borderRadius: BorderRadius.circular(32),
+              borderRadius: BorderRadius.circular(TiermetryRadii.md),
             ),
           ),
         ],

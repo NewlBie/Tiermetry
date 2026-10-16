@@ -1,24 +1,29 @@
+import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
-
-// Features
-import 'features/arena/presentation/screens/arena_screen.dart';
-import 'features/event/presentation/screens/event_browser_screen.dart';
-import 'features/profile/presentation/screens/profile_screen.dart';
-import 'features/booking/presentation/screens/booking_screen.dart';
-import 'features/home/presentation/screens/home_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:tiermetry/core/constants/app_avatars.dart';
+import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/bottom_nav.dart';
+import 'package:tiermetry/core/widgets/deferred_page.dart';
+import 'package:tiermetry/core/widgets/fullscreen_dropdown_menu.dart';
+import 'package:tiermetry/core/widgets/top_bar.dart';
 
-// Tabs
-// HomeTab import removed because it was moved to HomeScreen
+import 'features/arena/presentation/screens/arena_screen.dart';
+import 'features/booking/presentation/screens/booking_screen.dart';
+import 'features/booking/presentation/widgets/floating_booking_pill.dart';
+import 'features/event/presentation/screens/event_browser_screen.dart';
+import 'features/event/presentation/screens/my_events_screen.dart';
+import 'features/home/presentation/screens/home_screen.dart';
 import 'features/profile/presentation/screens/account_privacy_screen.dart';
 import 'features/profile/presentation/screens/help_and_support_screen.dart';
 import 'features/profile/presentation/screens/legal_policies_screen.dart';
+import 'features/profile/presentation/screens/profile_screen.dart';
 import 'features/profile/presentation/screens/transactions_screen.dart';
-
-// Components
-import 'package:tiermetry/core/widgets/bottom_nav.dart';
-import 'package:tiermetry/core/widgets/drawer.dart';
-import 'package:tiermetry/core/widgets/top_bar.dart';
 
 class Root extends StatefulWidget {
   const Root({super.key});
@@ -27,26 +32,45 @@ class Root extends StatefulWidget {
   State<Root> createState() => _RootState();
 }
 
-class _RootState extends State<Root> with TickerProviderStateMixin {
+class _RootState extends State<Root>
+    with TickerProviderStateMixin, RefreshRateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final _authCtrl = locator.authCtrl;
+  final _profileCtrl = locator.profileCtrl;
 
   int _selectedIndex = 0;
-  final bool _hasNotification = true;
+  bool _isMenuOpen = false;
 
   late final AnimationController _menuAnimationController;
 
-  final List<BottomNavItem> navItems = const [
-    BottomNavItem(icon: Icons.home_filled, label: 'Home'),
-    BottomNavItem(icon: Icons.sports_esports_rounded, label: 'Arenas'),
-    BottomNavItem(icon: Icons.explore_rounded, label: 'Explore'),
-    BottomNavItem(icon: Icons.person_rounded, label: 'Profile'),
+  final List<GlobalKey<NavigatorState>> _navigatorKeys = [
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
+    GlobalKey<NavigatorState>(),
   ];
 
-  final List<Widget> _pages = const [
-    HomeScreen(userName: "Neal"),
-    ArenaScreen(),
-    EventBrowserScreen(),
-    ProfileScreen(),
+  final List<BottomNavItem> navItems = [
+    BottomNavItem(
+      iconBuilder:
+          (size, color) => AmazingIconBulk.home(size: size, color: color),
+      label: 'Home',
+    ),
+    BottomNavItem(
+      iconBuilder:
+          (size, color) => AmazingIconBulk.game(size: size, color: color),
+      label: 'Arenas',
+    ),
+    BottomNavItem(
+      iconBuilder:
+          (size, color) => AmazingIconBulk.discover(size: size, color: color),
+      label: 'Explore',
+    ),
+    BottomNavItem(
+      iconBuilder:
+          (size, color) => AmazingIconBulk.profile(size: size, color: color),
+      label: 'Profile',
+    ),
   ];
 
   @override
@@ -56,6 +80,19 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+    _menuAnimationController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed ||
+          status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    });
+
+    final savedLocation = _profileCtrl.profile?.location.trim();
+    if (savedLocation != null && savedLocation.isNotEmpty) {
+      locator.locationCtrl.selectCity(savedLocation);
+    }
   }
 
   @override
@@ -64,86 +101,52 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  List<DrawerItem> _buildDrawerItems() {
-    return [
-      DrawerItem(
-        icon: Icons.person_outline_rounded,
-        text: 'Account & Privacy',
-        subtitle: 'Profile, phone, email',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const AccountPrivacyScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.receipt_long_rounded,
-        text: 'My Transactions',
-        subtitle: 'Wallet activity',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TransactionsScreen()),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.bookmark_added_outlined,
-        text: 'My Bookings',
-        subtitle: 'Arena and event reservations',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const BookingScreen()),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.help_outline,
-        text: 'Help & Support',
-        subtitle: 'FAQs and contact',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const HelpAndSupportScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.description_outlined,
-        text: 'Legal & Policies',
-        subtitle: 'Terms and privacy',
-        onTap: () {
-          Navigator.pop(context);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const LegalPoliciesScreen(),
-            ),
-          );
-        },
-      ),
-      DrawerItem(
-        icon: Icons.logout_rounded,
-        text: 'Logout',
-        subtitle: 'Sign out of this device',
-        color: Colors.redAccent,
-        onTap: _showLogoutSheet,
-      ),
-    ];
+  void _toggleMenu() {
+    if (_isMenuOpen) {
+      _menuAnimationController.reverse();
+    } else {
+      _menuAnimationController.forward();
+    }
+    setState(() {
+      _isMenuOpen = !_isMenuOpen;
+    });
+  }
+
+  void _handleMenuRoute(String route) {
+    // We navigate to existing screens
+    Widget? target;
+    switch (route) {
+      case 'booking':
+        target = const BookingScreen();
+        break;
+      case 'my_events':
+        target = const MyEventsScreen();
+        break;
+      case 'wallet':
+        target = const TransactionsScreen();
+        break;
+      case 'account':
+        target = const AccountPrivacyScreen();
+        break;
+      case 'support':
+        target = const HelpAndSupportScreen();
+        break;
+      case 'legal':
+        target = const LegalPoliciesScreen();
+        break;
+    }
+
+    if (target != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute<void>(builder: (context) => target!),
+      );
+    }
   }
 
   void _showLogoutSheet() {
-    Navigator.pop(context);
+    // If the menu was open, the overlay will disappear because _isMenuOpen is toggled false inside FullscreenDropdownMenu.
+    // Wait, the menu calls onClose before onLogout.
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -152,9 +155,11 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF151515),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            color: TiermetryColors.surface,
+            borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+            border: Border.all(
+              color: TiermetryColors.white.withValues(alpha: 0.08),
+            ),
           ),
           child: SafeArea(
             top: false,
@@ -163,14 +168,16 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Log out?',
-                  style: TiermetryTypography.title(color: Colors.white),
+                  ('Log out?').toUpperCase(),
+                  style: TiermetryTypography.title(
+                    color: TiermetryColors.white,
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: TiermetrySpacing.sm),
                 Text(
                   'You can sign back in anytime.',
                   style: TiermetryTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.62),
+                    color: TiermetryColors.white.withValues(alpha: 0.62),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -186,7 +193,11 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
                     ),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _authCtrl.signOut();
+                          locator.profileCtrl.clear();
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
                           foregroundColor: Colors.white,
@@ -204,104 +215,174 @@ class _RootState extends State<Root> with TickerProviderStateMixin {
     );
   }
 
-  Widget _getCurrentTitle() {
-    switch (_selectedIndex) {
-      case 0:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (_isMenuOpen) {
+          _toggleMenu();
+          return;
+        }
+        final innerNav = _navigatorKeys[_selectedIndex].currentState;
+        if (innerNav != null && innerNav.canPop()) {
+          innerNav.pop();
+        } else if (_selectedIndex != 0) {
+          setState(() => _selectedIndex = 0);
+        } else {
+          await SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: TiermetryColors.black,
+        body: Stack(
           children: [
-            Text(
-              'TIERMETRY',
-              style: TiermetryTypography.title(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+            IndexedStack(
+              index: _selectedIndex,
+              children: [
+                DeferredPage(
+                  index: 0,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[0],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder:
+                              (context) => HomeScreen(
+                                userName: _authCtrl.user?.name ?? 'Gamer',
+                              ),
+                        ),
+                  ),
+                ),
+                DeferredPage(
+                  index: 1,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[1],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const ArenaScreen(),
+                        ),
+                  ),
+                ),
+                DeferredPage(
+                  index: 2,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[2],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const EventBrowserScreen(),
+                        ),
+                  ),
+                ),
+                DeferredPage(
+                  index: 3,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[3],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                  ),
+                ),
+              ],
+            ),
+
+            // BottomNav
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: TiermetrySpacing.screenPadding,
+                  ),
+                  child: BottomNav(
+                    currentIndex: _selectedIndex,
+                    onTap: (index) {
+                      setState(() => _selectedIndex = index);
+                    },
+                    items: navItems,
+                  ),
+                ),
               ),
             ),
-            Text(
-              'JUST KNOCK IT OUT',
-              style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.62),
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.9,
+
+            // Floating Booking Pill (above BottomNav)
+            const Positioned(
+              left: TiermetrySpacing.screenPadding,
+              right: TiermetrySpacing.screenPadding,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 78),
+                  child: FloatingBookingPill(),
+                ),
+              ),
+            ),
+
+            // Overlay Fullscreen Menu
+            if (_isMenuOpen || !_menuAnimationController.isDismissed)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !_isMenuOpen,
+                  child: ListenableBuilder(
+                    listenable: _profileCtrl,
+                    builder: (context, _) {
+                      final profile = _profileCtrl.profile;
+                      final userName =
+                          profile?.name.isNotEmpty == true
+                              ? profile!.name
+                              : (_authCtrl.user?.name ?? 'Gamer');
+                      final userHandle =
+                          profile?.username?.isNotEmpty == true
+                              ? '@${profile!.username}'
+                              : '@${userName.toLowerCase().replaceAll(' ', '_')}';
+                      final avatarAsset = AppAvatar.assetForId(
+                        profile?.avatarId ??
+                            AppAvatar.idFromAssetOrString(profile?.image) ??
+                            AppAvatar.defaultAvatarId,
+                      );
+
+                      return FullscreenDropdownMenu(
+                        animation: _menuAnimationController,
+                        onClose: _toggleMenu,
+                        onNavigateIndex: (index) {
+                          setState(() => _selectedIndex = index);
+                        },
+                        onPushRoute: _handleMenuRoute,
+                        onLogout: _showLogoutSheet,
+                        userName: userName,
+                        userHandle: userHandle,
+                        userAvatarAsset: avatarAsset,
+                        isOpen: _isMenuOpen,
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            // TopBar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: TopBar(
+                menuAnimationProgress: _menuAnimationController,
+                onMenuTap: _toggleMenu,
               ),
             ),
           ],
-        );
-      case 1:
-        return Text(
-          'Arenas',
-          key: const ValueKey('arenas'),
-          style: TiermetryTypography.title(color: Colors.white),
-        );
-      case 2:
-        return Text(
-          'Events',
-          key: const ValueKey('events'),
-          style: TiermetryTypography.title(color: Colors.white),
-        );
-      case 3:
-        return Text(
-          'Profile',
-          key: const ValueKey('profile'),
-          style: TiermetryTypography.title(color: Colors.white),
-        );
-      default:
-        return const SizedBox.shrink();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: AppDrawer(
-        userName: 'Neal Adams',
-        userHandle: '@neal_adams',
-        userAvatarAsset: 'assets/Seller.png',
-        items: _buildDrawerItems(),
-      ),
-      onDrawerChanged: (isOpened) {
-        if (isOpened) {
-          _menuAnimationController.forward();
-        } else {
-          _menuAnimationController.reverse();
-        }
-      },
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          IndexedStack(index: _selectedIndex, children: _pages),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: TopBar(
-              title: _getCurrentTitle(),
-              menuAnimationProgress: _menuAnimationController,
-              hasNotification: _hasNotification,
-              onMenuTap: () => _scaffoldKey.currentState?.openDrawer(),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 16,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: BottomNav(
-                currentIndex: _selectedIndex,
-                onTap: (index) {
-                  setState(() => _selectedIndex = index);
-                },
-                items: navItems,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

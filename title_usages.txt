@@ -1,0 +1,72 @@
+lib\core\widgets\drawer.dart:155:                    style: TiermetryTypography.title(
+lib\core\widgets\drawer.dart:241:                  style: TiermetryTypography.title(
+lib\core\widgets\section_header.dart:23:        Text(title, style: TiermetryTypography.title(color: Colors.white)),
+lib\core\widgets\top_bar.dart:78:                style: TiermetryTypography.title(
+lib\features\arena\presentation\screens\all_arenas_screen.dart:156:        style: TiermetryTypography.title(color: Colors.white, fontSize: 22),
+lib\features\arena\presentation\screens\arena_details_screen.dart:326:                    style: TiermetryTypography.title(
+lib\features\arena\presentation\screens\arena_details_screen.dart:1150:    style: TiermetryTypography.title(
+lib\features\arena\presentation\screens\arena_map_screen.dart:236:                                        style: TiermetryTypography.title(
+lib\features\arena\presentation\screens\arena_screen.dart:340:                style: TiermetryTypography.title(color: TiermetryColors.white),
+lib\features\arena\presentation\screens\arena_screen.dart:529:                    style: TiermetryTypography.title(
+lib\features\arena\presentation\screens\arena_screen.dart:588:                          style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\arena_card.dart:90:                  style: TiermetryTypography.titleSmall(
+lib\features\arena\presentation\widgets\arena_greeting.dart:65:            style: TiermetryTypography.display(color: Colors.white),
+lib\features\arena\presentation\widgets\booking_sheet.dart:326:                    style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\booking_sheet.dart:513:                        style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\booking_sheet.dart:728:                style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\booking_sheet.dart:933:                            style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\booking_sheet.dart:940:                            style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\booking_status_overlay.dart:151:                  style: TiermetryTypography.title(
+lib\features\arena\presentation\widgets\filter_sheet.dart:147:          style: TiermetryTypography.title(fontSize: 20, color: Colors.white),
+lib\features\arena\presentation\widgets\filter_sheet.dart:196:      style: TiermetryTypography.titleSmall(fontSize: 16, color: Colors.white),
+lib\features\arena\presentation\widgets\trending_game_poster.dart:60:                style: TiermetryTypography.display(
+lib\features\auth\presentation\screens\login_screen.dart:68:                    style: TiermetryTypography.display(
+lib\features\auth\presentation\screens\login_screen.dart:89:                          style: TiermetryTypography.title(
+lib\features\auth\presentation\screens\signup_screen.dart:88:                    style: TiermetryTypography.display(
+lib\features\booking\presentation\screens\booking_screen.dart:45:              style: TiermetryTypography.title(color: TiermetryColors.white),
+lib\features\booking\presentation\screens\booking_screen.dart:105:                      style: TiermetryTypography.title(
+lib\features\booking\presentation\screens\booking_screen.dart:228:                    style: TiermetryTypography.title(
+lib\features\booking\presentation\screens\booking_screen.dart:375:                              style: TiermetryTypography.title(
+lib\features\booking\presentation\screens\booking_screen.dart:392:                        style: TiermetryTypography.title(
+lib\features\booking\presentation\screens\booking_screen.dart:636:            style: TiermetryTypography.title(
+lib\features\booking\presentation\widgets\check_in_sheet.dart:124:                style: TiermetryTypography.title(
+lib\features\booking\presentation\widgets\check_in_sheet.dart:366:                  style: TiermetryTypography.title(
+lib\features\event\presentation\screens\event_browser_screen.dart:337:            style: TiermetryTypography.display(
+lib\features\event\presentation\screens\event_browser_screen.dart:392:                  style: TiermetryTypography.title(
+lib\features\event\presentation\screens\event_browser_screen.dart:454:                    style: TiermetryTypography.title(
+lib\features\event\presentation\screens\event_browser_screen.dart:539:            style: TiermetryTypography.title(
+lib\features\event\presentation\screens\event_details_screen.dart:176:                            style: TiermetryTypography.title(
+lib\features\event\presentation\screens\event_details_screen.dart:227:                                style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\screens\event_details_screen.dart:254:                            style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\screens\event_details_screen.dart:265:                            style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\screens\event_details_screen.dart:295:                            style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\screens\event_details_screen.dart:541:      style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\screens\event_details_screen.dart:591:                    style: TiermetryTypography.title(
+lib\features\event\presentation\screens\my_events_screen.dart:134:              style: TiermetryTypography.title(
+lib\features\event\presentation\screens\my_events_screen.dart:210:                      style: TiermetryTypography.title(
+lib\features\event\presentation\screens\my_events_screen.dart:257:                          style: TiermetryTypography.title(
+lib\features\event\presentation\widgets\event_card.dart:102:                    style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\widgets\event_carousel.dart:169:                      style: TiermetryTypography.titleSmall(
+lib\features\event\presentation\widgets\upcoming_event_card.dart:197:                        style: TiermetryTypography.titleSmall(
+lib\features\home\presentation\screens\home_screen.dart:120:                          style: TiermetryTypography.title(
+lib\features\home\presentation\widgets\adventure_greeting.dart:73:            style: TiermetryTypography.display(color: Colors.white),
+lib\features\home\presentation\widgets\bento_tile.dart:61:                  style: TiermetryTypography.title(
+lib\features\home\presentation\widgets\live_around_you_section.dart:150:                style: TiermetryTypography.title(color: Colors.white),
+lib\features\home\presentation\widgets\live_around_you_section.dart:423:          style: TiermetryTypography.title(
+lib\features\home\presentation\widgets\promotion_tile.dart:237:                      style: TiermetryTypography.titleSmall(
+lib\features\payment\presentation\screens\mock_payment_screen.dart:69:                  style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\account_privacy_screen.dart:196:          style: TiermetryTypography.title(fontSize: 18, color: Colors.white),
+lib\features\profile\presentation\screens\account_privacy_screen.dart:245:                style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\profile_screen.dart:289:                  style: TiermetryTypography.title(color: Colors.white),
+lib\features\profile\presentation\screens\profile_screen.dart:353:                            style: TiermetryTypography.display(
+lib\features\profile\presentation\screens\profile_screen.dart:593:            style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\profile_screen.dart:684:              style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\transactions_screen.dart:114:                    style: TiermetryTypography.title(color: Colors.white),
+lib\features\profile\presentation\screens\transactions_screen.dart:193:                  style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\transactions_screen.dart:211:            style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\transactions_screen.dart:240:                  style: TiermetryTypography.title(
+lib\features\profile\presentation\screens\transactions_screen.dart:258:            style: TiermetryTypography.title(
+lib\features\quest\presentation\screens\quest_screen.dart:32:                    style: TiermetryTypography.display(
+lib\features\quest\presentation\widgets\quest_card.dart:72:                    style: TiermetryTypography.title(
+lib\features\skill\presentation\widgets\featured_skill_morph_card.dart:147:                      style: TiermetryTypography.title(
+lib\root.dart:195:                  style: TiermetryTypography.title(

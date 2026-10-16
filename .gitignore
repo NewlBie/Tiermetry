@@ -53,3 +53,11 @@ analyze*.txt
 current_errors.txt
 build_output.txt
 temp_analysis.txt
+
+# Local Environment Credentials
+.env
+
+# Android signing credentials
+/android/key.properties
+/android/*.jks
+/android/*.keystore

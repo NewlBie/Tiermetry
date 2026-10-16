@@ -1,243 +1,188 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/core/theme/app_typography.dart';
-import 'package:tiermetry/core/widgets/custom_progress_bar.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/features/wallet/domain/entities/loyalty_account_entity.dart';
+import 'package:tiermetry/features/wallet/domain/entities/vibe_status.dart';
+import 'package:tiermetry/features/wallet/presentation/widgets/vibe_xp_status_card.dart';
 
-
-
+/// Displays only badges issued by the server-owned Vibe badge lifecycle.
 class TierAndBadgeCard extends StatelessWidget {
-  final String tierName;
-  final double tierProgress;
-  final int openedBadges;
-  final int totalBadges;
-  final int totalUniqueBadges;
-  final List<String> badgeTitles;
-  final List<Color> badgeColors;
+  final LoyaltyAccountEntity account;
+  final VoidCallback? onStatusTap;
 
-  const TierAndBadgeCard({
-    super.key,
-    required this.tierName,
-    required this.tierProgress,
-    required this.openedBadges,
-    required this.totalBadges,
-    required this.totalUniqueBadges,
-    required this.badgeTitles,
-    required this.badgeColors,
-  });
+  const TierAndBadgeCard({required this.account, this.onStatusTap, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader("Tier", trailing: "Tutorials"),
-          const SizedBox(height: 14),
-
-          Text("$tierName is your current tier", style: AppTypography.xl),
-          const SizedBox(height: 6),
-          Text("Purple path", style: AppTypography.accent),
-          const SizedBox(height: 20),
-
-          TierProgressBar(progress: tierProgress),
-          const SizedBox(height: 12),
-
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _TierLabel("VII"),
-              _PercentText("25%"),
-              _PercentText("50%"),
-              _PercentText("75%"),
-              _TierLabel("VIII"),
+    final badges = account.earnedStatusBadges;
+    return Column(
+      children: [
+        VibeXpStatusCard(account: account, onTap: onStatusTap),
+        const SizedBox(height: TiermetrySpacing.md),
+        AppSurface(
+          width: double.infinity,
+          padding: const EdgeInsets.all(TiermetrySpacing.lg),
+          color: TiermetryColors.surfaceUnderlay,
+          borderRadius: TiermetryRadii.lg,
+          shadows: const [],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'EARNED BADGES',
+                style: TiermetryTypography.label(
+                  color: TiermetryColors.textMuted,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                badges.isEmpty
+                    ? 'Your first badge is waiting'
+                    : '${badges.length} earned',
+                style: TiermetryTypography.titleSmall(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: TiermetrySpacing.md),
+              if (badges.isEmpty)
+                Text(
+                  'Complete eligible activities to unlock badges. Achievements are awarded and verified by HOMIES.',
+                  style: TiermetryTypography.bodySmall(
+                    color: TiermetryColors.textMuted,
+                    height: 1.4,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: TiermetrySpacing.sm,
+                  runSpacing: TiermetrySpacing.sm,
+                  children: badges
+                      .map((badge) => _BadgeChip(badge: badge))
+                      .toList(growable: false),
+                ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          _buildSectionHeader("Badges", trailing: "Open all"),
-          const SizedBox(height: 14),
-
-          Text("Opened $openedBadges/$totalBadges badges", style: AppTypography.lg),
-          const SizedBox(height: 4),
-          Text("From $totalUniqueBadges unique badges", style: AppTypography.subtitle),
-          const SizedBox(height: 18),
-
-          _BadgeList(
-            badgeTitles: badgeTitles,
-            badgeColors: badgeColors,
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, {String? trailing}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: AppTypography.sm),
-        if (trailing != null)
-          Text(trailing, style: AppTypography.subtitle),
-      ],
-    );
-  }
-}
-
-class _TierLabel extends StatelessWidget {
-  final String text;
-
-  const _TierLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: TiermetryColors.primary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(text, style: AppTypography.sm),
-    );
-  }
-}
-
-class _PercentText extends StatelessWidget {
-  final String text;
-
-  const _PercentText(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(text, style: AppTypography.xs);
-  }
-}
-
-class _BadgeCard extends StatelessWidget {
-  final int index;
-  final String title;
-  final Color color;
-
-  const _BadgeCard({
-    required this.index,
-    required this.title,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 78,
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("${index + 1}", style: AppTypography.sm),
-          const Spacer(),
-          Text(
-            title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTypography.xs.copyWith(color: Colors.white.withValues(alpha: 0.9)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BadgeList extends StatelessWidget {
-  final List<String> badgeTitles;
-  final List<Color> badgeColors;
-
-  const _BadgeList({
-    required this.badgeTitles,
-    required this.badgeColors,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // List
-        SizedBox(
-          height: 92,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: badgeTitles.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              return _BadgeCard(
-                index: index,
-                title: badgeTitles[index],
-                color: badgeColors[index],
-              );
-            },
-          ),
-        ),
-
-        // Left Fade
-        Positioned(
-          left: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 50,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    TiermetryColors.surface,
-                    TiermetryColors.surface.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-
-// Right Fade
-        Positioned(
-          right: 0,
-          top: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Container(
-              width: 50,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerRight,
-                  end: Alignment.centerLeft,
-                  colors: [
-                    TiermetryColors.surface,
-                    TiermetryColors.surface.withValues(alpha: 0.0),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ],
     );
   }
 }
 
+class _BadgeChip extends StatelessWidget {
+  final EarnedStatusBadge badge;
+
+  const _BadgeChip({required this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorForRarity(badge.rarity);
+    return InkWell(
+      borderRadius: BorderRadius.circular(TiermetryRadii.md),
+      onTap: () => _showDetail(context, color),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_iconFor(badge.iconName), size: 17, color: color),
+            const SizedBox(width: 6),
+            Text(
+              badge.title,
+              style: TiermetryTypography.caption(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context, Color color) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (_) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(TiermetrySpacing.screenPadding),
+              child: AppSurface(
+                padding: const EdgeInsets.all(TiermetrySpacing.xl),
+                color: TiermetryColors.surface,
+                borderRadius: TiermetryRadii.lg,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_iconFor(badge.iconName), size: 38, color: color),
+                    const SizedBox(height: TiermetrySpacing.md),
+                    Text(
+                      badge.title,
+                      style: TiermetryTypography.title(color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${badge.rarity.toUpperCase()} BADGE',
+                      style: TiermetryTypography.label(color: color),
+                    ),
+                    const SizedBox(height: TiermetrySpacing.md),
+                    Text(
+                      badge.criterion.isNotEmpty
+                          ? badge.criterion
+                          : 'Awarded by verified HOMIES activity.',
+                      textAlign: TextAlign.center,
+                      style: TiermetryTypography.bodySmall(
+                        color: TiermetryColors.textMuted,
+                      ),
+                    ),
+                    if (badge.earnedAt != null) ...[
+                      const SizedBox(height: TiermetrySpacing.sm),
+                      Text(
+                        'Earned ${DateFormat.yMMMd().format(badge.earnedAt!)}',
+                        style: TiermetryTypography.caption(
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: TiermetrySpacing.lg),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  IconData _iconFor(String icon) => switch (icon) {
+    'rocket' => Icons.rocket_launch_rounded,
+    'explore' => Icons.explore_rounded,
+    'calendar' => Icons.calendar_month_rounded,
+    'shield' => Icons.shield_rounded,
+    'star' => Icons.stars_rounded,
+    'diamond' => Icons.diamond_rounded,
+    _ => Icons.workspace_premium_rounded,
+  };
+
+  Color _colorForRarity(String rarity) => switch (rarity) {
+    'common' => TiermetryColors.accentCyan,
+    'rare' => TiermetryColors.accentLavender,
+    'epic' => const Color(0xFFFF9F43),
+    'legendary' => TiermetryColors.accentPink,
+    'mythic' => const Color(0xFFFFC857),
+    _ => Colors.white70,
+  };
+}

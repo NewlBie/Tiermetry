@@ -1,121 +1,160 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_island_notice.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class LegalPoliciesScreen extends StatelessWidget {
   const LegalPoliciesScreen({super.key});
 
-  void _openWebLink(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw Exception("Could not open $url");
+  Future<void> _openWebLink(BuildContext context, String url) async {
+    try {
+      final opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && context.mounted) {
+        _showOpenError(context);
+      }
+    } catch (_) {
+      if (context.mounted) {
+        _showOpenError(context);
+      }
     }
+  }
+
+  void _showOpenError(BuildContext context) {
+    AppIslandNotice.show(
+      context,
+      title: 'Could not open this policy',
+      message: 'Check your connection and try again.',
+      tone: AppIslandNoticeTone.error,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      backgroundColor: Colors.black,
-      navigationBar: CupertinoNavigationBar(
+    return Scaffold(
+      backgroundColor: TiermetryColors.background,
+      appBar: AppBar(
+        title: const Text('Legal & Policies'),
         backgroundColor: Colors.transparent,
-        middle: Text("Legal & Policies",
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            )),
-        border: null,
+        surfaceTintColor: Colors.transparent,
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Legal Documents",
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  )),
-              const SizedBox(height: 12),
-              Text("These documents outline our policies and your rights.",
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: Colors.white60,
-                  )),
-              const SizedBox(height: 30),
-              _legalTile(
-                context,
-                title: "Terms of Service",
-                subtitle: "Rules and conditions for using Tiermetry",
-                url: "https://tiermetry.com/terms",
-              ),
-              _legalTile(
-                context,
-                title: "Privacy Policy",
-                subtitle: "How we handle your data and protect privacy",
-                url: "https://tiermetry.com/privacy",
-              ),
-              _legalTile(
-                context,
-                title: "Community Guidelines",
-                subtitle: "What behavior is acceptable on our platform",
-                url: "https://tiermetry.com/guidelines",
-              ),
-              const Spacer(),
-              Center(
-                child: Text("Last updated: July 2025",
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      color: Colors.white30,
-                    )),
-              )
-            ],
-          ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(
+          TiermetrySpacing.screenPadding,
+          TiermetrySpacing.md,
+          TiermetrySpacing.screenPadding,
+          TiermetrySpacing.bottomSafeArea,
         ),
+        children: [
+          Text(
+            'Legal documents',
+            style: TiermetryTypography.title(color: Colors.white),
+          ),
+          const SizedBox(height: TiermetrySpacing.xs),
+          Text(
+            'These documents outline our policies and your rights.',
+            style: TiermetryTypography.bodySmall(
+              color: TiermetryColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: TiermetrySpacing.xl),
+          _legalTile(
+            context,
+            title: 'Terms of Service',
+            subtitle: 'Rules and conditions for using HOMIES',
+            url: 'https://www.homieshubs.in/legal/terms',
+          ),
+          _legalTile(
+            context,
+            title: 'Privacy Policy',
+            subtitle: 'How we handle your data and protect privacy',
+            url: 'https://www.homieshubs.in/legal/privacy',
+          ),
+          _legalTile(
+            context,
+            title: 'Community Guidelines',
+            subtitle: 'What behavior is acceptable on our platform',
+            url: 'https://www.homieshubs.in/legal/community-guidelines',
+          ),
+          _legalTile(
+            context,
+            title: 'Refund Policy',
+            subtitle: 'Booking cancellation, refunds, and payment issues',
+            url: 'https://www.homieshubs.in/legal/booking-cancellation-refund',
+          ),
+          _legalTile(
+            context,
+            title: 'Account Deletion',
+            subtitle: 'How to request deletion and data rights help',
+            url: 'https://www.homieshubs.in/legal/account-deletion',
+          ),
+          const SizedBox(height: TiermetrySpacing.xl),
+          Center(
+            child: Text(
+              'Last updated: September 2026',
+              style: TiermetryTypography.caption(
+                color: TiermetryColors.textMuted,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _legalTile(BuildContext context,
-      {required String title, required String subtitle, required String url}) {
-    return GestureDetector(
-      onTap: () => _openWebLink(url),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white10,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.white12),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.policy_outlined, color: Colors.white70, size: 26),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      )),
-                  const SizedBox(height: 4),
-                  Text(subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: Colors.white54,
-                      )),
-                ],
-              ),
+  Widget _legalTile(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required String url,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: TiermetrySpacing.sm),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+          onTap: () => _openWebLink(context, url),
+          child: AppSurface(
+            padding: const EdgeInsets.all(TiermetrySpacing.lg),
+            color: TiermetryColors.surfaceUnderlay,
+            borderRadius: TiermetryRadii.lg,
+            child: Row(
+              children: [
+                const Icon(Icons.policy_outlined, color: Colors.white70),
+                const SizedBox(width: TiermetrySpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TiermetryTypography.bodySmall(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TiermetryTypography.caption(
+                          color: TiermetryColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: TiermetrySpacing.sm),
+                const Icon(Icons.chevron_right_rounded, color: Colors.white38),
+              ],
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.white24)
-          ],
+          ),
         ),
       ),
     );

@@ -8,6 +8,7 @@ class ShimmerLoadingList extends StatelessWidget {
   final int itemCount;
   final double spacing;
   final double borderRadius;
+  final bool animate;
 
   const ShimmerLoadingList({
     required this.itemWidth,
@@ -15,27 +16,40 @@ class ShimmerLoadingList extends StatelessWidget {
     this.itemCount = 2,
     this.spacing = 12,
     this.borderRadius = 24,
+    this.animate = true,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[900]!,
-      highlightColor: Colors.grey[800]!,
+    final placeholder = SizedBox(
+      height: itemHeight,
       child: ListView.separated(
+        addRepaintBoundaries: false,
         scrollDirection: Axis.horizontal,
         itemCount: itemCount,
         separatorBuilder: (_, __) => SizedBox(width: spacing),
-        itemBuilder: (_, __) => Container(
-          width: itemWidth,
-          height: itemHeight,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(borderRadius),
-          ),
-        ),
+        itemBuilder:
+            (_, __) => Container(
+              width: itemWidth,
+              height: itemHeight,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.grey[900]!, const Color(0xFF242424)],
+                ),
+                borderRadius: BorderRadius.circular(borderRadius),
+              ),
+            ),
       ),
+    );
+
+    if (!animate) return placeholder;
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[900]!,
+      highlightColor: Colors.grey[800]!,
+      child: placeholder,
     );
   }
 }
@@ -94,7 +108,9 @@ class ShimmerLoadingVerticalList extends StatelessWidget {
         children: List.generate(
           itemCount,
           (index) => Padding(
-            padding: EdgeInsets.only(bottom: index < itemCount - 1 ? spacing : 0),
+            padding: EdgeInsets.only(
+              bottom: index < itemCount - 1 ? spacing : 0,
+            ),
             child: Container(
               height: itemHeight,
               decoration: BoxDecoration(

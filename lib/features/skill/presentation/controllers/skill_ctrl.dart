@@ -20,7 +20,7 @@ class SkillCtrl extends ChangeNotifier {
     try {
       _skills = await repo.getSkills();
     } catch (e) {
-      debugPrint("Error loading skills: $e");
+      debugPrint('Error loading skills: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

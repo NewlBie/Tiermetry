@@ -1,16 +1,31 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
+import 'package:tiermetry/core/widgets/app_error_state.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
+import 'package:tiermetry/core/widgets/app_pill.dart';
+import 'package:tiermetry/core/widgets/app_search_hero.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/section_header.dart';
+import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 import 'package:tiermetry/features/home/presentation/widgets/home_backdrop.dart';
 import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_overlay.dart';
+import 'package:tiermetry/features/home/presentation/widgets/upcoming_events_section.dart';
 
 import '../../domain/entities/event_entity.dart';
+import '../widgets/event_filters_sheet.dart';
+import '../widgets/showdown_event_card.dart';
+import '../widgets/upcoming_event_card.dart';
 import 'event_details_screen.dart';
 
 class EventBrowserScreen extends StatefulWidget {
@@ -20,91 +35,46 @@ class EventBrowserScreen extends StatefulWidget {
   State<EventBrowserScreen> createState() => _EventBrowserScreenState();
 }
 
-class _EventBrowserScreenState extends State<EventBrowserScreen> {
+class _EventBrowserScreenState extends State<EventBrowserScreen>
+    with RefreshRateMixin {
   final _eventCtrl = locator.eventCtrl;
   final _searchController = TextEditingController();
   late final ScrollController _scrollCtrl;
-
-  String _query = '';
-  String _selectedCategory = 'All';
-
-  static const List<_ExploreCategory> _categories = [
-    _ExploreCategory('All', Icons.explore_rounded),
-    _ExploreCategory('Events', Icons.confirmation_number_rounded),
-    _ExploreCategory('Deals', Icons.local_offer_rounded),
-    _ExploreCategory('Redeem', Icons.stars_rounded),
-    _ExploreCategory('Online', Icons.wifi_tethering_rounded),
-  ];
-
-  static const List<_DealData> _deals = [
-    _DealData(
-      title: 'Use points on event passes',
-      subtitle: 'Redeem 100 pts on selected tournaments and workshops.',
-      label: 'Redeem',
-      icon: Icons.stars_rounded,
-    ),
-    _DealData(
-      title: 'Free entry picks',
-      subtitle: 'Events with no entry cost and community perks.',
-      label: 'Deal',
-      icon: Icons.local_offer_rounded,
-    ),
-    _DealData(
-      title: 'Partner spotlight',
-      subtitle: 'Sponsored experiences from venues and organizers.',
-      label: 'Sponsored',
-      icon: Icons.campaign_rounded,
-    ),
-  ];
 
   @override
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
     _searchController.addListener(_onSearchChanged);
-    Future.microtask(_eventCtrl.loadEvents);
+    Future.microtask(() {
+      _eventCtrl.loadEvents();
+      _setupRealtimeDeals();
+      _fetchLiveDeals();
+    });
   }
 
   @override
   void dispose() {
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
+    _sponsorsSub?.cancel();
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
 
   void _onSearchChanged() {
-    setState(() => _query = _searchController.text.trim().toLowerCase());
+    _eventCtrl.search(_searchController.text.trim());
   }
 
-  List<EventEntity> _filteredEvents(List<EventEntity> events) {
-    return events.where((event) {
-        final haystack =
-            [
-              event.title,
-              event.subtitle,
-              event.location,
-              event.cost,
-              ...event.tags,
-            ].join(' ').toLowerCase();
-
-        final matchesQuery = _query.isEmpty || haystack.contains(_query);
-        final matchesCategory = switch (_selectedCategory) {
-          'Deals' => event.cost.toLowerCase().contains('free'),
-          'Redeem' => event.points > 0,
-          'Online' => event.location.toLowerCase().contains('online'),
-          'Events' => true,
-          _ => true,
-        };
-
-        return matchesQuery && matchesCategory;
-      }).toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  void _onClearAll() {
+    _searchController.clear();
+    _eventCtrl.clearFilters();
   }
 
   void _openEvent(EventEntity event) {
     Navigator.of(context).push(
-      PageRouteBuilder(
+      PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, anim, _) => EventDetailsScreen(event: event),
         transitionsBuilder:
@@ -123,220 +93,314 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
       body: Stack(
         children: [
           const HomeBackdrop(),
-          CustomScrollView(
-            controller: _scrollCtrl,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    TiermetrySpacing.screenPadding,
-                    topPad + 120,
-                    TiermetrySpacing.screenPadding,
-                    TiermetrySpacing.lg,
-                  ),
-                  child: const _ExploreGreeting(),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: _SearchHero(
-                      controller: _searchController,
-                      onClear: _query.isEmpty ? null : _searchController.clear,
+          RefreshIndicator(
+            onRefresh: () => _eventCtrl.loadEvents(isRefresh: true),
+            backgroundColor: TiermetryColors.surface,
+            color: TiermetryColors.accentNeonGreen,
+            edgeOffset: topPad + TiermetrySpacing.topBarHeight,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification scrollInfo) {
+                if (scrollInfo.metrics.pixels >=
+                        scrollInfo.metrics.maxScrollExtent - 200 &&
+                    !_eventCtrl.isLoadingMore) {
+                  _eventCtrl.loadEvents();
+                }
+                return false;
+              },
+              child: ListenableBuilder(
+                listenable: Listenable.merge([_eventCtrl, _searchController]),
+                builder: (context, _) {
+                  final isSearching = _searchController.text.trim().isNotEmpty;
+                  return CustomScrollView(
+                    controller: _scrollCtrl,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
                     ),
-                  ),
-                ),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            TiermetrySpacing.screenPadding,
+                            topPad +
+                                TiermetrySpacing.topBarHeight +
+                                TiermetrySpacing.sectionGap,
+                            TiermetrySpacing.screenPadding,
+                            TiermetrySpacing.lg,
+                          ),
+                          child: const _ExploreGreeting(),
+                        ),
+                      ),
+                      SliverToBoxAdapter(
+                        child: RepaintBoundary(
+                          child: Padding(
+                            padding: TiermetrySpacing.pagePadding,
+                            child: AppSearchHero(
+                              controller: _searchController,
+                              hintText:
+                                  FeatureFlags.disableFinancialRewards
+                                      ? 'Search events, deals, venues...'
+                                      : 'Search events, deals, rewards...',
+                              activeFilterCount: _eventCtrl.activeFilterCount,
+                              onFilter: () => EventFiltersSheet.show(context),
+                              onClear:
+                                  _searchController.text.isEmpty
+                                      ? null
+                                      : _searchController.clear,
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (!isSearching) ...[
+                        _buildRadarSection(context),
+                        _buildHeadlinersSection(context),
+                        _buildShowdownsSection(),
+                        _buildDealsSection(),
+                        _buildTheSceneSection(),
+                      ] else ...[
+                        _buildSearchResultsSection(),
+                      ],
+
+                      // We can keep the loader if it's paginating
+                      if (_eventCtrl.isLoadingMore)
+                        const SliverToBoxAdapter(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 24,
+                              horizontal: TiermetrySpacing.screenPadding,
+                            ),
+                            child: ShimmerLoadingVerticalList(itemCount: 1),
+                          ),
+                        ),
+
+                      const SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: TiermetrySpacing.bottomSafeArea,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
-              _buildCategoryStrip(),
-              _buildRewardsSection(),
-              _buildEventSections(),
-              _buildDealsSection(),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: TiermetrySpacing.bottomSafeArea),
-              ),
-            ],
+            ),
           ),
-          ScrollGradientOverlay(scrollController: _scrollCtrl),
+          const ScrollGradientOverlay(),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryStrip() {
+  Widget _buildRadarSection(BuildContext context) {
+    if (!_eventCtrl.isLoading && _eventCtrl.radarEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = (screenWidth * 0.65).clamp(200.0, 240.0);
+    final cardHeight = cardWidth * 1.33; // 3:4 aspect ratio approx
+
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: TiermetrySpacing.xl),
-            Padding(
+            const SizedBox(height: TiermetrySpacing.sectionGap),
+            const Padding(
               padding: TiermetrySpacing.pagePadding,
-              child: Text(
-                'Browse explore',
-                style: TiermetryTypography.title(color: Colors.white),
+              child: SectionHeader(title: 'Radar', onViewMore: null),
+            ),
+            const SizedBox(height: TiermetrySpacing.headerToContent),
+            UpcomingEventsSection(
+              events: _eventCtrl.radarEvents,
+              isLoading: _eventCtrl.isLoading,
+              cardWidth: cardWidth,
+              sectionHeight: cardHeight,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeadlinersSection(BuildContext context) {
+    if (!_eventCtrl.isLoading && _eventCtrl.headlinerEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final cardWidth = (screenWidth * 0.82).clamp(250.0, 300.0);
+    final cardHeight = cardWidth * 1.25;
+
+    return SliverToBoxAdapter(
+      child: RepaintBoundary(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: TiermetrySpacing.sectionGap),
+            const Padding(
+              padding: TiermetrySpacing.pagePadding,
+              child: SectionHeader(
+                title: 'Headliners',
+                onViewMore: null,
+                tagLabel: 'Sponsored',
               ),
             ),
             const SizedBox(height: TiermetrySpacing.headerToContent),
-            SizedBox(
-              height: 116,
-              child: ListView.builder(
-                clipBehavior: Clip.none,
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(
-                  left: TiermetrySpacing.listInset,
-                  right: TiermetrySpacing.listInset,
-                  top: 4,
-                ),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(right: TiermetrySpacing.lg),
-                    child: _ExploreCapsule(
-                      category: category,
-                      isSelected: _selectedCategory == category.label,
-                      onTap:
-                          () => setState(
-                            () => _selectedCategory = category.label,
-                          ),
-                    ),
-                  );
-                },
-              ),
+            UpcomingEventsSection(
+              events: _eventCtrl.headlinerEvents,
+              isLoading: _eventCtrl.isLoading,
+              cardWidth: cardWidth,
+              sectionHeight: cardHeight,
             ),
-            const SizedBox(height: TiermetrySpacing.sectionGap),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRewardsSection() {
-    return SliverToBoxAdapter(
-      child: RepaintBoundary(
-        child: Padding(
-          padding: TiermetrySpacing.pagePadding,
-          child: const _RewardsCard(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEventSections() {
-    return ListenableBuilder(
-      listenable: _eventCtrl,
-      builder: (context, _) {
-        if (_eventCtrl.isLoading) {
-          return const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.only(top: TiermetrySpacing.sectionGap),
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              ),
-            ),
-          );
-        }
-
-        final events = _eventCtrl.events;
-        final matches = _filteredEvents(events);
-        final featured = [...events]
-          ..sort((a, b) => b.points.compareTo(a.points));
-        final hasActiveSearch = _query.isNotEmpty || _selectedCategory != 'All';
-
-        return SliverList.list(
-          children: [
-            const SizedBox(height: TiermetrySpacing.sectionGap),
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: SectionHeader(
-                      title:
-                          hasActiveSearch ? 'Best matches' : 'Events for you',
-                    ),
-                  ),
-                  const SizedBox(height: TiermetrySpacing.headerToContent),
-                  matches.isEmpty
-                      ? const _EmptyState(message: 'No matching events found.')
-                      : Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: Column(
-                          children:
-                              matches
-                                  .take(3)
-                                  .map(
-                                    (event) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: TiermetrySpacing.md,
-                                      ),
-                                      child: _EventResultTile(
-                                        event: event,
-                                        onTap: () => _openEvent(event),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                        ),
-                      ),
-                  const SizedBox(height: TiermetrySpacing.sectionGap),
-                ],
-              ),
-            ),
-            RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: TiermetrySpacing.pagePadding,
-                    child: SectionHeader(title: 'Featured events'),
-                  ),
-                  const SizedBox(height: TiermetrySpacing.headerToContent),
-                  featured.isEmpty
-                      ? const _EmptyState(message: 'No featured events found.')
-                      : SizedBox(
-                        height: 236,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          padding: TiermetrySpacing.listPadding,
-                          itemCount: featured.length,
-                          separatorBuilder:
-                              (_, __) => const SizedBox(
-                                width: TiermetrySpacing.cardGap,
-                              ),
-                          itemBuilder: (context, index) {
-                            return SizedBox(
-                              width: 300,
-                              child: _FeaturedEventCard(
-                                event: featured[index],
-                                onTap: () => _openEvent(featured[index]),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDealsSection() {
+  Widget _buildShowdownsSection() {
+    if (!_eventCtrl.isLoading && _eventCtrl.showdownEvents.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: TiermetrySpacing.sectionGap),
-            Padding(
+            const Padding(
+              padding: TiermetrySpacing.pagePadding,
+              child: SectionHeader(title: 'Showdowns', onViewMore: null),
+            ),
+            const SizedBox(height: TiermetrySpacing.headerToContent),
+            UpcomingEventsSection(
+              events: _eventCtrl.showdownEvents,
+              isLoading: _eventCtrl.isLoading,
+              cardWidth: 280,
+              sectionHeight: 310,
+              cardBuilder: (context, event) => ShowdownEventCard(event: event),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTheSceneSection() {
+    final events = _eventCtrl.sceneEvents;
+
+    return SliverMainAxisGroup(
+      slivers: [
+        const SliverToBoxAdapter(
+          child: SizedBox(height: TiermetrySpacing.sectionGap),
+        ),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: TiermetrySpacing.pagePadding,
+            child: SectionHeader(
+              title: _eventCtrl.isLoading ? 'Searching...' : 'The Scene',
+            ),
+          ),
+        ),
+        const SliverToBoxAdapter(
+          child: SizedBox(height: TiermetrySpacing.headerToContent),
+        ),
+        if (_eventCtrl.isLoading && events.isEmpty)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: TiermetrySpacing.md,
+                left: TiermetrySpacing.screenPadding,
+                right: TiermetrySpacing.screenPadding,
+              ),
+              child: ShimmerLoadingVerticalList(),
+            ),
+          )
+        else if (_eventCtrl.error != null && events.isEmpty)
+          SliverToBoxAdapter(
+            child: AppErrorState(
+              message: _eventCtrl.error!,
+              onRetry: () => _eventCtrl.loadEvents(isRefresh: true),
+            ),
+          )
+        else if (events.isEmpty)
+          SliverToBoxAdapter(
+            child: AppEmptyState(
+              message: 'No more events in the scene.',
+              onAction: _onClearAll,
+              actionLabel: 'Clear Filters',
+            ),
+          )
+        else
+          SliverPadding(
+            padding: TiermetrySpacing.pagePadding,
+            sliver: SliverList.builder(
+              itemCount: events.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: TiermetrySpacing.md),
+                  child: _EventResultTile(
+                    event: events[index],
+                    onTap: () => _openEvent(events[index]),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
+  List<Map<String, dynamic>> _liveDeals = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _sponsorsSub;
+
+  void _setupRealtimeDeals() {
+    try {
+      _sponsorsSub = Supabase.instance.client
+          .from('sponsors')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .listen((data) {
+            if (mounted) {
+              setState(() {
+                _liveDeals = List<Map<String, dynamic>>.from(
+                  data.where((item) => item['is_active'] == true),
+                );
+              });
+            }
+          });
+    } catch (_) {
+      _fetchLiveDeals();
+    }
+  }
+
+  Future<void> _fetchLiveDeals() async {
+    try {
+      final res = await Supabase.instance.client
+          .from('sponsors')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+      if (res.isNotEmpty && mounted) {
+        setState(() {
+          _liveDeals = List<Map<String, dynamic>>.from(res);
+        });
+      }
+    } catch (_) {}
+  }
+
+  Widget _buildDealsSection() {
+    // Sponsor visibility is controlled by the server's RLS policy. Do not
+    // replace an intentionally empty result with fabricated sponsor content.
+    final deals = _liveDeals;
+    if (deals.isEmpty) return const SliverToBoxAdapter(child: SizedBox());
+
+    return SliverToBoxAdapter(
+      child: RepaintBoundary(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: TiermetrySpacing.sectionGap),
+            const Padding(
               padding: TiermetrySpacing.pagePadding,
               child: SectionHeader(title: 'Deals and sponsored'),
             ),
@@ -347,18 +411,163 @@ class _EventBrowserScreenState extends State<EventBrowserScreen> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 padding: TiermetrySpacing.listPadding,
-                itemCount: _deals.length,
+                itemCount: deals.length,
                 separatorBuilder:
                     (_, __) => const SizedBox(width: TiermetrySpacing.cardGap),
                 itemBuilder: (context, index) {
-                  return _DealCard(
-                    data: _deals[index],
+                  final deal = deals[index];
+                  final name = deal['name'] as String? ?? 'Special Deal';
+                  final tagline = deal['tagline'] as String? ?? '';
+                  final imageUrl = deal['logo_url'] as String? ?? '';
+                  final tier = deal['tier'] as String? ?? 'Sponsored';
+
+                  return Container(
+                    width: 260,
+                    height: 172,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF181C24),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child:
+                          imageUrl.isNotEmpty
+                              ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => _buildDealTextFallback(
+                                      name,
+                                      tagline,
+                                      tier,
+                                    ),
+                              )
+                              : _buildDealTextFallback(name, tagline, tier),
+                    ),
                   ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.08);
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDealTextFallback(String name, String tagline, String tier) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1F2838), Color(0xFF0F141D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              tier.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.amber,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 15,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (tagline.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              tagline,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchResultsSection() {
+    if (_eventCtrl.isLoading && _eventCtrl.events.isEmpty) {
+      return const SliverToBoxAdapter(
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: TiermetrySpacing.md,
+            left: TiermetrySpacing.screenPadding,
+            right: TiermetrySpacing.screenPadding,
+          ),
+          child: ShimmerLoadingVerticalList(),
+        ),
+      );
+    }
+
+    if (_eventCtrl.error != null && _eventCtrl.events.isEmpty) {
+      return SliverToBoxAdapter(
+        child: AppErrorState(
+          message: _eventCtrl.error!,
+          onRetry: () => _eventCtrl.loadEvents(isRefresh: true),
+        ),
+      );
+    }
+
+    if (_eventCtrl.events.isEmpty) {
+      return SliverToBoxAdapter(
+        child: AppEmptyState(
+          message: 'No events found.',
+          onAction: _onClearAll,
+          actionLabel: 'Clear Filters',
+        ),
+      );
+    }
+
+    return SliverPadding(
+      padding: TiermetrySpacing.pagePadding.copyWith(top: TiermetrySpacing.md),
+      sliver: SliverList.builder(
+        itemCount: _eventCtrl.events.length,
+        itemBuilder: (context, index) {
+          final event = _eventCtrl.events[index];
+          final isShowdown = _eventCtrl.showdownEvents.any(
+            (e) => e.id == event.id,
+          );
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: TiermetrySpacing.lg),
+            child: AspectRatio(
+                  aspectRatio: isShowdown ? 280 / 310 : 225 / 300,
+                  child:
+                      isShowdown
+                          ? ShowdownEventCard(event: event)
+                          : UpcomingEventCard(event: event),
+                )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, duration: 400.ms),
+          );
+        },
       ),
     );
   }
@@ -376,268 +585,25 @@ class _ExploreGreeting extends StatelessWidget {
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
           child: Text(
-            'Explore the scene',
-            style: TiermetryTypography.display(
-              color: Colors.white,
-              fontSize: 32,
+            ('Explore the scene').toUpperCase(),
+            style: TiermetryTypography.displayLarge(
+              color: TiermetryColors.white,
             ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          'Events, deals, sponsored drops, and rewards in one place.',
+          FeatureFlags.disableFinancialRewards
+              ? 'Events, deals, and sponsored drops in one place.'
+              : 'Events, deals, sponsored drops, and rewards in one place.',
           style: TiermetryTypography.caption(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: TiermetryColors.white.withValues(alpha: 0.62),
             fontSize: 13,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.2,
           ),
         ),
       ],
-    );
-  }
-}
-
-class _SearchHero extends StatelessWidget {
-  final TextEditingController controller;
-  final VoidCallback? onClear;
-
-  const _SearchHero({required this.controller, required this.onClear});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _SearchField(controller: controller)),
-          if (onClear != null) ...[
-            const SizedBox(width: TiermetrySpacing.sm),
-            GestureDetector(
-              onTap: onClear,
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.surfaceElement,
-                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                ),
-                child: const Icon(Icons.close_rounded, color: Colors.white70),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-
-  const _SearchField({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.search_rounded,
-            color: Colors.white.withValues(alpha: 0.58),
-          ),
-          const SizedBox(width: TiermetrySpacing.sm),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              style: TiermetryTypography.caption(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-              cursorColor: TiermetryColors.accentNeonGreen,
-              decoration: InputDecoration(
-                hintText: 'Search events, deals, rewards...',
-                hintStyle: TiermetryTypography.caption(
-                  color: Colors.white.withValues(alpha: 0.38),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-                border: InputBorder.none,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ExploreCapsule extends StatelessWidget {
-  final _ExploreCategory category;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ExploreCapsule({
-    required this.category,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    const primaryColor = TiermetryColors.accentNeonGreen;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutBack,
-        width: 105,
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border:
-              isSelected
-                  ? Border.all(color: primaryColor, width: 1.5)
-                  : Border.all(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    width: 1,
-                  ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: primaryColor,
-                borderRadius: BorderRadius.circular(isSelected ? 28 : 20),
-                boxShadow: [
-                  BoxShadow(
-                    color: primaryColor.withValues(
-                      alpha: isSelected ? 0.35 : 0.16,
-                    ),
-                    blurRadius: isSelected ? 16 : 8,
-                    spreadRadius: isSelected ? 2 : 1,
-                  ),
-                ],
-              ),
-              child: Icon(
-                category.icon,
-                color: Colors.black.withAlpha(220),
-                size: 25,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              category.label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
-              ),
-            ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.1),
-    );
-  }
-}
-
-class _RewardsCard extends StatelessWidget {
-  const _RewardsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(TiermetryRadii.md),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 58,
-            height: 58,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  TiermetryColors.gradientStart,
-                  TiermetryColors.gradientEnd,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Icon(Icons.stars_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: TiermetrySpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '240 points available',
-                  style: TiermetryTypography.title(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Redeem on tickets, passes, and partner deals.',
-                  style: TiermetryTypography.caption(
-                    color: Colors.white.withValues(alpha: 0.62),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right_rounded, color: Colors.white54),
-        ],
-      ),
     );
   }
 }
@@ -652,31 +618,21 @@ class _EventResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AppSurface(
         padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
+        borderRadius: 24,
+        shadows:
+            TiermetryShadows.venueTile, // Shared logic for horizontal tiles
         child: Row(
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Hero(
-                tag: event.image,
-                child: Image.asset(
-                  event.image,
+                tag: event.id,
+                child: AppImage(
+                  imagePath: event.image ?? 'assets/Hackathon.jpg',
                   width: 82,
                   height: 82,
-                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -686,22 +642,22 @@ class _EventResultTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    event.title,
+                    (event.title).toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
-                      color: Colors.white,
+                      color: TiermetryColors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${event.date} - ${event.location}',
+                    '${DateFormat('MMM d').format(event.startTime)} - ${event.location}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.caption(
-                      color: Colors.white.withValues(alpha: 0.52),
+                      color: TiermetryColors.white.withValues(alpha: 0.52),
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
                     ),
@@ -709,20 +665,23 @@ class _EventResultTile extends StatelessWidget {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      _TinyPill(text: event.cost),
+                      AppPill(text: event.cost),
                       const SizedBox(width: TiermetrySpacing.sm),
-                      Text(
-                        '${event.points} pts',
-                        style: TiermetryTypography.caption(
-                          color: Colors.white.withValues(alpha: 0.58),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                      if (!FeatureFlags.disableFinancialRewards)
+                        Text(
+                          '${event.points} pts',
+                          style: TiermetryTypography.caption(
+                            color: TiermetryColors.white.withValues(
+                              alpha: 0.58,
+                            ),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
                       const Spacer(),
                       Icon(
                         Icons.chevron_right_rounded,
-                        color: Colors.white.withValues(alpha: 0.35),
+                        color: TiermetryColors.white.withValues(alpha: 0.35),
                       ),
                     ],
                   ),
@@ -734,222 +693,4 @@ class _EventResultTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FeaturedEventCard extends StatelessWidget {
-  final EventEntity event;
-  final VoidCallback onTap;
-
-  const _FeaturedEventCard({required this.event, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 24,
-              offset: const Offset(0, 14),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Image.asset(event.image, fit: BoxFit.cover),
-                    Positioned(
-                      top: 10,
-                      left: 10,
-                      child: _TinyPill(text: '${event.points} pts'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              event.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.title(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${event.date} - ${event.time}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TiermetryTypography.caption(
-                color: Colors.white.withValues(alpha: 0.58),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DealCard extends StatelessWidget {
-  final _DealData data;
-
-  const _DealCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 260,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.accentNeonGreen,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(data.icon, color: Colors.black.withAlpha(220)),
-              ),
-              const Spacer(),
-              _TinyPill(text: data.label),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            data.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.title(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            data.subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.caption(
-              color: Colors.white.withValues(alpha: 0.58),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-            ).copyWith(height: 1.3),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TinyPill extends StatelessWidget {
-  final String text;
-
-  const _TinyPill({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surfaceElement,
-        borderRadius: BorderRadius.circular(TiermetryRadii.pill),
-      ),
-      child: Text(
-        text,
-        style: TiermetryTypography.caption(
-          color: Colors.white.withValues(alpha: 0.74),
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final String message;
-
-  const _EmptyState({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: TiermetrySpacing.pagePadding,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(TiermetrySpacing.lg),
-        decoration: BoxDecoration(
-          color: TiermetryColors.surface,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TiermetryTypography.caption(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ExploreCategory {
-  final String label;
-  final IconData icon;
-
-  const _ExploreCategory(this.label, this.icon);
-}
-
-class _DealData {
-  final String title;
-  final String subtitle;
-  final String label;
-  final IconData icon;
-
-  const _DealData({
-    required this.title,
-    required this.subtitle,
-    required this.label,
-    required this.icon,
-  });
 }

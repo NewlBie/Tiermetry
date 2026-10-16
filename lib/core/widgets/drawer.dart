@@ -28,11 +28,11 @@ class AppDrawer extends StatelessWidget {
   final List<DrawerItem> items;
 
   const AppDrawer({
+    required this.items,
     super.key,
     this.userName = 'User',
     this.userHandle = '@user',
     this.userAvatarAsset,
-    required this.items,
   });
 
   @override
@@ -149,7 +149,7 @@ class _DrawerProfileHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    userName,
+                    (userName).toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
@@ -237,7 +237,7 @@ class _Avatar extends StatelessWidget {
           avatarAsset == null
               ? Center(
                 child: Text(
-                  initials,
+                  (initials).toUpperCase(),
                   style: TiermetryTypography.title(
                     color: Colors.white,
                     fontSize: 18,

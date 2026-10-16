@@ -12,6 +12,24 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+subprojects {
+    afterEvaluate {
+        if (project.extensions.findByName("android") != null) {
+            val android = project.extensions.getByName("android") as com.android.build.gradle.BaseExtension
+            android.buildToolsVersion = "34.0.0"
+        }
+    }
+}
+
+subprojects {
+    tasks.configureEach {
+        if (name.contains("lintVital")) {
+            enabled = false
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
 }

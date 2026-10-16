@@ -15,17 +15,16 @@ class TiermetryTheme {
       tertiary: TiermetryColors.accentNeonGreen,
       surface: TiermetryColors.surface,
       onSurface: Colors.white,
+      onPrimary: Colors.black,
     );
 
     return base.copyWith(
       colorScheme: colorScheme,
       scaffoldBackgroundColor: TiermetryColors.background,
-      textTheme: TiermetryTypography.textTheme(base.textTheme).apply(
-        bodyColor: Colors.white,
-        displayColor: Colors.white,
-      ),
+      textTheme: TiermetryTypography.textTheme(
+        base.textTheme,
+      ).apply(bodyColor: Colors.white, displayColor: Colors.white),
       splashFactory: InkSparkle.splashFactory,
     );
   }
 }
-

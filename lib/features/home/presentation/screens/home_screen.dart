@@ -1,26 +1,25 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-
-// Features
-import 'package:tiermetry/features/skill/presentation/screens/skill_browser_screen.dart';
-import 'package:tiermetry/features/event/presentation/screens/event_browser_screen.dart';
-
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
-
-// Components
+import 'package:tiermetry/core/widgets/app_empty_state.dart';
 import 'package:tiermetry/core/widgets/section_header.dart';
+import 'package:tiermetry/features/event/presentation/screens/my_events_screen.dart';
+import 'package:tiermetry/features/home/presentation/controllers/home_controller.dart';
 
-// Modular Sections
 import '../widgets/adventure_greeting.dart';
-import '../widgets/scroll_gradient_overlay.dart';
-import '../widgets/metrics_section.dart';
-import '../widgets/live_around_you_section.dart';
-import '../widgets/trending_activities_section.dart';
 import '../widgets/featured_skills_section.dart';
-import '../widgets/upcoming_events_section.dart';
 import '../widgets/home_backdrop.dart';
+import '../widgets/live_around_you_section.dart';
+import '../widgets/metrics_section.dart';
+import '../widgets/recently_booked_section.dart';
+import '../widgets/scroll_gradient_overlay.dart';
+import '../widgets/trending_activities_section.dart';
+import '../widgets/upcoming_events_section.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userName;
@@ -31,26 +30,26 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  final _skillCtrl = locator.skillCtrl;
-  final _eventCtrl = locator.eventCtrl;
-  final _trendingActivityCtrl = locator.trendingActivityCtrl;
+class _HomeScreenState extends State<HomeScreen> with RefreshRateMixin {
   late ScrollController _scrollCtrl;
 
   @override
   void initState() {
     super.initState();
-    _scrollCtrl = ScrollController();
+    _scrollCtrl = HomeController.instance.scrollController;
     Future.microtask(() {
-      _skillCtrl.loadSkills();
-      _eventCtrl.loadEvents();
-      _trendingActivityCtrl.loadActivities();
+      HomeController.instance.skillCtrl.loadSkills();
+      HomeController.instance.eventCtrl.loadEvents();
+      HomeController.instance.communityCtrl.loadCommunities(
+        city: locator.locationCtrl.selectedCity,
+      );
+      HomeController.instance.trendingActivityCtrl.loadActivities();
     });
   }
 
   @override
   void dispose() {
-    _scrollCtrl.dispose();
+    // DO NOT dispose _scrollCtrl here, it is owned by HomeController.instance
     super.dispose();
   }
 
@@ -63,167 +62,205 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Stack(
         children: [
           const HomeBackdrop(),
-          CustomScrollView(
-            controller: _scrollCtrl,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              // --- Greeting ---------------------------------------------------
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    TiermetrySpacing.screenPadding,
-                    topPad + 120,
-                    TiermetrySpacing.screenPadding,
-                    TiermetrySpacing.xl,
-                  ),
-                  child: AdventureGreeting(userName: widget.userName),
+          RefreshIndicator(
+            onRefresh: () async {
+              await Future.wait([
+                HomeController.instance.skillCtrl.loadSkills(),
+                HomeController.instance.eventCtrl.loadEvents(),
+                HomeController.instance.communityCtrl.loadCommunities(
+                  city: locator.locationCtrl.selectedCity,
                 ),
+                HomeController.instance.trendingActivityCtrl.loadActivities(),
+              ]);
+            },
+            color: TiermetryColors.accentNeonGreen,
+            backgroundColor: const Color(0xFF111111),
+            child: CustomScrollView(
+              controller: _scrollCtrl,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
+              slivers: [
+                // --- Greeting ---------------------------------------------------
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      TiermetrySpacing.screenPadding,
+                      topPad +
+                          TiermetrySpacing.topBarHeight +
+                          TiermetrySpacing.sectionGap,
+                      TiermetrySpacing.screenPadding,
+                      TiermetrySpacing.xl,
+                    ),
+                    child: AdventureGreeting(userName: widget.userName),
+                  ),
+                ),
 
-              // --- Metrics Bento Grid ----------------------------------------
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 720),
-                      child: Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            MetricsSection(),
-                            SizedBox(height: TiermetrySpacing.sectionGap),
-                          ],
+                // --- Metrics Bento Grid ----------------------------------------
+                SliverToBoxAdapter(
+                  child: RepaintBoundary(
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 720),
+                        child: const Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MetricsSection(),
+                              SizedBox(height: TiermetrySpacing.sectionGap),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              // --- Live Around You -------------------------------------------
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      LiveAroundYouSection(),
-                      SizedBox(height: TiermetrySpacing.sectionGap),
-                    ],
+                // --- Live Around You -------------------------------------------
+                const SliverToBoxAdapter(
+                  child: RepaintBoundary(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LiveAroundYouSection(),
+                        SizedBox(height: TiermetrySpacing.sectionGap),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              // --- Trending Activities --------------------------------------
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: Text(
-                          'Trending Activities',
-                          style: TiermetryTypography.title(color: Colors.white),
+                // --- Trending Activities --------------------------------------
+                SliverToBoxAdapter(
+                  child: RepaintBoundary(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: Text(
+                            ('Trending Activities').toUpperCase(),
+                            style: TiermetryTypography.title(
+                              color: TiermetryColors.white,
+                            ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: TiermetrySpacing.headerToContent),
-                      ListenableBuilder(
-                        listenable: _trendingActivityCtrl,
-                        builder: (context, _) {
-                          return TrendingActivitiesSection(
-                            activities: _trendingActivityCtrl.activities,
-                            isLoading: _trendingActivityCtrl.isLoading,
-                            onActivitySelected: (id) {
-                              _trendingActivityCtrl.updateActivitySelection(
-                                id,
-                                true,
+                        const SizedBox(
+                          height: TiermetrySpacing.headerToContent,
+                        ),
+                        ListenableBuilder(
+                          listenable:
+                              HomeController.instance.trendingActivityCtrl,
+                          builder: (context, _) {
+                            final ctrl =
+                                HomeController.instance.trendingActivityCtrl;
+                            return TrendingActivitiesSection(
+                              activities: ctrl.activities,
+                              isLoading: ctrl.isLoading,
+                              onActivitySelected: (String id) {
+                                ctrl.updateActivitySelection(id, true);
+                              },
+                            );
+                          },
+                        ),
+                        const SizedBox(height: TiermetrySpacing.sectionGap),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // --- Featured Skills -------------------------------------------
+                SliverToBoxAdapter(
+                  child: RepaintBoundary(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: SectionHeader(
+                            title: 'Featured Skills',
+                            onViewMore: null,
+                          ),
+                        ),
+                        const SizedBox(
+                          height: TiermetrySpacing.headerToContent,
+                        ),
+                        ListenableBuilder(
+                          listenable: HomeController.instance.skillCtrl,
+                          builder: (context, _) {
+                            final ctrl = HomeController.instance.skillCtrl;
+                            if (!ctrl.isLoading && ctrl.skills.isEmpty) {
+                              return const AppEmptyState(
+                                message:
+                                    'No personalized skills available right now.\nCheck back later or explore the full catalog.',
+                                icon: Icons.auto_awesome_outlined,
+                              );
+                            }
+                            return FeaturedSkillsSection(
+                              skills: ctrl.skills,
+                              isLoading: ctrl.isLoading,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: TiermetrySpacing.sectionGap),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // --- Upcoming Events -------------------------------------------
+                SliverToBoxAdapter(
+                  child: RepaintBoundary(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: TiermetrySpacing.pagePadding,
+                          child: SectionHeader(
+                            title: 'Upcoming Events',
+                            onViewMore: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute<void>(
+                                  builder: (_) => const MyEventsScreen(),
+                                ),
                               );
                             },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: TiermetrySpacing.sectionGap),
-                    ],
-                  ),
-                ),
-              ),
-
-              // --- Featured Skills -------------------------------------------
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: SectionHeader(
-                          title: 'Featured Skills',
-                          onViewMore:
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const SkillBrowserScreen(),
-                                ),
-                              ),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: TiermetrySpacing.headerToContent),
-                      ListenableBuilder(
-                        listenable: _skillCtrl,
-                        builder: (context, _) {
-                          return FeaturedSkillsSection(
-                            skills: _skillCtrl.skills,
-                            isLoading: _skillCtrl.isLoading,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: TiermetrySpacing.sectionGap),
-                    ],
-                  ),
-                ),
-              ),
-
-              // --- Upcoming Events -------------------------------------------
-              SliverToBoxAdapter(
-                child: RepaintBoundary(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: TiermetrySpacing.pagePadding,
-                        child: SectionHeader(
-                          title: 'Upcoming Events',
-                          onViewMore:
-                              () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const EventBrowserScreen(),
-                                ),
-                              ),
+                        const SizedBox(
+                          height: TiermetrySpacing.headerToContent,
                         ),
-                      ),
-                      const SizedBox(height: TiermetrySpacing.headerToContent),
-                      ListenableBuilder(
-                        listenable: _eventCtrl,
-                        builder: (context, _) {
-                          return UpcomingEventsSection(
-                            events: _eventCtrl.events,
-                            isLoading: _eventCtrl.isLoading,
-                          );
-                        },
-                      ),
-                      const SizedBox(height: TiermetrySpacing.bottomSafeArea),
-                    ],
+                        ListenableBuilder(
+                          listenable: HomeController.instance.eventCtrl,
+                          builder: (context, _) {
+                            final ctrl = HomeController.instance.eventCtrl;
+                            return UpcomingEventsSection(
+                              events: ctrl.events,
+                              isLoading: ctrl.isLoading,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: TiermetrySpacing.sectionGap),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ],
+
+                // --- Recently Booked -------------------------------------------
+                const SliverToBoxAdapter(
+                  child: RepaintBoundary(child: RecentlyBookedSection()),
+                ),
+                const SliverToBoxAdapter(
+                  child: SizedBox(height: TiermetrySpacing.bottomSafeArea),
+                ),
+              ],
+            ),
           ),
 
           // --- Independent scroll-responsive gradient overlay ---
           // This has its own listener and doesn't rebuild the main tree
-          ScrollGradientOverlay(scrollController: _scrollCtrl),
+          const ScrollGradientOverlay(),
         ],
       ),
     );

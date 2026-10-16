@@ -21,14 +21,15 @@ class MetricsSection extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ArenaScreen()),
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ArenaScreen(),
+                    ),
                   );
                 },
-                child: BentoTile(
+                child: const BentoTile(
                   title: 'Discover Arenas',
-                  imagePath: 'assets/sticks/steering.png',
+                  imagePath: 'assets/Arena.png',
                   imageRight: -30,
                   imageBottom: -50,
                   imageScale: 2.0,
@@ -40,14 +41,13 @@ class MetricsSection extends StatelessWidget {
             Expanded(
               child: GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
+                  Navigator.of(context, rootNavigator: true).push(
+                    MaterialPageRoute<void>(
                       builder: (_) => const EventBrowserScreen(),
                     ),
                   );
                 },
-                child: BentoTile(
+                child: const BentoTile(
                   title: 'Explore Events',
                   imagePath: 'assets/sticks/starbucks.png',
                   imageRight: -30,
@@ -59,7 +59,6 @@ class MetricsSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: TiermetrySpacing.gridGap),
-        // Bottom Full Width - Upgrade & Promotion
         const PromotionTile(),
       ],
     );

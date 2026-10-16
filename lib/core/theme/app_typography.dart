@@ -2,9 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'colors.dart'; // <- your existing TiermetryColors
 import 'font_sizes.dart';
 import 'font_weights.dart';
-import 'colors.dart'; // <- your existing TiermetryColors
 
 class AppTypography {
   static final TextStyle xs = GoogleFonts.inter(

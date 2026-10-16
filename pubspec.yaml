@@ -1,5 +1,5 @@
 name: tiermetry
-description: "A new Flutter project."
+description: "Everything your place needs, all in one place."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+4
 
 environment:
   sdk: ^3.7.2
@@ -30,21 +30,23 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  google_fonts: ^6.1.0
+  google_fonts: ^8.2.1
   cupertino_icons: ^1.0.8
   gradient_borders: 1.0.1
   flutter_svg: ^2.0.7
-  google_maps_flutter: ^2.5.0
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
   blur: ^3.0.0
   intl: ^0.20.2
   image_picker: ^1.0.4
+  flutter_image_compress: ^2.5.1
   fl_chart: ^1.0.0
   share_plus: ^7.2.1
   qr_flutter: ^4.1.0
   confetti: ^0.7.0
   lottie: ^2.7.0
   url_launcher: ^6.2.5
-  flutter_email_sender: ^6.0.1
+  flutter_email_sender: ^6.0.3
   cached_network_image: ^3.4.1
   shimmer: ^3.0.0
   sensors_plus: ^5.0.1
@@ -52,6 +54,25 @@ dependencies:
   circulito: ^1.0.3
   flutter_refresh_rate_control: ^0.0.3
   line_icons: ^2.0.3
+  supabase_flutter: ^2.16.0
+  mobile_scanner: ^7.4.0
+  amazing_icons: ^3.1.1
+  font_awesome_flutter: ^11.0.0
+  video_player: ^2.11.1
+  shared_preferences: ^2.5.5
+  connectivity_plus: ^7.3.1
+  app_links: ^7.0.0
+  flutter_cashfree_pg_sdk: ^2.4.0+52
+  geolocator: ^14.0.2
+  geocoding: ^5.0.0
+  auto_size_text: ^3.0.0
+  posthog_flutter: ^5.38.0
+  flutter_dotenv: ^6.0.1
+  app_tracking_transparency: ^2.0.7
+  postgres: ^3.5.12
+  firebase_core: ^4.14.0
+  firebase_messaging: ^16.6.0
+  flutter_local_notifications: ^22.3.0
 
 dev_dependencies:
   flutter_test:
@@ -78,25 +99,23 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-    - assets/logo.png
-    - assets/menu.png
-    - assets/Seller.png
-    - assets/Hackathon.jpg
-    - assets/score.png
-    - assets/skill.png
-    - assets/time.png
-    - assets/arena_color.png
-    - assets/arena1.jpeg
-    - assets/verified.svg
-    - assets/card_yellow.jpg
-    - assets/pc_card.png
-    - assets/kart_arena.png
-    - assets/ticket_cut.svg
+    - assets/
+    - assets/logo/
     - assets/sticks/
     - assets/images/
-
-
+    - assets/videos/
+    - assets/activity_images/
+    - assets/onboard/
+    - assets/mojis/
+  fonts:
+    - family: StreetExplorer
+      fonts:
+        - asset: assets/font/StreetExplorer-X3Y9Z.otf
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/app_icon.png"
+  image_path: "assets/homisicon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#0F0F0F"
+  adaptive_icon_foreground: "assets/homisicon.png"
+  min_sdk_android: 21

@@ -9,5 +9,21 @@ class FeatureFlags {
 
   /// Disable BackdropFilter-based blur effects (can help on some emulators/GPUs).
   static const bool disableBlur = bool.fromEnvironment('TM_DISABLE_BLUR');
-}
 
+  /// Keep loyalty/reward features enabled for the normal HOMIES app.
+  ///
+  /// A restricted submission build can opt out explicitly with
+  /// `TM_ENABLE_FINANCIAL_REWARDS=false`.
+  static const bool enableFinancialRewards = bool.fromEnvironment(
+    'TM_ENABLE_FINANCIAL_REWARDS',
+    defaultValue: true,
+  );
+  static const bool disableFinancialRewards = !enableFinancialRewards;
+
+  /// Keep in-app payment services enabled for the normal HOMIES app.
+  static const bool enableInAppPayments = bool.fromEnvironment(
+    'TM_ENABLE_IN_APP_PAYMENTS',
+    defaultValue: true,
+  );
+  static const bool disableInAppPayments = !enableInAppPayments;
+}

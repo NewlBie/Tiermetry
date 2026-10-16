@@ -1,7 +1,29 @@
-import '../entities/arena_entity.dart';
 import '../entities/arena_details_entity.dart';
+import '../entities/arena_entity.dart';
 
 abstract class ArenaRepo {
-  Future<List<ArenaEntity>> getArenas();
+  Future<List<ArenaEntity>> getArenas({
+    String? query,
+    String? activity,
+    double? maxDistance,
+    int? maxPriceTier,
+    double? minRating,
+    Set<String> platforms,
+    bool? onlyOpenNow,
+    bool? hasOffers,
+    String? sortBy,
+    int page = 0,
+    int pageSize = 20,
+  });
   Future<ArenaDetailsEntity?> getArenaDetails(String id);
+  Future<List<ArenaDevice>> getAvailableUnits({
+    required String serviceId,
+    required DateTime startTime,
+    required DateTime endTime,
+  });
+  Future<DateTime?> getNextAvailableBookingStart({
+    required String serviceId,
+    required Duration duration,
+    required DateTime fromTime,
+  });
 }

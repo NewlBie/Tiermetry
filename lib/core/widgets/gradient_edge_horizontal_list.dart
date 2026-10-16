@@ -11,8 +11,8 @@ class GradientEdgeHorizontalList extends StatefulWidget {
   final ScrollPhysics physics;
 
   const GradientEdgeHorizontalList({
-    this.controller,
     required this.children,
+    this.controller,
     this.gradientWidth = 32.0,
     this.fadeStartThreshold = 50.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 20),
@@ -71,7 +71,7 @@ class _GradientEdgeHorizontalListState
   double _getLeftFadeOpacity() {
     if (!_isScrollable) return 0;
 
-    double offset = _scrollController.offset;
+    final double offset = _scrollController.offset;
 
     // Smoothly fade in as user scrolls past threshold
     if (offset < widget.fadeStartThreshold) {
@@ -85,8 +85,8 @@ class _GradientEdgeHorizontalListState
   double _getRightFadeOpacity() {
     if (!_isScrollable) return 0;
 
-    double offset = _scrollController.offset;
-    double remainingScroll = _maxScroll - offset;
+    final double offset = _scrollController.offset;
+    final double remainingScroll = _maxScroll - offset;
 
     // Smoothly fade in as user scrolls away from end
     if (remainingScroll < widget.fadeStartThreshold) {
@@ -100,8 +100,8 @@ class _GradientEdgeHorizontalListState
     return AnimatedBuilder(
       animation: _scrollController,
       builder: (context, child) {
-        double leftOpacity = _getLeftFadeOpacity();
-        double rightOpacity = _getRightFadeOpacity();
+        final double leftOpacity = _getLeftFadeOpacity();
+        final double rightOpacity = _getRightFadeOpacity();
 
         return ShaderMask(
           shaderCallback: (bounds) {

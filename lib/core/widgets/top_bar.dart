@@ -1,197 +1,180 @@
-import 'dart:ui';
+import 'dart:async';
 
+import 'package:amazing_icons/amazing_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:tiermetry/core/constants/feature_flags.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/widgets/india_city_picker_sheet.dart';
+import 'package:tiermetry/features/notification/presentation/screens/notifications_screen.dart';
 
 class TopBar extends StatelessWidget {
-  final Widget title;
-
-  // Kept for backwards compatibility; this widget previously animated the menu
-  // icon. The current TopBar uses a static icon.
   final Animation<double>? menuAnimationProgress;
-
-  final bool hasNotification;
   final VoidCallback onMenuTap;
 
   const TopBar({
-    super.key,
-    required this.title,
-    this.menuAnimationProgress,
-    required this.hasNotification,
     required this.onMenuTap,
+    super.key,
+    this.menuAnimationProgress,
   });
 
   @override
   Widget build(BuildContext context) {
-    final surface = _TopBarSurface(
-      title: title,
-      menuAnimationProgress: menuAnimationProgress,
-      hasNotification: hasNotification,
-      onMenuTap: onMenuTap,
-    );
-
-    final glass =
-        FeatureFlags.disableBlur
-            ? surface
-            : BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-              child: surface,
-            );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // --- Frosted Matte Glass Zone ---
-        ClipRect(child: glass),
-
-        // --- Luminous Separator ---
-        Container(
-          height: 0.5,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.transparent,
-                Colors.white.withValues(alpha: 0.05),
-                TiermetryColors.accentLavender.withValues(alpha: 0.10),
-                Colors.white.withValues(alpha: 0.05),
-                Colors.transparent,
-              ],
-              stops: const [0.0, 0.2, 0.5, 0.8, 1.0],
-            ),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: TiermetrySpacing.screenPadding,
+          vertical: TiermetrySpacing.sm,
+        ),
+        child: RepaintBoundary(
+          child: _TopBarSurface(
+            menuAnimationProgress: menuAnimationProgress,
+            onMenuTap: onMenuTap,
           ),
         ),
-
-        // --- Fade-out Gradient (no blur, pure paint) ---
-        Container(
-          height: 20,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                TiermetryColors.background.withValues(alpha: 0.5),
-                TiermetryColors.background.withValues(alpha: 0.0),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
 class _TopBarSurface extends StatelessWidget {
-  final Widget title;
   final Animation<double>? menuAnimationProgress;
-  final bool hasNotification;
   final VoidCallback onMenuTap;
 
   const _TopBarSurface({
-    required this.title,
     required this.menuAnimationProgress,
-    required this.hasNotification,
     required this.onMenuTap,
   });
+
+  Future<void> _showLocationPicker(BuildContext context) async {
+    final city = await showIndiaCityPicker(
+      context,
+      searchCities: locator.locationCtrl.searchCities,
+      useCurrentLocation: locator.locationCtrl.resolveCurrentCity,
+      selectedCity: locator.locationCtrl.selectedCity,
+    );
+    if (city == null) return;
+
+    try {
+      await locator.profileCtrl.updateLocation(city);
+      locator.locationCtrl.selectCity(city);
+      unawaited(locator.communityCtrl.loadCommunities(city: city));
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Location updated to $city.')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Location could not be saved. Please try again.'),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: TiermetryColors.background.withValues(alpha: 0.72),
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1B1B1B), Color(0xFF121212)],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0x14FFFFFF)),
       ),
-      child: SafeArea(
-        bottom: false,
+      child: SizedBox(
+        height: TiermetrySpacing.topBarHeight,
         child: Padding(
-          padding: const EdgeInsets.only(
-            top: 10,
-            left: 20,
-            right: 20,
-            bottom: 12,
-          ),
-          child: SizedBox(
-            height: 64,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _TopBarButton(
-                  onTap: onMenuTap,
-                  child:
-                      menuAnimationProgress == null
-                          ? const Icon(
-                            Icons.grid_view_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          )
-                          : AnimatedIcon(
-                            icon: AnimatedIcons.menu_close,
-                            progress: menuAnimationProgress!,
-                            color: Colors.white,
-                            size: 22,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              SvgPicture.asset('assets/HomiesApha.svg', height: 38),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () => _showLocationPicker(context),
+                    child: Container(
+                      constraints: const BoxConstraints(maxWidth: 150),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.065),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AmazingIconBulk.location(
+                            size: 14,
+                            color: TiermetryColors.primary,
                           ),
-                ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeOutCubic,
-                    transitionBuilder: (child, animation) {
-                      return FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.08),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      );
-                    },
-                    child: Center(
-                      key: title.key ?? ValueKey(title.runtimeType),
-                      child: title,
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: ListenableBuilder(
+                              listenable: locator.locationCtrl,
+                              builder: (context, _) {
+                                return Text(
+                                  locator.locationCtrl.selectedCity,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                _TopBarButton(
-                  onTap: () {
-                    // TODO: implement notifications
-                  },
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                      if (hasNotification)
-                        Positioned(
-                          right: 1,
-                          top: 1,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: TiermetryColors.accentLavender,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: TiermetryColors.accentLavender
-                                      .withValues(alpha: 0.6),
-                                  blurRadius: 6,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
-                          ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _TopBarButton(
+                    onTap: () {
+                      Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const NotificationsScreen(),
                         ),
-                    ],
+                      );
+                    },
+                    child: AmazingIconBulk.notification(
+                      size: 20,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  _TopBarButton(
+                    onTap: onMenuTap,
+                    child: AnimatedIcon(
+                      icon: AnimatedIcons.menu_close,
+                      progress:
+                          menuAnimationProgress ?? kAlwaysDismissedAnimation,
+                      size: 20,
+                      color: TiermetryColors.accentNeonGreen,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -211,15 +194,11 @@ class _TopBarButton extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 48,
-        height: 48,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.06),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.1),
-            width: 0.8,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          color: Colors.white.withValues(alpha: 0.055),
         ),
         child: Center(child: child),
       ),
