@@ -9,6 +9,7 @@ class AuthCtrl extends ChangeNotifier {
   UserEntity? _user;
   bool _isLoading = true;
   String? _error;
+  bool _needsEmailVerification = false;
 
   AuthCtrl(this._authRepo) {
     _user = _authRepo.currentUser;
@@ -23,26 +24,40 @@ class AuthCtrl extends ChangeNotifier {
   bool get isAuthenticated => _user != null;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get needsEmailVerification => _needsEmailVerification;
 
   Future<void> signIn(String email, String password) async {
     _setLoading(true);
     try {
       await _authRepo.signIn(email: email, password: password);
       _error = null;
+      _needsEmailVerification = false;
     } catch (e) {
-      _error = ErrorMapper.map(e);
+      _needsEmailVerification = _isEmailNotConfirmedError(e);
+      _error =
+          _needsEmailVerification
+              ? 'Please verify your email before logging in.'
+              : ErrorMapper.map(e);
     } finally {
       _setLoading(false);
     }
   }
 
-  Future<void> signUp(String email, String password, String name) async {
+  Future<bool> signUp(String email, String password, String name) async {
     _setLoading(true);
     try {
-      await _authRepo.signUp(email: email, password: password, name: name);
+      final requiresEmailVerification = await _authRepo.signUp(
+        email: email,
+        password: password,
+        name: name,
+      );
       _error = null;
+      _needsEmailVerification = false;
+      return requiresEmailVerification;
     } catch (e) {
       _error = ErrorMapper.map(e);
+      _needsEmailVerification = false;
+      return false;
     } finally {
       _setLoading(false);
     }
@@ -53,6 +68,7 @@ class AuthCtrl extends ChangeNotifier {
     try {
       await _authRepo.verifyOTP(email: email, token: token);
       _error = null;
+      _needsEmailVerification = false;
     } catch (e) {
       _error = ErrorMapper.map(e);
       rethrow;
@@ -79,6 +95,7 @@ class AuthCtrl extends ChangeNotifier {
     try {
       await _authRepo.resetPasswordForEmail(email: email);
       _error = null;
+      _needsEmailVerification = false;
     } catch (e) {
       _error = ErrorMapper.map(e);
       rethrow;
@@ -87,8 +104,32 @@ class AuthCtrl extends ChangeNotifier {
     }
   }
 
+  Future<void> signInWithGoogle() async {
+    _setLoading(true);
+    try {
+      await _authRepo.signInWithGoogle();
+      _error = null;
+      _needsEmailVerification = false;
+    } catch (e) {
+      _error = ErrorMapper.map(e);
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   Future<void> signOut() async {
     await _authRepo.signOut();
+    _user = null;
+    _error = null;
+    _needsEmailVerification = false;
+    notifyListeners();
+  }
+
+  bool _isEmailNotConfirmedError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('email not confirmed') ||
+        message.contains('email_not_confirmed') ||
+        message.contains('email not verified');
   }
 
   void _setLoading(bool value) {

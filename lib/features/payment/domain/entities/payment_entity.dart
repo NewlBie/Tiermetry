@@ -4,6 +4,7 @@ class PaymentEntity {
   final String id;
   final String? bookingId;
   final String? holdId;
+  final String? orderId;
   final double amount;
   final PaymentStatus status;
   final String? method;
@@ -18,6 +19,7 @@ class PaymentEntity {
     required this.updatedAt,
     this.bookingId,
     this.holdId,
+    this.orderId,
     this.method,
   });
 }

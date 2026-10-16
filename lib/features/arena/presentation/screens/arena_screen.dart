@@ -1,11 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:silky_scroll/silky_scroll.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
-import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
@@ -21,7 +20,6 @@ import '../widgets/arena_backdrop.dart';
 import '../widgets/arena_card.dart';
 import '../widgets/arena_greeting.dart';
 import '../widgets/filter_sheet.dart';
-import 'all_arenas_screen.dart';
 
 class ArenaScreen extends StatefulWidget {
   const ArenaScreen({super.key});
@@ -46,31 +44,28 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
     _ActivityChoice('Karting', Icons.sports_motorsports_rounded),
   ];
 
-  static const List<_SponsoredCardData> _sponsoredCards = [
-    _SponsoredCardData(
-      offerValue: '50% OFF',
-      title: 'Squad night deals',
-      subtitle: 'Gaming cafes, turf slots, and group bookings for tonight.',
-      label: 'Sponsored',
-    ),
-    _SponsoredCardData(
-      offerValue: '₹73',
-      title: 'Weekend turf rush',
-      subtitle: 'Late slots, floodlights, and quick bookings near you.',
-      label: 'Promoted',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
     _searchController.addListener(_onSearchChanged);
-    Future.microtask(() => _arenaCtrl.loadArenas());
+    Future.microtask(() {
+      _arenaCtrl.loadArenas();
+      unawaited(_resolveLocationForDistances());
+      _setupRealtimePromotions();
+      _fetchLiveBanners();
+    });
+  }
+
+  Future<void> _resolveLocationForDistances() async {
+    if (_arenaCtrl.locationCtrl.currentPosition != null) return;
+    await _arenaCtrl.locationCtrl.resolveCurrentCity();
   }
 
   @override
   void dispose() {
+    _promotionsSub?.cancel();
+    _sponsorsSub?.cancel();
     _searchController
       ..removeListener(_onSearchChanged)
       ..dispose();
@@ -112,16 +107,10 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
         platforms: result.platforms,
         onlyOpenNow: result.onlyOpenNow,
         hasOffers: result.onlyOffers,
-        sortBy: result.sortBy == ArenaFilterDefaults.sortBy ? null : result.sortBy,
+        sortBy:
+            result.sortBy == ArenaFilterDefaults.sortBy ? null : result.sortBy,
       );
     }
-  }
-
-  void _openAllArenas() {
-    Navigator.push(
-      context,
-      MaterialPageRoute<void>(builder: (_) => const AllArenasScreen()),
-    );
   }
 
   @override
@@ -151,11 +140,15 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                 listenable: _arenaCtrl,
                 builder: (context, _) {
                   final arenas = _arenaCtrl.arenas;
-                  final isSearching = _searchController.text.trim().isNotEmpty;
-                  final featured = [...arenas]
-                    ..sort((a, b) => b.rating.compareTo(a.rating));
+                  final searchQuery = _searchController.text.trim();
+                  final isSearching = searchQuery.isNotEmpty;
+                  final featured = rankTopPicks(
+                    arenas,
+                    searchQuery: searchQuery,
+                    selectedActivity: _selectedActivity,
+                  );
 
-                  return SilkyCustomScrollView(
+                  return CustomScrollView(
                     controller: _scrollCtrl,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
@@ -182,58 +175,14 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                               controller: _searchController,
                               hintText:
                                   'Search gaming cafes, turfs, paintball...',
+                              activeFilterCount:
+                                  _currentFilter.hasActiveFilters ? 1 : 0,
+                              onFilter: _openFilterSheet,
                               onClear:
                                   _searchController.text.isEmpty
                                       ? null
                                       : _searchController.clear,
                             ),
-                          ),
-                        ),
-                      ),
-                      // ── Filter & Sort Row ───────────────────────────────
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(
-                            TiermetrySpacing.screenPadding,
-                            TiermetrySpacing.sm,
-                            TiermetrySpacing.screenPadding,
-                            0,
-                          ),
-                          child: Row(
-                            children: [
-                              // Filter button
-                              _FilterSortButton(
-                                label: 'Filter',
-                                icon: Icons.tune_rounded,
-                                hasActive: _currentFilter.hasActiveFilters &&
-                                    _currentFilter.sortBy == ArenaFilterDefaults.sortBy,
-                                onTap: _openFilterSheet,
-                              ),
-                              const SizedBox(width: 8),
-                              // Sort button shows current sort when not default
-                              _FilterSortButton(
-                                label: _currentFilter.sortBy == ArenaFilterDefaults.sortBy
-                                    ? 'Sort'
-                                    : _currentFilter.sortBy,
-                                icon: Icons.sort_rounded,
-                                hasActive: _currentFilter.sortBy != ArenaFilterDefaults.sortBy,
-                                onTap: _openFilterSheet,
-                              ),
-                              const Spacer(),
-                              // Clear all — only show when filters active
-                              if (_currentFilter.hasActiveFilters || _selectedActivity != 'All')
-                                GestureDetector(
-                                  onTap: _onClearAll,
-                                  child: Text(
-                                    'Clear all',
-                                    style: TiermetryTypography.caption(
-                                      color: TiermetryColors.primary,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                            ],
                           ),
                         ),
                       ),
@@ -253,7 +202,6 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                                 _arenaCtrl.isLoading
                                     ? 'Searching...'
                                     : 'Venues',
-                            onViewMore: _openAllArenas,
                           ),
                         ),
                       ),
@@ -380,7 +328,85 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
     );
   }
 
+  List<Map<String, dynamic>> _liveBanners = [];
+  List<Map<String, dynamic>> _liveSponsors = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _promotionsSub;
+  StreamSubscription<List<Map<String, dynamic>>>? _sponsorsSub;
+
+  void _setupRealtimePromotions() {
+    try {
+      _promotionsSub = Supabase.instance.client
+          .from('promotions')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .listen((data) {
+            if (mounted) {
+              setState(() {
+                _liveBanners = List<Map<String, dynamic>>.from(
+                  data.where((item) => item['is_active'] == true),
+                );
+              });
+            }
+          });
+      _sponsorsSub = Supabase.instance.client
+          .from('sponsors')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .listen((data) {
+            if (mounted) {
+              setState(() {
+                _liveSponsors = List<Map<String, dynamic>>.from(
+                  data.where((item) => item['is_active'] == true),
+                );
+              });
+            }
+          });
+    } catch (_) {
+      _fetchLiveBanners();
+    }
+  }
+
+  Future<void> _fetchLiveBanners() async {
+    try {
+      final res = await Supabase.instance.client
+          .from('promotions')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+      if (res.isNotEmpty && mounted) {
+        setState(() {
+          _liveBanners = List<Map<String, dynamic>>.from(res);
+        });
+      }
+      final sponsors = await Supabase.instance.client
+          .from('sponsors')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+      if (mounted) {
+        setState(
+          () => _liveSponsors = List<Map<String, dynamic>>.from(sponsors),
+        );
+      }
+    } catch (_) {}
+  }
+
   Widget _buildSponsoredSection(bool isSearching) {
+    final banners = [
+      ..._liveBanners,
+      ..._liveSponsors.map(
+        (sponsor) => <String, dynamic>{
+          'title': sponsor['name'],
+          'code': sponsor['tier'],
+          'image_url': sponsor['logo_url'],
+        },
+      ),
+    ];
+
+    if (banners.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
     return SliverToBoxAdapter(
       child: AnimatedSize(
         duration: const Duration(milliseconds: 300),
@@ -398,17 +424,52 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       SizedBox(
-                        height: 120,
+                        height: 135,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           padding: TiermetrySpacing.listPadding,
-                          itemCount: _sponsoredCards.length,
+                          itemCount: banners.length,
                           separatorBuilder:
-                              (_, __) => const SizedBox(width: 8.0),
+                              (_, __) => const SizedBox(width: 12.0),
                           itemBuilder: (context, index) {
-                            return _SponsoredVenueTile(
-                                  data: _sponsoredCards[index],
+                            final item = banners[index];
+                            final imageUrl = item['image_url'] as String? ?? '';
+                            final title =
+                                item['title'] as String? ?? 'Special Offer';
+                            final code = item['code'] as String? ?? '';
+
+                            return Container(
+                                  width: 250,
+                                  height: 135,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF181C24),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    ),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(14),
+                                    child:
+                                        imageUrl.isNotEmpty
+                                            ? Image.network(
+                                              imageUrl,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (_, __, ___) =>
+                                                      _buildBannerTextFallback(
+                                                        title,
+                                                        code,
+                                                      ),
+                                            )
+                                            : _buildBannerTextFallback(
+                                              title,
+                                              code,
+                                            ),
+                                  ),
                                 )
                                 .animate()
                                 .fadeIn(duration: 400.ms)
@@ -424,8 +485,57 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
     );
   }
 
+  Widget _buildBannerTextFallback(String title, String code) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF2A1B4E), Color(0xFF140D28)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 15,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (code.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.amber.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                code,
+                style: const TextStyle(
+                  color: Colors.amber,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildFeaturedSection(bool isSearching, List<ArenaEntity> featured) {
     final bool showSection = !isSearching || featured.isNotEmpty;
+    final deckArenas = featured.take(5).toList(growable: false);
+    final int openCount = deckArenas.where((arena) => arena.isOpenNow).length;
 
     return SliverToBoxAdapter(
       child: AnimatedSize(
@@ -438,38 +548,19 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Padding(
+                      Padding(
                         padding: TiermetrySpacing.pagePadding,
                         child: SectionHeader(
-                          title: 'Featured Arenas',
-                          onViewMore: null,
-                          tagLabel: 'Sponsored',
+                          title: isSearching ? 'Best Matches' : 'Top Picks',
+                          tagLabel:
+                              openCount > 0 ? '$openCount OPEN NOW' : null,
                         ),
                       ),
                       const SizedBox(height: TiermetrySpacing.headerToContent),
                       if (featured.isNotEmpty)
                         SizedBox(
-                          height: 330,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            padding: TiermetrySpacing.listPadding,
-                            itemCount:
-                                featured.length > 5 ? 5 : featured.length,
-                            separatorBuilder:
-                                (_, __) => const SizedBox(
-                                  width: TiermetrySpacing.cardGap,
-                                ),
-                            itemBuilder: (context, index) {
-                              return SizedBox(
-                                width: 320,
-                                child: ArenaCard(
-                                  arena: featured[index],
-                                  isFeatured: true,
-                                ),
-                              );
-                            },
-                          ),
+                          height: 370,
+                          child: _FeaturedArenaDeck(arenas: deckArenas),
                         )
                       else if (!_arenaCtrl.isLoading)
                         const AppEmptyState(message: 'No top picks found.'),
@@ -480,6 +571,134 @@ class _ArenaScreenState extends State<ArenaScreen> with RefreshRateMixin {
       ),
     );
   }
+}
+
+class _FeaturedArenaDeck extends StatefulWidget {
+  final List<ArenaEntity> arenas;
+
+  const _FeaturedArenaDeck({required this.arenas});
+
+  @override
+  State<_FeaturedArenaDeck> createState() => _FeaturedArenaDeckState();
+}
+
+class _FeaturedArenaDeckState extends State<_FeaturedArenaDeck> {
+  late final PageController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController(viewportFraction: 0.74);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.arenas.length;
+    return PageView.builder(
+      controller: _controller,
+      clipBehavior: Clip.none,
+      padEnds: count == 1,
+      physics: const BouncingScrollPhysics(),
+      itemCount: count,
+      itemBuilder: (context, index) {
+        return AnimatedBuilder(
+          animation: _controller,
+          child: Semantics(
+            label:
+                'Top pick ${index + 1} of $count: ${widget.arenas[index].name}',
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
+              child: ArenaCard(arena: widget.arenas[index], isFeatured: true),
+            ),
+          ),
+          builder: (context, child) {
+            final page =
+                _controller.hasClients
+                    ? (_controller.page ?? _controller.initialPage.toDouble())
+                    : _controller.initialPage.toDouble();
+            final offset = (page - index).clamp(-1.0, 1.0);
+            return Transform.rotate(
+              angle: offset * 0.075,
+              child: Transform.scale(
+                scale: 1 - (offset.abs() * 0.075),
+                child: child,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// Presentation-only ordering for the swipe deck. Availability stays derived
+/// from each arena's authoritative operating-hours data; this does not change
+/// server-side search, filters, or the venue list order.
+List<ArenaEntity> rankTopPicks(
+  Iterable<ArenaEntity> arenas, {
+  required String searchQuery,
+  required String selectedActivity,
+}) {
+  final normalizedQuery = searchQuery.trim().toLowerCase();
+  final normalizedActivity = selectedActivity.trim().toLowerCase();
+  final ranked = arenas.toList(growable: false);
+
+  int relevance(ArenaEntity arena) {
+    if (normalizedQuery.isEmpty) return 0;
+    final name = arena.name.toLowerCase();
+    final searchableDetails =
+        <String>[
+          arena.activityLabel,
+          arena.location,
+          arena.shortAddress,
+          ...arena.tags,
+        ].join(' ').toLowerCase();
+    if (name.contains(normalizedQuery)) return 2;
+    return searchableDetails.contains(normalizedQuery) ? 1 : 0;
+  }
+
+  bool activityMatches(ArenaEntity arena) {
+    if (normalizedActivity.isEmpty || normalizedActivity == 'all') return false;
+    final haystack =
+        <String>[arena.activityLabel, ...arena.tags].join(' ').toLowerCase();
+    return haystack.contains(normalizedActivity);
+  }
+
+  ranked.sort((left, right) {
+    final openComparison = (right.isOpenNow ? 1 : 0).compareTo(
+      left.isOpenNow ? 1 : 0,
+    );
+    if (openComparison != 0) return openComparison;
+
+    final relevanceComparison = relevance(right).compareTo(relevance(left));
+    if (relevanceComparison != 0) return relevanceComparison;
+
+    final activityComparison = (activityMatches(right) ? 1 : 0).compareTo(
+      activityMatches(left) ? 1 : 0,
+    );
+    if (activityComparison != 0) return activityComparison;
+
+    final distanceComparison = (left.distance ?? double.infinity).compareTo(
+      right.distance ?? double.infinity,
+    );
+    if (distanceComparison != 0) return distanceComparison;
+
+    final ratingComparison = right.rating.compareTo(left.rating);
+    if (ratingComparison != 0) return ratingComparison;
+
+    final reviewComparison = right.reviewCount.compareTo(left.reviewCount);
+    if (reviewComparison != 0) return reviewComparison;
+
+    return left.name.toLowerCase().compareTo(right.name.toLowerCase());
+  });
+
+  return ranked;
 }
 
 class _ActivityCapsule extends StatelessWidget {
@@ -550,292 +769,9 @@ class _ActivityCapsule extends StatelessWidget {
   }
 }
 
-class _SponsoredVenueTile extends StatelessWidget {
-  final _SponsoredCardData data;
-
-  const _SponsoredVenueTile({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1.55,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF4E00), // Vibrant neon orange
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black,
-              offset: Offset(3, 3),
-              blurRadius: 0, // Hard shadow
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // The custom black shape
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _TicketPainter(color: Colors.black),
-              ),
-            ),
-            
-            // Top Left Logo
-            Positioned(
-              left: 14,
-              top: 14,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 20,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  const Icon(
-                    Icons.keyboard_arrow_up_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ],
-              ),
-            ),
-            
-            // Offer Value (Center)
-            Positioned.fill(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 30, bottom: 16),
-                  child: FractionallySizedBox(
-                    widthFactor: 0.65,
-                    heightFactor: 0.5,
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      child: Text(
-                        data.offerValue.replaceAll(' OFF', ''),
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          height: 1.0,
-                          letterSpacing: -2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            
-            // Bottom Left Text
-            Positioned(
-              left: 14,
-              bottom: 12,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    data.title.split(' ').first.toLowerCase(),
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      height: 1.0,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  Text(
-                    data.title.split(' ').skip(1).join(' ').toLowerCase(),
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black,
-                      height: 1.0,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TicketPainter extends CustomPainter {
-  final Color color;
-  
-  _TicketPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    const double r = 12.0; // Corner radius for the black shape
-    const double p = 8.0; // Orange border thickness
-    
-    // Intrusions based on proportions of the card
-    final double tlW = size.width * 0.18;
-    final double tlH = size.height * 0.35;
-    
-    final double blW = size.width * 0.48;
-    final double blH = size.height * 0.40;
-
-    final path = Path()
-      // 1. Top edge, start after top-left intrusion
-      ..moveTo(tlW + r, p)
-      ..lineTo(size.width - p - r, p)
-      
-      // 2. Top-right corner (convex)
-      ..arcToPoint(Offset(size.width - p, p + r), radius: const Radius.circular(r), clockwise: true)
-      
-      // 3. Right edge
-      ..lineTo(size.width - p, size.height - p - r)
-      
-      // 4. Bottom-right corner (convex)
-      ..arcToPoint(Offset(size.width - p - r, size.height - p), radius: const Radius.circular(r), clockwise: true)
-      
-      // 5. Bottom edge (right of bottom-left intrusion)
-      ..lineTo(blW + r, size.height - p)
-      
-      // 6. Corner turning UP (convex)
-      ..arcToPoint(Offset(blW, size.height - p - r), radius: const Radius.circular(r), clockwise: true)
-      
-      // 7. Right edge of bottom-left intrusion
-      ..lineTo(blW, size.height - blH + r)
-      
-      // 8. Corner turning LEFT (concave)
-      ..arcToPoint(Offset(blW - r, size.height - blH), radius: const Radius.circular(r), clockwise: false)
-      
-      // 9. Top edge of bottom-left intrusion
-      ..lineTo(p + r, size.height - blH)
-      
-      // 10. Corner turning UP (convex)
-      ..arcToPoint(Offset(p, size.height - blH - r), radius: const Radius.circular(r), clockwise: true)
-      
-      // 11. Left edge (between bottom-left and top-left intrusions)
-      ..lineTo(p, tlH + r)
-      
-      // 12. Corner turning RIGHT (convex)
-      ..arcToPoint(Offset(p + r, tlH), radius: const Radius.circular(r), clockwise: true)
-      
-      // 13. Bottom edge of top-left intrusion
-      ..lineTo(tlW - r, tlH)
-      
-      // 14. Corner turning UP (concave)
-      ..arcToPoint(Offset(tlW, tlH - r), radius: const Radius.circular(r), clockwise: false)
-      
-      // 15. Right edge of top-left intrusion
-      ..lineTo(tlW, p + r)
-      
-      // 16. Corner turning RIGHT (convex)
-      ..arcToPoint(Offset(tlW + r, p), radius: const Radius.circular(r), clockwise: true)
-      
-      ..close();
-      
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _TicketPainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
 class _ActivityChoice {
   final String label;
   final IconData icon;
 
   const _ActivityChoice(this.label, this.icon);
-}
-
-class _SponsoredCardData {
-  final String title;
-  final String subtitle;
-  final String offerValue;
-  final String label;
-
-  const _SponsoredCardData({
-    required this.title,
-    required this.subtitle,
-    required this.offerValue,
-    required this.label,
-  });
-}
-
-// ─── Filter / Sort Button ─────────────────────────────────────────────────────
-/// A pill-shaped button with an active indicator dot.
-class _FilterSortButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool hasActive;
-  final VoidCallback onTap;
-
-  const _FilterSortButton({
-    required this.label,
-    required this.icon,
-    required this.hasActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        decoration: BoxDecoration(
-          color: hasActive
-              ? TiermetryColors.primary.withValues(alpha: 0.12)
-              : TiermetryColors.surfaceElement,
-          borderRadius: BorderRadius.circular(TiermetryRadii.pill),
-          border: Border.all(
-            color: hasActive
-                ? TiermetryColors.primary
-                : TiermetryColors.cardBorder,
-            width: hasActive ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: hasActive
-                  ? TiermetryColors.primary
-                  : Colors.white.withValues(alpha: 0.7),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TiermetryTypography.caption(
-                color: hasActive ? TiermetryColors.primary : Colors.white70,
-                fontWeight: hasActive ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-            if (hasActive) ...[
-              const SizedBox(width: 6),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: TiermetryColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }

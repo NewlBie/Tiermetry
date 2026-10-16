@@ -1,3 +1,5 @@
+import 'package:tiermetry/features/arena/domain/entities/arena_entity.dart';
+
 enum BookingStatus {
   pending,
   confirmed,
@@ -100,6 +102,7 @@ class BookingItemEntity {
 
 class BookingEntity {
   final String id;
+  final String venueId;
   final String title;
   final String location;
   final DateTime dateTime;
@@ -112,6 +115,11 @@ class BookingEntity {
   sessionStatus; // 'not_started', 'checked_in', 'active', 'ended', 'force_ended'
   final String? bookingCode;
   final String? cancelReason;
+  final String? refundStatus;
+  final String? transactionReference;
+  final DateTime? expectedRefundDate;
+  final String? paymentMethod;
+  final int quantity;
   final String source;
   final List<BookingSessionEntity> sessions;
   final List<BookingEventEntity> events;
@@ -122,9 +130,12 @@ class BookingEntity {
   final double paidAmount;
   final double outstandingAmount;
   final BookingPaymentState paymentState;
+  final bool hasReview;
+  final ArenaEntity? arena;
 
   BookingEntity({
     required this.id,
+    required this.venueId,
     required this.title,
     required this.location,
     required this.dateTime,
@@ -136,6 +147,11 @@ class BookingEntity {
     this.sessionStatus,
     this.bookingCode,
     this.cancelReason,
+    this.refundStatus,
+    this.transactionReference,
+    this.expectedRefundDate,
+    this.paymentMethod,
+    this.quantity = 1,
     this.source = 'online',
     this.sessions = const [],
     this.events = const [],
@@ -146,12 +162,15 @@ class BookingEntity {
     this.paidAmount = 0,
     this.outstandingAmount = 0,
     this.paymentState = BookingPaymentState.unknown,
+    this.hasReview = false,
+    this.arena,
   });
 
   bool get isUpcoming =>
-      dateTime.isAfter(DateTime.now()) &&
+      effectiveEndTime.isAfter(DateTime.now()) &&
       (status == BookingStatus.confirmed ||
           status == BookingStatus.pending ||
+          status == BookingStatus.active ||
           status == BookingStatus.checkedIn);
 
   BookingSessionEntity? get primarySession =>

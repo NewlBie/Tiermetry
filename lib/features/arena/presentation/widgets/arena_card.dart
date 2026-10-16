@@ -1,6 +1,5 @@
 // lib/features/arena/presentation/widgets/arena_card.dart
 import 'package:amazing_icons/amazing_icons.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
@@ -14,6 +13,33 @@ import '../../domain/entities/arena_entity.dart';
 import '../screens/arena_details_screen.dart';
 
 class ArenaCard extends StatelessWidget {
+  static const double _chipHeight = 23;
+  static const double _chipWidth = 68;
+  static const EdgeInsets _chipPadding = EdgeInsets.symmetric(horizontal: 4);
+  static const double _chipFontSize = 9;
+  static const _closedArenaGrayscale = <double>[
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0.2126,
+    0.7152,
+    0.0722,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+  ];
+
   final ArenaEntity arena;
   final bool isFeatured;
 
@@ -23,15 +49,24 @@ class ArenaCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _PremiumTapWrapper(
       onTap: () => _navigateToDetails(context),
-      child: RepaintBoundary(
-        child: isFeatured ? _buildFeaturedLayout() : _buildNormalLayout(context),
+      child: Opacity(
+        // Keep closed arenas discoverable and tappable, but make their state
+        // immediately distinguishable in a busy discovery list.
+        opacity: arena.isOpenNow ? 1.0 : 0.58,
+        child: RepaintBoundary(
+          child:
+              isFeatured ? _buildFeaturedLayout() : _buildNormalLayout(context),
+        ),
       ),
     );
   }
 
   Widget _buildNormalLayout(BuildContext context) {
-    final imageSize = (MediaQuery.of(context).size.width * 0.36).clamp(120.0, 160.0);
-    
+    final imageSize = (MediaQuery.of(context).size.width * 0.36).clamp(
+      120.0,
+      160.0,
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: TiermetrySpacing.sm),
       child: Row(
@@ -46,18 +81,20 @@ class ArenaCard extends StatelessWidget {
 
   Widget _buildFeaturedLayout() {
     return AppSurface(
-      borderRadius: TiermetryRadii.xl,
+      borderRadius: 20,
       shadows: TiermetryShadows.card,
-      gradient: TiermetryColors.brandGradient,
+      color: const Color(0xFF111216),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [_buildFeaturedImageHeader(), _buildFeaturedDetailsFooter()],
+        children: [
+          _buildFeaturedImageHeader(),
+          Expanded(child: _buildFeaturedDetailsFooter()),
+        ],
       ),
     );
   }
 
   void _navigateToDetails(BuildContext context) {
-    Navigator.of(context).push(
+    Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder<void>(
         transitionDuration: const Duration(milliseconds: 500),
         pageBuilder: (context, anim, _) => ArenaDetailsScreen(arena: arena),
@@ -74,14 +111,19 @@ class ArenaCard extends StatelessWidget {
 
   Widget _buildImageLeft(double size) {
     return SizedBox(
-      width: size, 
+      width: size,
       height: size, // Force square image to prevent layout collapse
       child: ClipRRect(
         borderRadius: BorderRadius.circular(TiermetryRadii.lg),
-        child: Hero(
-          tag: 'arena_${arena.id}',
-          child: AppImage(
-            imagePath: arena.image,
+        child: _buildArenaMedia(
+          Hero(
+            tag: 'arena_${arena.id}',
+            child: AppImage(
+              imagePath: arena.image,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+            ),
           ),
         ),
       ),
@@ -89,86 +131,181 @@ class ArenaCard extends StatelessWidget {
   }
 
   Widget _buildDetailsRight() {
-    final tags = ['PS5', 'XBOX', 'PC', 'Nintendo'];
-    
-    return Padding(
-      padding: const EdgeInsets.only(left: TiermetrySpacing.md, top: 12, bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Title & Location
-          Text(
-            (arena.name).toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.titleSmall(
-              color: TiermetryColors.white,
-            ),
+    final tags = arena.tags.isEmpty ? ['Gaming'] : arena.tags.take(4).toList();
+    final roundedRating = arena.rating.round().clamp(0, 5);
+    final ratingLabel =
+        arena.reviewCount > 0
+            ? '$roundedRating · ${arena.reviewCount}'
+            : '$roundedRating';
+    final priceLabel =
+        arena.priceTier > 0
+            ? List.filled(arena.priceTier.clamp(1, 4).toInt(), '₹').join()
+            : 'Rates';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 190;
+        final titleFontSize = compact ? 14.0 : 16.0;
+        final metricFontSize = compact ? 10.0 : 11.0;
+        final metricIconSize = compact ? 12.0 : 14.0;
+        final metricGap = compact ? 4.0 : TiermetrySpacing.sm;
+
+        return Padding(
+          padding: const EdgeInsets.only(
+            left: TiermetrySpacing.md,
+            top: 12,
+            bottom: 12,
           ),
-          const SizedBox(height: 2),
-          Text(
-            arena.location,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.caption(
-              color: TiermetryColors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: TiermetrySpacing.sm),
-          
-          // Tags
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            children: tags.take(3).map((tag) => Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: TiermetrySpacing.xs,
-                vertical: 2,
-              ),
-              decoration: BoxDecoration(
-                color: TiermetryColors.surfaceElement,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                tag,
-                style: TiermetryTypography.label(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Title & Location
+              Text(
+                (arena.name).toUpperCase(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TiermetryTypography.titleSmall(
                   color: TiermetryColors.white,
+                  fontSize: titleFontSize,
+                  height: 1.1,
                 ),
               ),
-            )).toList(),
-          ),
-          
-          const SizedBox(height: TiermetrySpacing.md),
-          
-          // Metrics (Left organized, icons instead of text)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              _buildNormalStatColumn('${arena.distance}km', AmazingIconFilled.location),
-              const SizedBox(width: TiermetrySpacing.md),
-              _buildNormalStatColumn('${arena.screenCount}', AmazingIconFilled.monitor),
-              const SizedBox(width: TiermetrySpacing.md),
-              _buildNormalStatColumn('${arena.rating}', AmazingIconFilled.star),
+              const SizedBox(height: 2),
+              Text(
+                arena.location,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TiermetryTypography.caption(
+                  color: TiermetryColors.white.withValues(alpha: 0.7),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: TiermetrySpacing.sm),
+
+              // Tags
+              Wrap(
+                spacing: 4,
+                runSpacing: 4,
+                children:
+                    tags
+                        .take(3)
+                        .map(
+                          (tag) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: TiermetrySpacing.xs,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: TiermetryColors.surfaceElement,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              tag,
+                              style: TiermetryTypography.label(
+                                color: TiermetryColors.white,
+                              ),
+                            ),
+                          ),
+                        )
+                        .toList(),
+              ),
+
+              const SizedBox(height: TiermetrySpacing.md),
+
+              // Equal-width metric cells keep distance, availability, and rating
+              // visually balanced even when one value is longer than the others.
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildNormalStatColumn(
+                      arena.isOpenNow ? arena.distanceLabel : 'Closed',
+                      arena.isOpenNow
+                          ? AmazingIconFilled.location
+                          : AmazingIconFilled.clock,
+                      fontSize: metricFontSize,
+                      iconSize: metricIconSize,
+                      color:
+                          arena.isOpenNow
+                              ? TiermetryColors.accentNeonGreen
+                              : const Color(0xFFFF453A),
+                    ),
+                  ),
+                  _buildMetricDivider(metricGap),
+                  Expanded(
+                    child: _buildNormalStatColumn(
+                      ratingLabel,
+                      AmazingIconFilled.star,
+                      fontSize: metricFontSize,
+                      iconSize: metricIconSize,
+                    ),
+                  ),
+                  _buildMetricDivider(metricGap),
+                  Expanded(
+                    child: _buildNormalStatColumn(
+                      priceLabel,
+                      Icons.currency_rupee_rounded,
+                      fontSize: metricFontSize,
+                      iconSize: metricIconSize,
+                    ),
+                  ),
+                ],
+              ),
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNormalStatColumn(
+    String value,
+    IconData icon, {
+    required double fontSize,
+    required double iconSize,
+    Color color = TiermetryColors.accentNeonGreen,
+  }) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      alignment: Alignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, size: iconSize, color: color),
+          const SizedBox(width: 3),
+          Text(
+            value,
+            style: TiermetryTypography.caption(
+              color: color,
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildNormalStatColumn(String value, IconData icon) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Icon(icon, size: 14, color: TiermetryColors.accentNeonGreen),
-        const SizedBox(width: 4),
-        Text(
-          value,
-          style: TiermetryTypography.caption(
-            color: TiermetryColors.white,
-          ),
+  Widget _buildMetricDivider(double gap) {
+    return SizedBox(
+      width: gap,
+      child: Center(
+        child: Container(
+          width: 1,
+          height: 16,
+          color: TiermetryColors.white.withValues(alpha: 0.12),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildArenaMedia(Widget child) {
+    if (arena.isOpenNow) return child;
+    return ColorFiltered(
+      colorFilter: const ColorFilter.matrix(_closedArenaGrayscale),
+      child: child,
     );
   }
 
@@ -178,56 +315,34 @@ class ArenaCard extends StatelessWidget {
 
   Widget _buildFeaturedImageHeader() {
     return AspectRatio(
-      aspectRatio: 16 / 9, // 16:9 aspect ratio
+      aspectRatio: 16 / 9,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Hero(
-            tag: 'arena_featured_${arena.id}',
-            child: AppImage(imagePath: arena.image),
+          _buildArenaMedia(
+            LayoutBuilder(
+              builder:
+                  (context, constraints) => AppImage(
+                    imagePath: arena.image,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    fit: BoxFit.cover,
+                  ),
+            ),
           ),
-          // Gradient Fade
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: const [0.4, 1.0], // Fade starts lower
+                  stops: const [0.18, 1.0],
                   colors: [
-                    Colors.transparent,
-                    TiermetryColors.black.withValues(alpha: 0.9), // Deep shadow for text readability
+                    TiermetryColors.black.withValues(alpha: 0.22),
+                    TiermetryColors.black.withValues(alpha: 0.92),
                   ],
                 ),
               ),
-            ),
-          ),
-          // Text Details (Left)
-          Positioned(
-            left: TiermetrySpacing.lg,
-            bottom: TiermetrySpacing.lg,
-            right: TiermetrySpacing.lg,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text((arena.name).toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TiermetryTypography.titleSmall(
-                    color: TiermetryColors.white,
-                  ),
-                ),
-                const SizedBox(height: TiermetrySpacing.xs),
-                Text(
-                  arena.location,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TiermetryTypography.caption(
-                    color: TiermetryColors.white.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
             ),
           ),
         ],
@@ -236,71 +351,72 @@ class ArenaCard extends StatelessWidget {
   }
 
   Widget _buildFeaturedDetailsFooter() {
-    final tags = ['PS5', 'XBOX', 'PC', 'Nintendo'];
+    final tags = _featuredTags;
+    final address =
+        arena.shortAddress.isNotEmpty ? arena.shortAddress : arena.location;
+    final description =
+        arena.capacity > 0
+            ? '${arena.activityLabel} for up to ${arena.capacity} players at a time.'
+            : '${arena.activityLabel} experiences near you.';
 
     return Padding(
-      padding: const EdgeInsets.all(TiermetrySpacing.lg),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Tags spanning entire width
+          Text(
+            arena.name.toUpperCase(),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TiermetryTypography.titleSmall(
+              color: Colors.white,
+              fontSize: 18,
+              height: 1.04,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '$address · ${arena.hours}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TiermetryTypography.caption(
+              color: Colors.white.withValues(alpha: 0.58),
+              fontSize: 10.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            description,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TiermetryTypography.bodySmall(
+              color: Colors.white.withValues(alpha: 0.76),
+              fontSize: 12,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.14)),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 5,
-            runSpacing: 4,
-            children: tags.take(3).map((tag) => Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: TiermetrySpacing.sm,
-                vertical: TiermetrySpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: TiermetryColors.surfaceElement,
-                borderRadius: BorderRadius.circular(5),
-              ),
-              child: Text(
-                tag,
-                style: TiermetryTypography.label(
-                  color: TiermetryColors.white,
-                ),
-              ),
-            )).toList(),
-          ),
-          const SizedBox(height: TiermetrySpacing.md),
-          // Divider
-          Container(
-            height: 1,
-            color: TiermetryColors.white.withValues(alpha: 0.1),
-          ),
-          const SizedBox(height: TiermetrySpacing.md),
-          // Stats and Map Row
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 6,
+            runSpacing: 6,
             children: [
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildFeaturedStatColumn('${arena.distance}km', 'Distance'),
-                    _buildFeaturedStatColumn('${arena.screenCount}', 'Screens'),
-                    _buildFeaturedStatColumn('${arena.rating}', 'Rating'),
-                  ],
-                ),
-              ),
-              const SizedBox(width: TiermetrySpacing.lg),
-              // Map Icon Box
-              Container(
-                width: 70,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: TiermetryColors.surfaceElement,
-                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                ),
-                child: Center(
-                  child: Icon(
-                    CupertinoIcons.map,
-                    color: TiermetryColors.textPrimary.withValues(alpha: 0.6),
-                    size: 28,
-                  ),
-                ),
+              _buildRatingChip(),
+              ...tags.take(2).map(_buildExperienceChip),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              _buildFooterMetric(
+                icon:
+                    arena.isOpenNow
+                        ? Icons.location_on_outlined
+                        : Icons.schedule_outlined,
+                value: arena.isOpenNow ? arena.distanceLabel : 'Closed',
+                color: arena.isOpenNow ? null : const Color(0xFFFF6B5F),
               ),
             ],
           ),
@@ -309,24 +425,126 @@ class ArenaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFeaturedStatColumn(String value, String label) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Text(
-          value,
-          style: TiermetryTypography.caption(
-            color: TiermetryColors.white,
+  String get _experienceLabel =>
+      arena.tags.isNotEmpty ? arena.tags.first : arena.activityLabel;
+
+  List<String> get _featuredTags {
+    final tags = <String>[_experienceLabel];
+    for (final tag in arena.tags) {
+      if (!tags.any(
+        (existing) => existing.toLowerCase() == tag.toLowerCase(),
+      )) {
+        tags.add(tag);
+      }
+      if (tags.length == 3) break;
+    }
+    return tags;
+  }
+
+  Widget _buildFooterMetric({
+    required IconData icon,
+    required String value,
+    Color? color,
+  }) {
+    final metricColor = color ?? Colors.white.withValues(alpha: 0.78);
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 78),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+      decoration: BoxDecoration(
+        color:
+            color == null
+                ? TiermetryColors.surfaceElement
+                : color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: metricColor),
+          const SizedBox(width: 3),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TiermetryTypography.caption(
+                color: metricColor,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: TiermetrySpacing.xs),
-        Text(
-          label,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExperienceChip(String tag) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 150),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: TiermetryColors.surfaceUnderlay,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          tag,
+          maxLines: 1,
           style: TiermetryTypography.label(
-            color: TiermetryColors.textMuted,
+            color: TiermetryColors.white.withValues(alpha: 0.84),
+            fontSize: _chipFontSize,
+            letterSpacing: 0.5,
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildRatingChip() {
+    return SizedBox(
+      width: _chipWidth,
+      height: _chipHeight,
+      child: Container(
+        padding: _chipPadding,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: TiermetryColors.white,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(AmazingIconFilled.star, size: 11, color: Colors.black),
+              const SizedBox(width: 2),
+              Text(
+                arena.rating.round().clamp(0, 5).toString(),
+                style: TiermetryTypography.label(
+                  color: Colors.black,
+                  fontSize: _chipFontSize,
+                  letterSpacing: 0.35,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 3),
+              Text(
+                '(${arena.reviewCount})',
+                style: TiermetryTypography.label(
+                  color: Colors.black.withValues(alpha: 0.62),
+                  fontSize: 8.5,
+                  letterSpacing: 0,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

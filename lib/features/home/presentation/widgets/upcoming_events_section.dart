@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
-import 'package:tiermetry/core/widgets/animated_list_item.dart';
 import 'package:tiermetry/core/widgets/scroll_fade_overlay.dart';
 import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 import 'package:tiermetry/features/event/domain/entities/event_entity.dart';
@@ -29,9 +27,7 @@ class UpcomingEventsSection extends StatefulWidget {
 
 class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
   late ScrollController _scrollController;
-  double _maxScroll = 0;
-  double _leftFadeOpacity = 0;
-  double _rightFadeOpacity = 0;
+  final ValueNotifier<double> _rightFadeOpacity = ValueNotifier<double>(1);
 
   @override
   void initState() {
@@ -40,37 +36,35 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
     _scrollController.addListener(_updateFadeOpacity);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        if (!_scrollController.hasClients) return;
-        setState(() => _maxScroll = _scrollController.position.maxScrollExtent);
-        _updateFadeOpacity();
-      }
+      if (mounted) _updateFadeOpacity();
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant UpcomingEventsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.events.length != widget.events.length ||
+        oldWidget.isLoading != widget.isLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _updateFadeOpacity();
+      });
+    }
   }
 
   void _updateFadeOpacity() {
     if (!_scrollController.hasClients) return;
-    if (_maxScroll == 0) return;
-
-    final double offset = _scrollController.offset;
-    final double remaining = _maxScroll - offset;
-
-    final double leftOp = (offset / 50).clamp(0, 1);
+    final position = _scrollController.position;
+    final double remaining = position.maxScrollExtent - position.pixels;
     final double rightOp = (remaining / 50).clamp(0, 1);
-
-    if (mounted &&
-        ((_leftFadeOpacity - leftOp).abs() > 0.03 ||
-            (_rightFadeOpacity - rightOp).abs() > 0.03)) {
-      setState(() {
-        _leftFadeOpacity = leftOp;
-        _rightFadeOpacity = rightOp;
-      });
+    if ((_rightFadeOpacity.value - rightOp).abs() > 0.03) {
+      _rightFadeOpacity.value = rightOp;
     }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _rightFadeOpacity.dispose();
     super.dispose();
   }
 
@@ -80,7 +74,11 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
       height: widget.sectionHeight,
       child:
           widget.isLoading
-              ? ShimmerLoadingList(itemWidth: widget.cardWidth, itemCount: 1)
+              ? ShimmerLoadingList(
+                itemWidth: widget.cardWidth,
+                itemCount: 1,
+                animate: false,
+              )
               : widget.events.isEmpty
               ? const Center(
                 child: Text(
@@ -90,7 +88,9 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
               )
               : Stack(
                 children: [
-                  SilkyListView.separated(
+                  ListView.separated(
+                    addRepaintBoundaries: false,
+                    cacheExtent: 220,
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
                     padding: TiermetrySpacing.listPadding,
@@ -99,24 +99,25 @@ class _UpcomingEventsSectionState extends State<UpcomingEventsSection> {
                         (_, __) =>
                             const SizedBox(width: TiermetrySpacing.cardGap),
                     itemBuilder: (_, index) {
-                      return AnimatedListItem(
-                        index: index,
-                        child: SizedBox(
-                          width: widget.cardWidth,
-                          child:
-                              widget.cardBuilder != null
-                                  ? widget.cardBuilder!(
-                                    context,
-                                    widget.events[index],
-                                  )
-                                  : UpcomingEventCard(
-                                    event: widget.events[index],
-                                  ),
-                        ),
+                      return SizedBox(
+                        width: widget.cardWidth,
+                        child:
+                            widget.cardBuilder != null
+                                ? widget.cardBuilder!(
+                                  context,
+                                  widget.events[index],
+                                )
+                                : UpcomingEventCard(
+                                  event: widget.events[index],
+                                ),
                       );
                     },
                   ),
-                  ScrollFadeOverlay(opacity: _rightFadeOpacity),
+                  ValueListenableBuilder<double>(
+                    valueListenable: _rightFadeOpacity,
+                    builder:
+                        (_, opacity, __) => ScrollFadeOverlay(opacity: opacity),
+                  ),
                 ],
               ),
     );

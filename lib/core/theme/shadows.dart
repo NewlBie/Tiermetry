@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'colors.dart';
 
 /// ---------------------------------------------------------------------------
-/// TIERMETRY SHADOWS - Universal Design Tokens
+/// HOMIES SHADOWS - Universal Design Tokens
 /// ---------------------------------------------------------------------------
 /// Central source for all shadow effects in the app.
 /// Following the "Deep Surface" aesthetic with soft, vertical offsets.

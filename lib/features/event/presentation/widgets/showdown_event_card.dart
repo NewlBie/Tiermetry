@@ -17,7 +17,6 @@ import '../screens/showdown_details_screen.dart';
 class ShowdownEventCard extends StatelessWidget {
   final EventEntity event;
 
-
   const ShowdownEventCard({required this.event, super.key});
 
   bool get _isOnline {
@@ -39,8 +38,7 @@ class ShowdownEventCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        Navigator.push(
-          context,
+        Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute<void>(
             builder: (context) => ShowdownDetailsScreen(event: event),
           ),
@@ -49,180 +47,193 @@ class ShowdownEventCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(TiermetryRadii.md),
         child: ColoredBox(
-        color: TiermetryColors.surface, // app's standard card grey
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final double scale = (constraints.maxWidth / 280.0).clamp(1.0, 2.0);
+          color: TiermetryColors.surface, // app's standard card grey
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final double scale = (constraints.maxWidth / 280.0).clamp(
+                1.0,
+                2.0,
+              );
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // ── 16:9 image ──
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: AppImage(
-                    imagePath: event.image ?? 'assets/Hackathon.jpg',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
-                // ── Dark content section with overlapping time badge ──
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // ── Main content layout ──
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        TiermetrySpacing.lg * scale,
-                        (TiermetrySpacing.xl + 4) * scale,
-                        TiermetrySpacing.lg * scale,
-                        TiermetrySpacing.sm * scale,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // ── Title ──
-                          Text(
-                            event.title.toUpperCase(),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.geist(
-                              fontSize: 16 * scale,
-                              fontWeight: FontWeight.w900,
-                              height: 1.1,
-                              color: TiermetryColors.white,
-                            ),
-                          ),
-                          SizedBox(height: TiermetrySpacing.md * scale),
-                          
-                          // ── Bottom block ──
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              // ── Left: metrics + location ──
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // Metrics row
-                                    Row(
-                                      children: [
-                                        _MetricChip(
-                                          icon: _isOnline
-                                              ? CupertinoIcons.globe
-                                              : CupertinoIcons.location_fill,
-                                          label: _isOnline
-                                              ? 'Online'
-                                              : 'In-person',
-                                          scale: scale,
-                                        ),
-                                        SizedBox(width: 6 * scale),
-                                        _MetricChip(
-                                          icon: _isFree
-                                              ? CupertinoIcons.gift_fill
-                                              : CupertinoIcons.creditcard_fill,
-                                          label:
-                                              _isFree ? 'Free' : event.cost,
-                                          highlight: _isFree,
-                                          scale: scale,
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 5 * scale),
-                                    // Location
-                                    Text(
-                                      event.location,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TiermetryTypography.caption(
-                                        color: TiermetryColors.white
-                                            .withValues(alpha: 0.45),
-                                        fontWeight: FontWeight.w600,
-                                      ).copyWith(
-                                        fontSize: 11 * (1 + (scale - 1) * 0.5), 
-                                        height: 1.3
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-
-                              SizedBox(width: TiermetrySpacing.sm * scale),
-
-                              // ── Right: date badge ──
-                              Container(
-                                width: 40 * scale,
-                                height: 40 * scale,
-                                decoration: BoxDecoration(
-                                  color: TiermetryColors.accentNeonGreen,
-                                  borderRadius: BorderRadius.circular(10 * scale),
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      month,
-                                      style: GoogleFonts.geist(
-                                        fontSize: 7 * scale,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: 0.6,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                    Text(
-                                      day,
-                                      style: GoogleFonts.geist(
-                                        fontSize: 15 * scale,
-                                        height: 1.0,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.black,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── 16:9 image ──
+                  AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: AppImage(
+                      imagePath: event.image ?? 'assets/Hackathon.jpg',
+                      fit: BoxFit.cover,
                     ),
+                  ),
 
-                    // ── Tilted WHITE time badge at seam ──
-                    Positioned(
-                      top: -14 * scale,
-                      left: TiermetrySpacing.lg * scale,
-                      child: Transform.rotate(
-                        angle: -0.04,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12 * scale,
-                            vertical: 4 * scale,
-                          ),
-                          color: Colors.white,
-                          child: Text(
-                            time,
-                            style: GoogleFonts.geist(
-                              fontSize: 22 * scale,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black,
-                              letterSpacing: -0.4,
-                              height: 1.0,
+                  // ── Dark content section with overlapping time badge ──
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // ── Main content layout ──
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          TiermetrySpacing.lg * scale,
+                          (TiermetrySpacing.xl + 4) * scale,
+                          TiermetrySpacing.lg * scale,
+                          TiermetrySpacing.sm * scale,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // ── Title ──
+                            Text(
+                              event.title.toUpperCase(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.geist(
+                                fontSize: 16 * scale,
+                                fontWeight: FontWeight.w900,
+                                height: 1.1,
+                                color: TiermetryColors.white,
+                              ),
+                            ),
+                            SizedBox(height: TiermetrySpacing.md * scale),
+
+                            // ── Bottom block ──
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                // ── Left: metrics + location ──
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Metrics row
+                                      Row(
+                                        children: [
+                                          _MetricChip(
+                                            icon:
+                                                _isOnline
+                                                    ? CupertinoIcons.globe
+                                                    : CupertinoIcons
+                                                        .location_fill,
+                                            label:
+                                                _isOnline
+                                                    ? 'Online'
+                                                    : 'In-person',
+                                            scale: scale,
+                                          ),
+                                          SizedBox(width: 6 * scale),
+                                          _MetricChip(
+                                            icon:
+                                                _isFree
+                                                    ? CupertinoIcons.gift_fill
+                                                    : CupertinoIcons
+                                                        .creditcard_fill,
+                                            label:
+                                                _isFree ? 'Free' : event.cost,
+                                            highlight: _isFree,
+                                            scale: scale,
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 5 * scale),
+                                      // Location
+                                      Text(
+                                        event.location,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TiermetryTypography.caption(
+                                          color: TiermetryColors.white
+                                              .withValues(alpha: 0.45),
+                                          fontWeight: FontWeight.w600,
+                                        ).copyWith(
+                                          fontSize:
+                                              11 * (1 + (scale - 1) * 0.5),
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                SizedBox(width: TiermetrySpacing.sm * scale),
+
+                                // ── Right: date badge ──
+                                Container(
+                                  width: 40 * scale,
+                                  height: 40 * scale,
+                                  decoration: BoxDecoration(
+                                    color: TiermetryColors.accentNeonGreen,
+                                    borderRadius: BorderRadius.circular(
+                                      10 * scale,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        month,
+                                        style: GoogleFonts.geist(
+                                          fontSize: 7 * scale,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 0.6,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      Text(
+                                        day,
+                                        style: GoogleFonts.geist(
+                                          fontSize: 15 * scale,
+                                          height: 1.0,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // ── Tilted WHITE time badge at seam ──
+                      Positioned(
+                        top: -14 * scale,
+                        left: TiermetrySpacing.lg * scale,
+                        child: Transform.rotate(
+                          angle: -0.04,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12 * scale,
+                              vertical: 4 * scale,
+                            ),
+                            color: Colors.white,
+                            child: Text(
+                              time,
+                              style: GoogleFonts.geist(
+                                fontSize: 22 * scale,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black,
+                                letterSpacing: -0.4,
+                                height: 1.0,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
-    ));
+    );
   }
 }
 
@@ -245,9 +256,10 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 7 * scale, vertical: 3 * scale),
       decoration: BoxDecoration(
-        color: highlight
-            ? TiermetryColors.accentNeonGreen.withValues(alpha: 0.18)
-            : TiermetryColors.white.withValues(alpha: 0.08),
+        color:
+            highlight
+                ? TiermetryColors.accentNeonGreen.withValues(alpha: 0.18)
+                : TiermetryColors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(6 * scale),
       ),
       child: Row(
@@ -256,17 +268,19 @@ class _MetricChip extends StatelessWidget {
           Icon(
             icon,
             size: 11 * scale,
-            color: highlight
-                ? TiermetryColors.accentNeonGreen
-                : TiermetryColors.white.withValues(alpha: 0.7),
+            color:
+                highlight
+                    ? TiermetryColors.accentNeonGreen
+                    : TiermetryColors.white.withValues(alpha: 0.7),
           ),
           SizedBox(width: 4 * scale),
           Text(
             label,
             style: TiermetryTypography.label(
-              color: highlight
-                  ? TiermetryColors.accentNeonGreen
-                  : TiermetryColors.white.withValues(alpha: 0.85),
+              color:
+                  highlight
+                      ? TiermetryColors.accentNeonGreen
+                      : TiermetryColors.white.withValues(alpha: 0.85),
             ).copyWith(fontSize: 10 * scale),
           ),
         ],

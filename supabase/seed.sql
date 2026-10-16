@@ -56,3 +56,19 @@ from public.services where name = 'Console Lounge';
 insert into public.service_units (service_id, name, description, price, image, status)
 select id, 'Main Pitch', 'Full size 5-a-side pitch', 800, 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?auto=format&fit=crop&q=80&w=2070', 'available'
 from public.services where name = '5-a-side Football';
+
+-- 4. Insert Admin User (email: admin@tiermetry.com, password: password123)
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, recovery_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token
+) values (
+  '00000000-0000-0000-0000-000000000000', 
+  gen_random_uuid(), 
+  'authenticated', 
+  'authenticated', 
+  'admin@tiermetry.com', 
+  crypt('password123', gen_salt('bf')), 
+  now(), now(), now(), 
+  '{"provider":"email","providers":["email"]}', 
+  '{"role":"admin"}', 
+  now(), now(), '', '', '', ''
+);

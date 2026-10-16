@@ -14,6 +14,19 @@ flutter pub get
 flutter run
 ```
 
+## Build and launch the current Android app
+
+From PowerShell, use the checked-in helper so you always build from the current
+workspace before launching or creating an APK:
+
+```powershell
+.\tool\android-app.ps1 run       # build/install and launch on a connected device
+.\tool\android-app.ps1 apk       # create build\app\outputs\flutter-apk\app-release.apk
+```
+
+The APK command builds a release APK. Use `flutter run` (or the helper's `run`
+command) for a debug build on a connected device.
+
 ## Project Structure
 
 - `lib/core/`: app-wide infrastructure (theme, widgets, service locator, services)

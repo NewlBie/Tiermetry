@@ -37,7 +37,7 @@ class AuthRepoImpl implements AuthRepo {
   }
 
   @override
-  Future<void> signUp({
+  Future<bool> signUp({
     required String email,
     required String password,
     String? name,
@@ -48,17 +48,16 @@ class AuthRepoImpl implements AuthRepo {
       data: name != null ? {'name': name} : null,
     );
 
-    // DEVELOPMENT LOGGING
-    debugPrint('--- SUPABASE SIGNUP RESPONSE ---');
-    debugPrint('User: ${response.user?.id}');
-    debugPrint(
-      'Session: ${response.session?.accessToken != null ? "PRESENT" : "NULL"}',
-    );
-    debugPrint('-------------------------------');
+    return response.session == null;
   }
+
   @override
   Future<void> verifyOTP({required String email, required String token}) async {
-    await _supabase.auth.verifyOTP(type: OtpType.signup, email: email, token: token);
+    await _supabase.auth.verifyOTP(
+      type: OtpType.signup,
+      email: email,
+      token: token,
+    );
   }
 
   @override
@@ -68,7 +67,18 @@ class AuthRepoImpl implements AuthRepo {
 
   @override
   Future<void> resetPasswordForEmail({required String email}) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: kIsWeb ? null : 'homies://login-callback',
+    );
+  }
+
+  @override
+  Future<void> signInWithGoogle() async {
+    await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? null : 'homies://login-callback',
+    );
   }
 
   @override

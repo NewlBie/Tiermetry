@@ -68,13 +68,25 @@ const List<_SortOption> _kSortOptions = [
 // ─── Platform Tags ────────────────────────────────────────────────────────────
 
 const List<String> kPlatforms = [
-  'PC', 'PS5', 'Xbox', 'VR', 'Racing', 'Pool', 'Bowling', 'Other',
+  'PC',
+  'PS5',
+  'Xbox',
+  'VR',
+  'Racing',
+  'Pool',
+  'Bowling',
+  'Other',
 ];
 
 // ─── Amenity Tags ─────────────────────────────────────────────────────────────
 
 const List<String> kAmenities = [
-  'Parking', 'Food & Drinks', 'AC', 'WiFi', 'Locker', 'Coaching',
+  'Parking',
+  'Food & Drinks',
+  'AC',
+  'WiFi',
+  'Locker',
+  'Coaching',
 ];
 
 // ─── Filter Sheet ─────────────────────────────────────────────────────────────
@@ -149,7 +161,12 @@ class _FilterSheetState extends State<FilterSheet> {
         filter: TiermetryBlur.filter(TiermetryBlur.sm),
         child: Container(
           height: MediaQuery.of(context).size.height * 0.88,
-          padding: const EdgeInsets.only(top: 12, left: 20, right: 20, bottom: 20),
+          padding: const EdgeInsets.only(
+            top: 12,
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
           decoration: BoxDecoration(
             color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.90),
             borderRadius: const BorderRadius.vertical(
@@ -185,13 +202,14 @@ class _FilterSheetState extends State<FilterSheet> {
                     _chipWrap(
                       items: kPlatforms,
                       selected: _platforms,
-                      onToggle: (v) => setState(() {
-                        if (_platforms.contains(v)) {
-                          _platforms.remove(v);
-                        } else {
-                          _platforms.add(v);
-                        }
-                      }),
+                      onToggle:
+                          (v) => setState(() {
+                            if (_platforms.contains(v)) {
+                              _platforms.remove(v);
+                            } else {
+                              _platforms.add(v);
+                            }
+                          }),
                     ),
 
                     // ── Availability ─────────────────────────────────────────
@@ -217,13 +235,14 @@ class _FilterSheetState extends State<FilterSheet> {
                     _chipWrap(
                       items: kAmenities,
                       selected: _amenities,
-                      onToggle: (v) => setState(() {
-                        if (_amenities.contains(v)) {
-                          _amenities.remove(v);
-                        } else {
-                          _amenities.add(v);
-                        }
-                      }),
+                      onToggle:
+                          (v) => setState(() {
+                            if (_amenities.contains(v)) {
+                              _amenities.remove(v);
+                            } else {
+                              _amenities.add(v);
+                            }
+                          }),
                     ),
 
                     const SizedBox(height: 24),
@@ -257,7 +276,10 @@ class _FilterSheetState extends State<FilterSheet> {
           children: [
             Text(
               'FILTER & SORT',
-              style: TiermetryTypography.title(fontSize: 18, color: Colors.white),
+              style: TiermetryTypography.title(
+                fontSize: 18,
+                color: Colors.white,
+              ),
             ),
             TextButton(
               onPressed: _resetToDefaults,
@@ -307,7 +329,10 @@ class _FilterSheetState extends State<FilterSheet> {
     padding: const EdgeInsets.only(top: 22, bottom: 12),
     child: Text(
       text.toUpperCase(),
-      style: TiermetryTypography.titleSmall(fontSize: 13, color: Colors.white70),
+      style: TiermetryTypography.titleSmall(
+        fontSize: 13,
+        color: Colors.white70,
+      ),
     ),
   );
 
@@ -317,50 +342,61 @@ class _FilterSheetState extends State<FilterSheet> {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: _kSortOptions.map((opt) {
-        final isSelected = _sortBy == opt.label;
-        return GestureDetector(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _sortBy = opt.label);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? TiermetryColors.primary.withValues(alpha: 0.15)
-                  : Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(TiermetryRadii.sm),
-              border: Border.all(
-                color: isSelected
-                    ? TiermetryColors.primary
-                    : Colors.white.withValues(alpha: 0.1),
-                width: isSelected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  opt.icon,
-                  size: 14,
-                  color: isSelected ? TiermetryColors.primary : Colors.white54,
+      children:
+          _kSortOptions.map((opt) {
+            final isSelected = _sortBy == opt.label;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _sortBy = opt.label);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  opt.label,
-                  style: TiermetryTypography.caption(
-                    color: isSelected ? TiermetryColors.primary : Colors.white70,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 13,
+                decoration: BoxDecoration(
+                  color:
+                      isSelected
+                          ? TiermetryColors.primary.withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? TiermetryColors.primary
+                            : Colors.white.withValues(alpha: 0.1),
+                    width: isSelected ? 1.5 : 1,
                   ),
                 ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      opt.icon,
+                      size: 14,
+                      color:
+                          isSelected ? TiermetryColors.primary : Colors.white54,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      opt.label,
+                      style: TiermetryTypography.caption(
+                        color:
+                            isSelected
+                                ? TiermetryColors.primary
+                                : Colors.white70,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -374,8 +410,13 @@ class _FilterSheetState extends State<FilterSheet> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              _distance == null ? 'Any distance' : 'Up to ${_distance!.toStringAsFixed(1)} km',
-              style: TiermetryTypography.caption(color: Colors.white70, fontSize: 13),
+              _distance == null
+                  ? 'Any distance'
+                  : 'Up to ${_distance!.toStringAsFixed(1)} km',
+              style: TiermetryTypography.caption(
+                color: Colors.white70,
+                fontSize: 13,
+              ),
             ),
             if (_distance != null)
               GestureDetector(
@@ -417,13 +458,19 @@ class _FilterSheetState extends State<FilterSheet> {
     const tiers = {1: '₹', 2: '₹₹', 3: '₹₹₹', 4: '₹₹₹₹'};
     return Wrap(
       spacing: 8,
-      children: tiers.entries.map((e) => _chip(
-        label: e.value,
-        isSelected: _priceTier == e.key,
-        onTap: () => setState(
-          () => _priceTier = (_priceTier == e.key) ? null : e.key,
-        ),
-      )).toList(),
+      children:
+          tiers.entries
+              .map(
+                (e) => _chip(
+                  label: e.value,
+                  isSelected: _priceTier == e.key,
+                  onTap:
+                      () => setState(
+                        () => _priceTier = (_priceTier == e.key) ? null : e.key,
+                      ),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -433,16 +480,20 @@ class _FilterSheetState extends State<FilterSheet> {
     final options = [null, 3.0, 3.5, 4.0, 4.5];
     return Wrap(
       spacing: 8,
-      children: options.map((r) {
-        final isSelected = _minRating == r;
-        final label = r == null ? 'Any' : '$r+';
-        return _chip(
-          label: label,
-          isSelected: isSelected,
-          onTap: () => setState(() => _minRating = (isSelected && r != null) ? null : r),
-          leadingIcon: r != null ? Icons.star_rounded : null,
-        );
-      }).toList(),
+      children:
+          options.map((r) {
+            final isSelected = _minRating == r;
+            final label = r == null ? 'Any' : '$r+';
+            return _chip(
+              label: label,
+              isSelected: isSelected,
+              onTap:
+                  () => setState(
+                    () => _minRating = (isSelected && r != null) ? null : r,
+                  ),
+              leadingIcon: r != null ? Icons.star_rounded : null,
+            );
+          }).toList(),
     );
   }
 
@@ -456,11 +507,16 @@ class _FilterSheetState extends State<FilterSheet> {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: items.map((item) => _chip(
-        label: item,
-        isSelected: selected.contains(item),
-        onTap: () => onToggle(item),
-      )).toList(),
+      children:
+          items
+              .map(
+                (item) => _chip(
+                  label: item,
+                  isSelected: selected.contains(item),
+                  onTap: () => onToggle(item),
+                ),
+              )
+              .toList(),
     );
   }
 
@@ -481,14 +537,16 @@ class _FilterSheetState extends State<FilterSheet> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: value
-              ? TiermetryColors.primary.withValues(alpha: 0.1)
-              : Colors.white.withValues(alpha: 0.05),
+          color:
+              value
+                  ? TiermetryColors.primary.withValues(alpha: 0.1)
+                  : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
           border: Border.all(
-            color: value
-                ? TiermetryColors.primary.withValues(alpha: 0.5)
-                : Colors.white.withValues(alpha: 0.08),
+            color:
+                value
+                    ? TiermetryColors.primary.withValues(alpha: 0.5)
+                    : Colors.white.withValues(alpha: 0.08),
           ),
         ),
         child: Row(
@@ -521,9 +579,10 @@ class _FilterSheetState extends State<FilterSheet> {
                   width: 1.5,
                 ),
               ),
-              child: value
-                  ? const Icon(Icons.check, size: 13, color: Colors.black)
-                  : null,
+              child:
+                  value
+                      ? const Icon(Icons.check, size: 13, color: Colors.black)
+                      : null,
             ),
           ],
         ),
@@ -548,14 +607,16 @@ class _FilterSheetState extends State<FilterSheet> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected
-              ? TiermetryColors.primary.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.06),
+          color:
+              isSelected
+                  ? TiermetryColors.primary.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
           border: Border.all(
-            color: isSelected
-                ? TiermetryColors.primary
-                : Colors.white.withValues(alpha: 0.1),
+            color:
+                isSelected
+                    ? TiermetryColors.primary
+                    : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 1.5 : 1,
           ),
         ),

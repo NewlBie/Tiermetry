@@ -16,7 +16,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _emailSent = false;
 
   Future<void> _resetPassword() async {
-    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) return;
+    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -27,7 +29,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: TiermetryColors.negative),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: TiermetryColors.negative,
+          ),
         );
       }
     } finally {
@@ -47,9 +52,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: _emailSent
-              ? _buildSuccessView()
-              : _buildFormView(),
+          child: _emailSent ? _buildSuccessView() : _buildFormView(),
         ),
       ),
     );
@@ -104,16 +107,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: _isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : Text(
-                    'Send Reset Link',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            child:
+                _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                      'Send Reset Link',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
           ),
         ),
       ],
@@ -124,7 +128,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.check_circle_outline, color: TiermetryColors.positive, size: 80),
+        const Icon(
+          Icons.check_circle_outline,
+          color: TiermetryColors.positive,
+          size: 80,
+        ),
         const SizedBox(height: 24),
         Text(
           'Check your email',

@@ -21,6 +21,7 @@ Use this ratio:
 | Skill/Class | What can I learn? | Category/instructor/session cue | Taller editorial card | Level, duration, next session | Enroll |
 | Activity Shortcut | What category should I browse? | Icon/symbol first | Compact tile | Label, optional count | Explore |
 | Booking | What have I already reserved? | Status and confirmation structure | Compact row | Date, people, venue, status | Manage |
+| Community | Who can I join nearby? | Member count and shared-interest identity | People-first editorial card | Members, city, join state, next plan | View community |
 | Premium Promotion | Why upgrade? | One benefit-led hero surface | Full-width panel | Short benefit copy | Upgrade |
 
 ## Differentiation Rule
@@ -45,7 +46,7 @@ Recommended Home order:
 2. Intent search or mode entry.
 3. Compact quick routes.
 4. Next booking, only when available.
-5. Live Around You.
+5. Communities Around You.
 6. Events This Week.
 7. Trending Activities.
 8. Featured Skills.

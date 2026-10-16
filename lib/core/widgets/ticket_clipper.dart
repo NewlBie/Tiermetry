@@ -15,38 +15,42 @@ class TicketClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final Path path = Path()
-      ..fillType = PathFillType.evenOdd
-      ..addRRect(RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-        Radius.circular(borderRadius),
-      ));
-    
+    final Path path =
+        Path()
+          ..fillType = PathFillType.evenOdd
+          ..addRRect(
+            RRect.fromRectAndRadius(
+              Rect.fromLTWH(0, 0, size.width, size.height),
+              Radius.circular(borderRadius),
+            ),
+          );
+
     // If there is an edgeInset, punch holes along that line (perforation)
     // If edgeInset is 0, punch holes on the absolute right edge (half circles)
     final double punchX = size.width - edgeInset;
-    
+
     // Also punch a top and bottom notch at the perforation line
     if (edgeInset > 0) {
       path
-        ..addOval(Rect.fromCircle(
-          center: Offset(punchX, 0),
-          radius: punchRadius,
-        ))
-        ..addOval(Rect.fromCircle(
-          center: Offset(punchX, size.height),
-          radius: punchRadius,
-        ));
+        ..addOval(
+          Rect.fromCircle(center: Offset(punchX, 0), radius: punchRadius),
+        )
+        ..addOval(
+          Rect.fromCircle(
+            center: Offset(punchX, size.height),
+            radius: punchRadius,
+          ),
+        );
     }
-    
+
     return path;
   }
 
   @override
   bool shouldReclip(covariant TicketClipper oldClipper) {
     return oldClipper.borderRadius != borderRadius ||
-           oldClipper.punchRadius != punchRadius ||
-           oldClipper.punchCount != punchCount ||
-           oldClipper.edgeInset != edgeInset;
+        oldClipper.punchRadius != punchRadius ||
+        oldClipper.punchCount != punchCount ||
+        oldClipper.edgeInset != edgeInset;
   }
 }

@@ -41,6 +41,9 @@ class _DeferredPageState extends State<DeferredPage> {
     if (!_hasBuilt) {
       return const SizedBox.shrink();
     }
-    return widget.child;
+    return TickerMode(
+      enabled: widget.currentIndex == widget.index,
+      child: widget.child,
+    );
   }
 }

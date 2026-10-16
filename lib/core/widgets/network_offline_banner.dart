@@ -51,7 +51,10 @@ class _NetworkOfflineBannerState extends State<NetworkOfflineBanner> {
                 child: SafeArea(
                   bottom: false,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 16,
+                    ),
                     alignment: Alignment.center,
                     child: Text(
                       'No Internet Connection',

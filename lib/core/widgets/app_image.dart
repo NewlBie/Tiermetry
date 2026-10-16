@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:shimmer/shimmer.dart';
 import '../theme/colors.dart';
 
 class AppImage extends StatelessWidget {
@@ -21,7 +20,19 @@ class AppImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (imagePath.trim().isEmpty) return _buildError();
     final isNetwork = imagePath.startsWith('http');
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = _cacheDimension(width, pixelRatio);
+    final cacheHeight = _cacheDimension(height, pixelRatio);
+    // Decode to one bounding dimension only. Supplying both dimensions can
+    // rasterize a non-16:9 source directly into a card-sized bitmap before
+    // BoxFit.cover has a chance to crop it.
+    final useWidthCache =
+        cacheWidth != null &&
+        (cacheHeight == null || cacheWidth >= cacheHeight);
+    final imageCacheWidth = useWidthCache ? cacheWidth : null;
+    final imageCacheHeight = useWidthCache ? null : cacheHeight;
 
     Widget image;
     if (isNetwork) {
@@ -30,11 +41,13 @@ class AppImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
-        placeholder: (context, url) => _buildShimmer(),
+        placeholder: (context, url) => _buildPlaceholder(),
         errorWidget: (context, url, error) => _buildError(),
         // Optimization: limit image size in memory
-        maxWidthDiskCache: 1000,
-        maxHeightDiskCache: 1000,
+        maxWidthDiskCache: imageCacheWidth,
+        maxHeightDiskCache: imageCacheHeight,
+        memCacheWidth: imageCacheWidth,
+        memCacheHeight: imageCacheHeight,
       );
     } else {
       image = Image.asset(
@@ -42,6 +55,8 @@ class AppImage extends StatelessWidget {
         width: width,
         height: height,
         fit: fit,
+        cacheWidth: imageCacheWidth,
+        cacheHeight: imageCacheHeight,
         errorBuilder: (context, error, stackTrace) => _buildError(),
       );
     }
@@ -52,11 +67,28 @@ class AppImage extends StatelessWidget {
     return image;
   }
 
-  Widget _buildShimmer() {
-    return Shimmer.fromColors(
-      baseColor: TiermetryColors.surfaceUnderlay,
-      highlightColor: TiermetryColors.surfaceElement,
-      child: Container(width: width, height: height, color: Colors.white),
+  int? _cacheDimension(double? logicalPixels, double pixelRatio) {
+    if (logicalPixels == null ||
+        !logicalPixels.isFinite ||
+        logicalPixels <= 0) {
+      return null;
+    }
+    return (logicalPixels * pixelRatio).round().clamp(1, 4096).toInt();
+  }
+
+  Widget _buildPlaceholder() {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            TiermetryColors.surfaceUnderlay,
+            TiermetryColors.surfaceElement,
+          ],
+        ),
+      ),
+      child: SizedBox(width: width, height: height),
     );
   }
 

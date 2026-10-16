@@ -39,3 +39,13 @@
 - Metadata: date/time, people, venue, payment or ticket state.
 - Action: `Manage`.
 - Avoid: discovery-card visuals; bookings are operational.
+
+## Community Card
+
+- Job: help the user find people to do an activity with.
+- First cue: shared-interest symbol plus member or local status.
+- Metadata: actual member count, city, category, and joined state.
+- Action: `View community`, followed by one clear join or leave action on details.
+- Details: use an action-first hierarchy: compact community and host identity, one date-led `Next up` Community Plan with meeting point, skill level, capacity, RSVP state, and what-to-bring guidance, then progressive disclosure for About, purpose, and guidelines, followed by the latest creator announcement. Use golden-ratio typography tokens, generous whitespace, solid tonal surfaces, and no gradients or decorative outlines. Every join, RSVP, plan, and update action explains what happens next; creator updates remain announcements rather than an infinite social feed.
+- Ownership: the current creator can transfer the sole host role to an existing member or permanently delete the community through an explicit confirmation flow; both actions remain server-authoritative.
+- Avoid: venue pricing cues, event date rails, chat-channel complexity, and every form of paid access or promotion.

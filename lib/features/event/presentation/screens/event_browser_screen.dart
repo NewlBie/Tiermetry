@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
@@ -20,6 +23,7 @@ import 'package:tiermetry/features/home/presentation/widgets/scroll_gradient_ove
 import 'package:tiermetry/features/home/presentation/widgets/upcoming_events_section.dart';
 
 import '../../domain/entities/event_entity.dart';
+import '../widgets/event_filters_sheet.dart';
 import '../widgets/showdown_event_card.dart';
 import '../widgets/upcoming_event_card.dart';
 import 'event_details_screen.dart';
@@ -37,37 +41,21 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
   final _searchController = TextEditingController();
   late final ScrollController _scrollCtrl;
 
-  static const List<_DealData> _deals = [
-    _DealData(
-      title: 'Use points on event passes',
-      subtitle: 'Redeem 100 pts on selected tournaments and workshops.',
-      label: 'Redeem',
-      icon: Icons.stars_rounded,
-    ),
-    _DealData(
-      title: 'Free entry picks',
-      subtitle: 'Events with no entry cost and community perks.',
-      label: 'Deal',
-      icon: Icons.local_offer_rounded,
-    ),
-    _DealData(
-      title: 'Partner spotlight',
-      subtitle: 'Sponsored experiences from venues and organizers.',
-      label: 'Sponsored',
-      icon: Icons.campaign_rounded,
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
     _scrollCtrl = ScrollController();
     _searchController.addListener(_onSearchChanged);
-    Future.microtask(() => _eventCtrl.loadEvents());
+    Future.microtask(() {
+      _eventCtrl.loadEvents();
+      _setupRealtimeDeals();
+      _fetchLiveDeals();
+    });
   }
 
   @override
   void dispose() {
+    _sponsorsSub?.cancel();
     _searchController
       ..removeListener(_onSearchChanged)
       ..dispose();
@@ -148,7 +136,12 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                             padding: TiermetrySpacing.pagePadding,
                             child: AppSearchHero(
                               controller: _searchController,
-                              hintText: 'Search events, deals, rewards...',
+                              hintText:
+                                  FeatureFlags.disableFinancialRewards
+                                      ? 'Search events, deals, venues...'
+                                      : 'Search events, deals, rewards...',
+                              activeFilterCount: _eventCtrl.activeFilterCount,
+                              onFilter: () => EventFiltersSheet.show(context),
                               onClear:
                                   _searchController.text.isEmpty
                                       ? null
@@ -166,7 +159,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                       ] else ...[
                         _buildSearchResultsSection(),
                       ],
-                      
+
                       // We can keep the loader if it's paginating
                       if (_eventCtrl.isLoadingMore)
                         const SliverToBoxAdapter(
@@ -200,11 +193,11 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
     if (!_eventCtrl.isLoading && _eventCtrl.radarEvents.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-    
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final cardWidth = (screenWidth * 0.65).clamp(200.0, 240.0);
     final cardHeight = cardWidth * 1.33; // 3:4 aspect ratio approx
-    
+
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
@@ -232,11 +225,11 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
     if (!_eventCtrl.isLoading && _eventCtrl.headlinerEvents.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-    
+
     final screenWidth = MediaQuery.sizeOf(context).width;
     final cardWidth = (screenWidth * 0.82).clamp(250.0, 300.0);
     final cardHeight = cardWidth * 1.25;
-    
+
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
@@ -357,8 +350,50 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
     );
   }
 
+  List<Map<String, dynamic>> _liveDeals = [];
+  StreamSubscription<List<Map<String, dynamic>>>? _sponsorsSub;
+
+  void _setupRealtimeDeals() {
+    try {
+      _sponsorsSub = Supabase.instance.client
+          .from('sponsors')
+          .stream(primaryKey: ['id'])
+          .order('created_at', ascending: false)
+          .listen((data) {
+            if (mounted) {
+              setState(() {
+                _liveDeals = List<Map<String, dynamic>>.from(
+                  data.where((item) => item['is_active'] == true),
+                );
+              });
+            }
+          });
+    } catch (_) {
+      _fetchLiveDeals();
+    }
+  }
+
+  Future<void> _fetchLiveDeals() async {
+    try {
+      final res = await Supabase.instance.client
+          .from('sponsors')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', ascending: false);
+      if (res.isNotEmpty && mounted) {
+        setState(() {
+          _liveDeals = List<Map<String, dynamic>>.from(res);
+        });
+      }
+    } catch (_) {}
+  }
 
   Widget _buildDealsSection() {
+    // Sponsor visibility is controlled by the server's RLS policy. Do not
+    // replace an intentionally empty result with fabricated sponsor content.
+    final deals = _liveDeals;
+    if (deals.isEmpty) return const SliverToBoxAdapter(child: SizedBox());
+
     return SliverToBoxAdapter(
       child: RepaintBoundary(
         child: Column(
@@ -376,18 +411,102 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 padding: TiermetrySpacing.listPadding,
-                itemCount: _deals.length,
+                itemCount: deals.length,
                 separatorBuilder:
                     (_, __) => const SizedBox(width: TiermetrySpacing.cardGap),
                 itemBuilder: (context, index) {
-                  return _DealCard(
-                    data: _deals[index],
+                  final deal = deals[index];
+                  final name = deal['name'] as String? ?? 'Special Deal';
+                  final tagline = deal['tagline'] as String? ?? '';
+                  final imageUrl = deal['logo_url'] as String? ?? '';
+                  final tier = deal['tier'] as String? ?? 'Sponsored';
+
+                  return Container(
+                    width: 260,
+                    height: 172,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF181C24),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child:
+                          imageUrl.isNotEmpty
+                              ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder:
+                                    (_, __, ___) => _buildDealTextFallback(
+                                      name,
+                                      tagline,
+                                      tier,
+                                    ),
+                              )
+                              : _buildDealTextFallback(name, tagline, tier),
+                    ),
                   ).animate().fadeIn(duration: 400.ms).slideX(begin: 0.08);
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDealTextFallback(String name, String tagline, String tier) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1F2838), Color(0xFF0F141D)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.amber.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              tier.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.amber,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            name,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 15,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (tagline.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              tagline,
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -405,7 +524,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
         ),
       );
     }
-    
+
     if (_eventCtrl.error != null && _eventCtrl.events.isEmpty) {
       return SliverToBoxAdapter(
         child: AppErrorState(
@@ -414,7 +533,7 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
         ),
       );
     }
-    
+
     if (_eventCtrl.events.isEmpty) {
       return SliverToBoxAdapter(
         child: AppEmptyState(
@@ -431,16 +550,22 @@ class _EventBrowserScreenState extends State<EventBrowserScreen>
         itemCount: _eventCtrl.events.length,
         itemBuilder: (context, index) {
           final event = _eventCtrl.events[index];
-          final isShowdown = _eventCtrl.showdownEvents.any((e) => e.id == event.id);
+          final isShowdown = _eventCtrl.showdownEvents.any(
+            (e) => e.id == event.id,
+          );
 
           return Padding(
             padding: const EdgeInsets.only(bottom: TiermetrySpacing.lg),
             child: AspectRatio(
-              aspectRatio: isShowdown ? 280 / 310 : 225 / 300,
-              child: isShowdown 
-                  ? ShowdownEventCard(event: event) 
-                  : UpcomingEventCard(event: event),
-            ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, duration: 400.ms),
+                  aspectRatio: isShowdown ? 280 / 310 : 225 / 300,
+                  child:
+                      isShowdown
+                          ? ShowdownEventCard(event: event)
+                          : UpcomingEventCard(event: event),
+                )
+                .animate()
+                .fadeIn(duration: 400.ms)
+                .slideY(begin: 0.1, duration: 400.ms),
           );
         },
       ),
@@ -468,7 +593,9 @@ class _ExploreGreeting extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          'Events, deals, sponsored drops, and rewards in one place.',
+          FeatureFlags.disableFinancialRewards
+              ? 'Events, deals, and sponsored drops in one place.'
+              : 'Events, deals, sponsored drops, and rewards in one place.',
           style: TiermetryTypography.caption(
             color: TiermetryColors.white.withValues(alpha: 0.62),
             fontSize: 13,
@@ -480,8 +607,6 @@ class _ExploreGreeting extends StatelessWidget {
     );
   }
 }
-
-
 
 class _EventResultTile extends StatelessWidget {
   final EventEntity event;
@@ -542,14 +667,17 @@ class _EventResultTile extends StatelessWidget {
                     children: [
                       AppPill(text: event.cost),
                       const SizedBox(width: TiermetrySpacing.sm),
-                      Text(
-                        '${event.points} pts',
-                        style: TiermetryTypography.caption(
-                          color: TiermetryColors.white.withValues(alpha: 0.58),
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                      if (!FeatureFlags.disableFinancialRewards)
+                        Text(
+                          '${event.points} pts',
+                          style: TiermetryTypography.caption(
+                            color: TiermetryColors.white.withValues(
+                              alpha: 0.58,
+                            ),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
                       const Spacer(),
                       Icon(
                         Icons.chevron_right_rounded,
@@ -565,79 +693,4 @@ class _EventResultTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DealCard extends StatelessWidget {
-  final _DealData data;
-
-  const _DealCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSurface(
-      width: 260,
-      padding: const EdgeInsets.all(16),
-      borderRadius: 24,
-      shadows: TiermetryShadows.highEmphasis,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              AppSurface(
-                width: 42,
-                height: 42,
-                color: TiermetryColors.accentNeonGreen,
-                borderRadius: 16,
-                border: Border.all(color: Colors.transparent),
-                shadows: const [],
-                child: Icon(
-                  data.icon,
-                  color: TiermetryColors.black.withAlpha(220),
-                ),
-              ),
-              const Spacer(),
-              AppPill(text: data.label),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            (data.title).toUpperCase(),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.title(
-              color: TiermetryColors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            data.subtitle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TiermetryTypography.caption(
-              color: TiermetryColors.white.withValues(alpha: 0.58),
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-            ).copyWith(height: 1.3),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DealData {
-  final String title;
-  final String subtitle;
-  final String label;
-  final IconData icon;
-
-  const _DealData({
-    required this.title,
-    required this.subtitle,
-    required this.label,
-    required this.icon,
-  });
 }

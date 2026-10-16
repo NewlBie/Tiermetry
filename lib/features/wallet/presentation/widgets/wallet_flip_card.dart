@@ -7,11 +7,13 @@ import 'package:tiermetry/features/profile/domain/entities/profile_entity.dart';
 
 class WalletFlipCard extends StatelessWidget {
   final WalletEntity walletData;
+  final int pendingTiergies;
   final VoidCallback onEarnPressed;
   final VoidCallback onRedeemPressed;
 
   const WalletFlipCard({
     required this.walletData,
+    required this.pendingTiergies,
     required this.onEarnPressed,
     required this.onRedeemPressed,
     super.key,
@@ -22,7 +24,9 @@ class WalletFlipCard extends StatelessWidget {
     return AspectRatio(
       aspectRatio: 2.0, // Much wider and shorter, not huge
       child: Container(
-        padding: const EdgeInsets.all(12), // Added padding so inner sections float inside
+        padding: const EdgeInsets.all(
+          12,
+        ), // Added padding so inner sections float inside
         decoration: BoxDecoration(
           color: const Color(0xFF111111), // Deep black bottom
           borderRadius: BorderRadius.circular(28),
@@ -45,7 +49,10 @@ class WalletFlipCard extends StatelessWidget {
             // Bottom Black Section (Actions)
             Expanded(
               flex: 32,
-              child: _BottomActions(onEarnPressed: onEarnPressed, onRedeemPressed: onRedeemPressed),
+              child: _BottomActions(
+                onEarnPressed: onEarnPressed,
+                onRedeemPressed: onRedeemPressed,
+              ),
             ),
           ],
         ),
@@ -65,7 +72,9 @@ class _GreenInnerSection extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFF9CF46F), // Vibrant light green from the reference
+        color: const Color(
+          0xFF9CF46F,
+        ), // Vibrant light green from the reference
         borderRadius: BorderRadius.circular(20), // Fully rounded corners
       ),
       child: Stack(
@@ -79,63 +88,51 @@ class _GreenInnerSection extends StatelessWidget {
               color: Colors.black.withValues(alpha: 0.04),
             ),
           ),
-          
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               Row(
                 children: [
-                  AmazingIconBulk.star(size: 14, color: const Color(0xFF0B3A11)),
+                  AmazingIconBulk.star(
+                    size: 14,
+                    color: const Color(0xFF0B3A11),
+                  ),
                   const SizedBox(width: 6),
-                  Text(
-                    'AVAILABLE TIERGIES',
-                    style: GoogleFonts.inter(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0B3A11).withValues(alpha: 0.7),
-                      letterSpacing: 1.0,
+                  Expanded(
+                    child: Text(
+                      'TIERGIES',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.inter(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0B3A11).withValues(alpha: 0.7),
+                        letterSpacing: 1.0,
+                      ),
                     ),
                   ),
                 ],
               ),
-              
+
               const Spacer(),
-              
-              // Balance & Pill Row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    walletData.balance,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF0B3A11),
-                      letterSpacing: -1.0,
-                      height: 1.0,
-                    ),
+
+              // Balance Row
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  walletData.balance,
+                  maxLines: 1,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF0B3A11),
+                    letterSpacing: 0,
+                    height: 1.0,
                   ),
-                  const SizedBox(width: 12),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0B3A11).withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '+ ${walletData.earned} recently',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF0B3A11),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -149,14 +146,17 @@ class _BottomActions extends StatelessWidget {
   final VoidCallback onEarnPressed;
   final VoidCallback onRedeemPressed;
 
-  const _BottomActions({required this.onEarnPressed, required this.onRedeemPressed});
+  const _BottomActions({
+    required this.onEarnPressed,
+    required this.onRedeemPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // Action 1: Redeem Rewards
+        // Action 1: Transactions
         Expanded(
           child: GestureDetector(
             onTap: () {
@@ -165,32 +165,36 @@ class _BottomActions extends StatelessWidget {
             },
             child: Container(
               color: Colors.transparent, // expand gesture area
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AmazingIconBulk.wallet(size: 20, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Redeem',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AmazingIconBulk.wallet(size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Transactions',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
-        
+
         // Vertical Divider
         Container(
           width: 1,
           height: 18,
           color: Colors.white.withValues(alpha: 0.15),
         ),
-        
+
         // Action 2: Earn More
         Expanded(
           child: GestureDetector(
@@ -200,20 +204,24 @@ class _BottomActions extends StatelessWidget {
             },
             child: Container(
               color: Colors.transparent,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AmazingIconBulk.game(size: 20, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Earn More',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AmazingIconBulk.game(size: 18, color: Colors.white),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Earn More',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

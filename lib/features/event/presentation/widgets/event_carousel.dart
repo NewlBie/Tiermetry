@@ -164,7 +164,8 @@ class _EventCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text((event.title).toUpperCase(),
+                    Text(
+                      (event.title).toUpperCase(),
                       style: TiermetryTypography.titleSmall(
                         color: Colors.white,
                         fontSize: 18,

@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
-import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import '../../domain/entities/skill_entity.dart';
 
@@ -19,8 +19,8 @@ class FeaturedSkillMorphCard extends StatelessWidget {
       child: AppSurface(
         width: 280,
         borderRadius: TiermetryRadii.md,
-        shadows: TiermetryShadows.featuredSkill,
-        border: const Border(),
+        shadows: const [],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -32,21 +32,16 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.25),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(skill.image, fit: BoxFit.cover),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: LayoutBuilder(
+                        builder:
+                            (context, constraints) => AppImage(
+                              imagePath: skill.image,
+                              width: constraints.maxWidth,
+                              height: constraints.maxHeight,
+                              fit: BoxFit.cover,
+                            ),
                       ),
                     ),
                   ),
@@ -145,72 +140,71 @@ class FeaturedSkillMorphCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                    Text(
-                      skill.category.toUpperCase(),
-                      style: TiermetryTypography.label(
-                        color: TiermetryColors.accentNeonGreen,
-                      ),
-                    ),
-                    const SizedBox(height: TiermetrySpacing.sm),
-                    SizedBox(
-                      height: 40, // Forces exactly 2 lines of vertical space for 16px font
-                      child: Text((skill.title).toUpperCase(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TiermetryTypography.titleSmall(
-                          color: Colors.white,
-                          height: 1.2,
+                      Text(
+                        skill.category.toUpperCase(),
+                        style: TiermetryTypography.label(
+                          color: TiermetryColors.accentNeonGreen,
                         ),
                       ),
-                    ),
-
-                    const SizedBox(height: TiermetrySpacing.lg),
-
-                    /// Meta & Action Row
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        /// Meta info (Time & Level)
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              _buildInfoItem(
-                                CupertinoIcons.time,
-                                skill.time,
-                              ),
-                              const SizedBox(height: TiermetrySpacing.sm),
-                              _buildInfoItem(
-                                CupertinoIcons.chart_bar_alt_fill,
-                                skill.level,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        /// CTA Button
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
+                      const SizedBox(height: TiermetrySpacing.sm),
+                      SizedBox(
+                        height:
+                            40, // Forces exactly 2 lines of vertical space for 16px font
+                        child: Text(
+                          (skill.title).toUpperCase(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TiermetryTypography.titleSmall(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(100),
+                            height: 1.2,
                           ),
-                          child: Text(
-                            'Enroll',
-                            style: TiermetryTypography.action(
-                              color: Colors.black,
+                        ),
+                      ),
+
+                      const SizedBox(height: TiermetrySpacing.lg),
+
+                      /// Meta & Action Row
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          /// Meta info (Time & Level)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                _buildInfoItem(CupertinoIcons.time, skill.time),
+                                const SizedBox(height: TiermetrySpacing.sm),
+                                _buildInfoItem(
+                                  CupertinoIcons.chart_bar_alt_fill,
+                                  skill.level,
+                                ),
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+
+                          /// CTA Button
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(100),
+                            ),
+                            child: Text(
+                              'Enroll',
+                              style: TiermetryTypography.action(
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
               ),
             ),
           ],

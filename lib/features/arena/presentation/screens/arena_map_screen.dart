@@ -1,10 +1,12 @@
-import 'dart:ui';
-
-import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:tiermetry/core/constants/map_tile_config.dart';
+import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../domain/entities/arena_entity.dart';
 
@@ -17,290 +19,291 @@ class ArenaMapScreen extends StatefulWidget {
   State<ArenaMapScreen> createState() => _ArenaMapScreenState();
 }
 
-class _ArenaMapScreenState extends State<ArenaMapScreen>
-    with SingleTickerProviderStateMixin, RefreshRateMixin {
-  late final LatLng _arenaLocation;
-  GoogleMapController? _mapController;
+class _ArenaMapScreenState extends State<ArenaMapScreen> {
+  static const _darkMapFilter = ColorFilter.matrix(<double>[
+    -0.42,
+    -0.18,
+    -0.08,
+    0,
+    168,
+    -0.16,
+    -0.38,
+    -0.08,
+    0,
+    164,
+    -0.12,
+    -0.18,
+    -0.32,
+    0,
+    166,
+    0,
+    0,
+    0,
+    1,
+    0,
+  ]);
 
-  late AnimationController _animationController;
-  late Animation<double> _bottomSheetAnimation;
-  late Animation<double> _fadeAnimation;
+  late final LatLng _arenaLocation;
+  final MapController _mapController = MapController();
+  bool _isOpeningMaps = false;
 
   @override
   void initState() {
     super.initState();
+    assert(
+      widget.arena.hasValidCoordinates,
+      'ArenaMapScreen requires a valid venue coordinate pair.',
+    );
     _arenaLocation = LatLng(widget.arena.latitude, widget.arena.longitude);
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-
-    _bottomSheetAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.15, 1.0, curve: Curves.easeOutCubic),
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-    );
-
-    _animationController.forward();
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
-    _mapController?.dispose();
+    _mapController.dispose();
     super.dispose();
   }
 
   void _recenterMap() {
-    _mapController?.animateCamera(
-      CameraUpdate.newCameraPosition(
-        CameraPosition(
-          target: _arenaLocation,
-          zoom: 17.5,
-          tilt: 58.0,
-          bearing: 28.0,
-        ),
-      ),
+    _mapController.move(_arenaLocation, 17.5);
+  }
+
+  Future<void> _openInMaps() async {
+    if (_isOpeningMaps) return;
+    setState(() => _isOpeningMaps = true);
+
+    final query = '${_arenaLocation.latitude},${_arenaLocation.longitude}';
+    final mapsUri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': query,
+    });
+
+    try {
+      final opened = await launchUrl(
+        mapsUri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!opened && mounted) {
+        _showMapLaunchError();
+      }
+    } catch (_) {
+      if (mounted) _showMapLaunchError();
+    } finally {
+      if (mounted) setState(() => _isOpeningMaps = false);
+    }
+  }
+
+  void _showMapLaunchError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not open this location in Maps.')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // ─────────────────────────────────────
-          // MAP
-          // ─────────────────────────────────────
-          GoogleMap(
-            mapType: MapType.normal,
-            initialCameraPosition: CameraPosition(
-              target: _arenaLocation,
-              zoom: 17.5,
-              tilt: 58.0, // Strong 3D buildings
-              bearing: 28.0,
-            ),
-            markers: {
-              Marker(
-                markerId: const MarkerId('user'),
-                position: LatLng(_arenaLocation.latitude - 0.003, _arenaLocation.longitude - 0.003),
-                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-                zIndexInt: 5,
-              ),
-              Marker(
-                markerId: const MarkerId('arena'),
-                position: _arenaLocation,
-                icon: BitmapDescriptor.defaultMarkerWithHue(
-                  BitmapDescriptor.hueCyan, // Clean modern cyan
-                ),
-                // Optional: make it slightly larger feel
-                zIndexInt: 10,
-              ),
-            },
-            polylines: {
-              Polyline(
-                polylineId: const PolylineId('route'),
-                color: const Color(0xFFEB441A),
-                width: 2, // Sleek, elegant line
-                points: [
-                  LatLng(_arenaLocation.latitude - 0.003, _arenaLocation.longitude - 0.003),
-                  LatLng(_arenaLocation.latitude - 0.003, _arenaLocation.longitude - 0.002),
-                  LatLng(_arenaLocation.latitude - 0.001, _arenaLocation.longitude - 0.002),
-                  LatLng(_arenaLocation.latitude - 0.001, _arenaLocation.longitude),
-                  _arenaLocation,
-                ],
-              ),
-            },
-            style: _modernDarkMapStyle,
-            buildingsEnabled: true,
-            indoorViewEnabled: false,
-            trafficEnabled: false,
-            myLocationButtonEnabled: false,
-            myLocationEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-            compassEnabled: false,
-            rotateGesturesEnabled: true,
-            tiltGesturesEnabled: true,
-            scrollGesturesEnabled: true,
-            zoomGesturesEnabled: true,
-            onMapCreated: (controller) {
-              _mapController = controller;
-            },
-          ),
+    final address =
+        widget.arena.location.trim().isNotEmpty
+            ? widget.arena.location.trim()
+            : widget.arena.shortAddress.trim();
 
-          // Artistic Vignette Overlay (fades edges to map background color)
+    return Scaffold(
+      backgroundColor: TiermetryColors.background,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
           Positioned.fill(
-            child: IgnorePointer(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: Alignment.center,
-                    radius: 1.2, // Expanded radius to push darkness to the edges
-                    colors: [
-                      Colors.transparent,
-                      const Color(0xFF080808).withValues(alpha: 0.3),
-                      const Color(0xFF080808).withValues(alpha: 0.8),
-                      const Color(0xFF080808),
-                    ],
-                    stops: const [0.6, 0.85, 0.95, 1.0], // Pushed stops outward
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _arenaLocation,
+                initialZoom: 17.5,
+                minZoom: 4,
+                maxZoom: MapTileConfig.maxZoom,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
+              ),
+              children: [
+                ColorFiltered(
+                  colorFilter:
+                      MapTileConfig.applyDarkTreatment
+                          ? _darkMapFilter
+                          : const ColorFilter.mode(
+                            Colors.transparent,
+                            BlendMode.dst,
+                          ),
+                  child: TileLayer(
+                    urlTemplate: MapTileConfig.urlTemplate,
+                    userAgentPackageName: MapTileConfig.userAgentPackageName,
+                    maxZoom: MapTileConfig.maxZoom,
                   ),
                 ),
-              ),
-            ),
-          ),
-
-          // ─────────────────────────────────────
-          // TOP CONTROLS
-          // ─────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Back button
-                    _GlassButton(
-                      onTap: () => Navigator.pop(context),
-                      child: Padding(
-                        padding: const EdgeInsets.only(right: 2.0),
-                        child: AmazingIconBulk.arrowLeft2(
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-
-                    // Recenter button
-                    _GlassButton(
-                      onTap: _recenterMap,
-                      child: AmazingIconBulk.location(
-                        color: Colors.white,
-                        size: 28,
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _arenaLocation,
+                      width: 56,
+                      height: 64,
+                      alignment: Alignment.topCenter,
+                      child: Semantics(
+                        label: '${widget.arena.name} exact location',
+                        child: const _ArenaMapMarker(),
                       ),
                     ),
                   ],
                 ),
+                const RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution(MapTileConfig.attribution),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.5),
+                      Colors.transparent,
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.4),
+                    ],
+                    stops: const [0, 0.18, 0.68, 1],
+                  ),
+                ),
               ),
             ),
           ),
-
-          // ─────────────────────────────────────
-          // BOTTOM SHEET
-          // ─────────────────────────────────────
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: ScaleTransition(
-              scale: _bottomSheetAnimation,
-              alignment: Alignment.bottomCenter,
-              child: FadeTransition(
-                opacity: _bottomSheetAnimation,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(28),
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                TiermetrySpacing.lg,
+                TiermetrySpacing.md,
+                TiermetrySpacing.lg,
+                0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _MapActionButton(
+                    tooltip: 'Back',
+                    icon: Icons.arrow_back_rounded,
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFEB441A),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Drag handle
-                        const SizedBox(height: 12),
-                        Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
+                  _MapActionButton(
+                    tooltip: 'Recenter on arena',
+                    icon: Icons.my_location_rounded,
+                    onPressed: _recenterMap,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  TiermetrySpacing.md,
+                  0,
+                  TiermetrySpacing.md,
+                  TiermetrySpacing.md,
+                ),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(TiermetrySpacing.screenPadding),
+                  decoration: BoxDecoration(
+                    color: TiermetryColors.surface.withValues(alpha: 0.97),
+                    borderRadius: BorderRadius.circular(TiermetryRadii.lg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.32),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'EXACT VENUE PIN',
+                        style: TiermetryTypography.bodySmall(
+                          color: TiermetryColors.primary,
+                        ).copyWith(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
                         ),
-
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(22, 20, 22, 28),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              // Title
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.center,
-                                child: Text(
-                                  widget.arena.name.toUpperCase(),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  style: TiermetryTypography.displayLarge(
-                                    fontSize: 42,
-                                    color: Colors.white,
-                                    letterSpacing: -1.0,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 24),
-
-                              // Bottom Row: Temperature & Distance
-                              FittedBox(
-                                fit: BoxFit.scaleDown,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Temperature
-                                    Row(
-                                      children: [
-                                        AmazingIconBulk.cloudSunny(
-                                          color: Colors.white,
-                                          size: 44,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          '24°C', // Fake temp
-                                          style: TiermetryTypography.title(
-                                            color: Colors.white,
-                                            fontSize: 32,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(width: 48),
-                                    // Distance
-                                    Row(
-                                      children: [
-                                        AmazingIconBulk.location(
-                                          color: Colors.white,
-                                          size: 44,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          '${widget.arena.distance} km',
-                                          style: TiermetryTypography.title(
-                                            color: Colors.white,
-                                            fontSize: 32,
-                                            letterSpacing: -0.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        widget.arena.name.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TiermetryTypography.title(
+                          color: Colors.white,
+                          fontSize: 24,
+                        ),
+                      ),
+                      if (address.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          address,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: TiermetryTypography.bodySmall(
+                            color: Colors.white70,
+                            height: 1.4,
                           ),
                         ),
                       ],
-                    ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${_arenaLocation.latitude.toStringAsFixed(6)}, '
+                        '${_arenaLocation.longitude.toStringAsFixed(6)}',
+                        style: TiermetryTypography.bodySmall(
+                          color: Colors.white38,
+                        ).copyWith(fontSize: 11),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _isOpeningMaps ? null : _openInMaps,
+                          icon:
+                              _isOpeningMaps
+                                  ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                  : const Icon(Icons.directions_rounded),
+                          label: const Text('OPEN IN MAPS'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: TiermetryColors.primary,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(
+                              0xFFEC441A,
+                            ).withValues(alpha: 0.45),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                TiermetryRadii.sm,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -310,95 +313,79 @@ class _ArenaMapScreenState extends State<ArenaMapScreen>
       ),
     );
   }
-
-  // ─────────────────────────────────────
-  // Modern Dark Map Style (Clean + Cinematic)
-  // ─────────────────────────────────────
-  static const String _modernDarkMapStyle = '''
-[
-  {
-    "elementType": "geometry",
-    "stylers": [{"color": "#080705"}] // Deep darkened surface
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [{"color": "#f9f1e6"}]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [{"color": "#080705"}] // Match surface
-  },
-  {
-    "featureType": "administrative",
-    "elementType": "geometry",
-    "stylers": [{"visibility": "off"}]
-  },
-  {
-    "featureType": "poi",
-    "stylers": [{"visibility": "off"}]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry",
-    "stylers": [{"color": "#8c8a83"}] // ~50% white, warm tinted
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry.stroke",
-    "stylers": [{"color": "#080705"}] // Match surface
-  },
-  {
-    "featureType": "landscape.man_made",
-    "elementType": "geometry.fill",
-    "stylers": [{"color": "#2c2a21"}] // Buildings slightly dialed down so contrast isn't insane
-  },
-  {
-    "featureType": "landscape.man_made",
-    "elementType": "geometry.stroke",
-    "stylers": [{"color": "#3b382d"}]
-  },
-  {
-    "featureType": "landscape.natural",
-    "elementType": "geometry",
-    "stylers": [{"color": "#0a0907"}]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [{"color": "#18435E"}]
-  }
-]
-''';
 }
 
-// ─────────────────────────────────────
-// Reusable glass button
-// ─────────────────────────────────────
-class _GlassButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final Widget child;
+class _MapActionButton extends StatelessWidget {
+  final String tooltip;
+  final IconData icon;
+  final VoidCallback onPressed;
 
-  const _GlassButton({required this.onTap, required this.child});
+  const _MapActionButton({
+    required this.tooltip,
+    required this.icon,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+    return Material(
+      color: TiermetryColors.surface.withValues(alpha: 0.96),
+      shape: const CircleBorder(),
+      elevation: 3,
+      shadowColor: Colors.black54,
+      clipBehavior: Clip.antiAlias,
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        icon: Icon(icon, color: Colors.white),
+      ),
+    );
+  }
+}
+
+class _ArenaMapMarker extends StatelessWidget {
+  const _ArenaMapMarker();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.topCenter,
+      children: [
+        Positioned(
+          top: 43,
           child: Container(
-            width: 56,
-            height: 56,
+            width: 4,
+            height: 13,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
+              color: TiermetryColors.primary,
+              borderRadius: BorderRadius.circular(TiermetryRadii.pill),
+              boxShadow: const [
+                BoxShadow(color: Colors.black54, blurRadius: 7),
+              ],
             ),
-            child: Center(child: child),
           ),
         ),
-      ),
+        Container(
+          width: 48,
+          height: 48,
+          decoration: const BoxDecoration(
+            color: TiermetryColors.primary,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black54,
+                blurRadius: 12,
+                offset: Offset(0, 5),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.sports_tennis_rounded,
+            color: Colors.white,
+            size: 23,
+          ),
+        ),
+      ],
     );
   }
 }

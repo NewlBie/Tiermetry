@@ -146,7 +146,8 @@ class _BookingStatusOverlayState extends State<BookingStatusOverlay> {
 
                 const SizedBox(height: 24),
 
-                Text((widget.title).toUpperCase(),
+                Text(
+                  (widget.title).toUpperCase(),
                   style: TiermetryTypography.title(
                     fontSize: 28,
                     color: Colors.white,

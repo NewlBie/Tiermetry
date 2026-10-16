@@ -1,5 +1,6 @@
 import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
@@ -14,7 +15,7 @@ class _NotifItem {
   final String id;
   final String title;
   final String body;
-  final String timeAgo;
+  final DateTime createdAt;
   final _NotifType type;
   bool isRead;
 
@@ -22,10 +23,27 @@ class _NotifItem {
     required this.id,
     required this.title,
     required this.body,
-    required this.timeAgo,
+    required this.createdAt,
     required this.type,
     this.isRead = false,
   });
+
+  factory _NotifItem.fromJson(Map<String, dynamic> json) => _NotifItem(
+    id: json['id'] as String,
+    title: json['title'] as String? ?? '',
+    body: json['body'] as String? ?? '',
+    createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+    type: _NotifType.system,
+    isRead: json['read_at'] != null,
+  );
+
+  String get timeAgo {
+    final age = DateTime.now().difference(createdAt);
+    if (age.inMinutes < 1) return 'Just now';
+    if (age.inHours < 1) return '${age.inMinutes} min ago';
+    if (age.inDays < 1) return '${age.inHours} hr ago';
+    return '${age.inDays} day${age.inDays == 1 ? '' : 's'} ago';
+  }
 }
 
 // ─── Screen ─────────────────────────────────────────────────────────────────
@@ -39,52 +57,39 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen>
     with RefreshRateMixin {
+  List<_NotifItem> _notifications = const [];
+  bool _loading = true;
 
-  final List<_NotifItem> _notifications = [
-    _NotifItem(
-      id: 'n1',
-      title: 'Booking Confirmed',
-      body: 'Your slot at Level Up Arena is confirmed for tomorrow at 6:00 PM.',
-      timeAgo: '2 min ago',
-      type: _NotifType.booking,
-    ),
-    _NotifItem(
-      id: 'n2',
-      title: 'Event Starting Soon',
-      body: 'The Valorant Championship begins in 1 hour. Get ready!',
-      timeAgo: '45 min ago',
-      type: _NotifType.event,
-    ),
-    _NotifItem(
-      id: 'n3',
-      title: 'You earned 200 Tiergies!',
-      body: 'Completing your first booking earned you 200 Tiergies reward points.',
-      timeAgo: '3 hrs ago',
-      type: _NotifType.reward,
-      isRead: true,
-    ),
-    _NotifItem(
-      id: 'n4',
-      title: 'New Arena Near You',
-      body: 'Pixel Palace just opened 2 km away. Check it out!',
-      timeAgo: '1 day ago',
-      type: _NotifType.system,
-      isRead: true,
-    ),
-    _NotifItem(
-      id: 'n5',
-      title: 'Limited Time Offer',
-      body: 'Get 30% off your next booking at CyberZone Arena. Offer ends tonight.',
-      timeAgo: '2 days ago',
-      type: _NotifType.system,
-      isRead: true,
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final rows = await Supabase.instance.client.rpc<List<dynamic>>(
+        'get_my_notification_inbox',
+        params: {'p_app_scope': 'customer'},
+      );
+      if (mounted) {
+        setState(() => _notifications = rows
+            .map((row) => _NotifItem.fromJson(Map<String, dynamic>.from(row as Map)))
+            .toList());
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   void _markAllRead() {
     setState(() {
       for (final n in _notifications) {
         n.isRead = true;
+        Supabase.instance.client.rpc<void>(
+          'mark_notification_read',
+          params: {'p_delivery_id': n.id},
+        );
       }
     });
   }
@@ -92,6 +97,10 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   void _markRead(String id) {
     setState(() {
       _notifications.firstWhere((n) => n.id == id).isRead = true;
+      Supabase.instance.client.rpc<void>(
+        'mark_notification_read',
+        params: {'p_delivery_id': id},
+      );
     });
   }
 
@@ -139,9 +148,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
                       children: [
                         Text(
                           'NOTIFICATIONS',
-                          style: TiermetryTypography.title(
-                            color: Colors.white,
-                          ),
+                          style: TiermetryTypography.title(color: Colors.white),
                         ),
                         if (unreadCount > 0)
                           Text(
@@ -172,15 +179,14 @@ class _NotificationsScreenState extends State<NotificationsScreen>
             ),
 
             // ── Divider ─────────────────────────────────────
-            Container(
-              height: 1,
-              color: Colors.white.withValues(alpha: 0.06),
-            ),
+            Container(height: 1, color: Colors.white.withValues(alpha: 0.06)),
 
             // ── List ────────────────────────────────────────
             Expanded(
               child:
-                  _notifications.isEmpty
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _notifications.isEmpty
                       ? _EmptyState()
                       : ListView.separated(
                         padding: const EdgeInsets.symmetric(
@@ -221,7 +227,10 @@ class _NotifTile extends StatelessWidget {
   Widget _buildIcon() {
     switch (notif.type) {
       case _NotifType.booking:
-        return AmazingIconBulk.calendar(size: 20, color: TiermetryColors.primary);
+        return AmazingIconBulk.calendar(
+          size: 20,
+          color: TiermetryColors.primary,
+        );
       case _NotifType.event:
         return AmazingIconBulk.flag(size: 20, color: const Color(0xFF7B61FF));
       case _NotifType.reward:
@@ -253,9 +262,10 @@ class _NotifTile extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: notif.isRead
-              ? Colors.transparent
-              : Colors.white.withValues(alpha: 0.03),
+          color:
+              notif.isRead
+                  ? Colors.transparent
+                  : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(TiermetryRadii.sm),
         ),
         child: Row(
@@ -285,9 +295,10 @@ class _NotifTile extends StatelessWidget {
                           notif.title,
                           style: TiermetryTypography.bodySmall(
                             color: Colors.white,
-                            fontWeight: notif.isRead
-                                ? FontWeight.w500
-                                : FontWeight.w700,
+                            fontWeight:
+                                notif.isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
                             fontSize: 14,
                           ),
                         ),

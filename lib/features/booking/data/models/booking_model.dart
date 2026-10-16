@@ -1,13 +1,14 @@
+import 'package:tiermetry/features/arena/data/models/arena_model.dart';
+
 import '../../domain/entities/booking_entity.dart';
 
 class BookingModel extends BookingEntity {
   final String userId;
-  final String venueId;
 
   BookingModel({
     required super.id,
+    required super.venueId,
     required this.userId,
-    required this.venueId,
     required super.status,
     required super.totalAmount,
     required super.title,
@@ -15,20 +16,27 @@ class BookingModel extends BookingEntity {
     required super.dateTime,
     required super.endTime,
     required super.imageUrl,
-    required super.source,
-    required super.sessions,
-    required super.events,
-    required super.payments,
-    required super.items,
-    required super.refundAmount,
-    required super.refundPercentage,
-    required super.paidAmount,
-    required super.outstandingAmount,
-    required super.paymentState,
     super.checkInCode,
     super.sessionStatus,
     super.bookingCode,
     super.cancelReason,
+    super.refundStatus,
+    super.transactionReference,
+    super.expectedRefundDate,
+    super.paymentMethod,
+    super.quantity = 1,
+    super.source = 'online',
+    super.sessions = const [],
+    super.events = const [],
+    super.payments = const [],
+    super.items = const [],
+    super.refundAmount = 0,
+    super.refundPercentage = 0,
+    super.paidAmount = 0,
+    super.outstandingAmount = 0,
+    super.paymentState = BookingPaymentState.unknown,
+    super.hasReview = false,
+    super.arena,
   });
 
   factory BookingModel.fromJson(Map<String, dynamic> json) {
@@ -42,6 +50,7 @@ class BookingModel extends BookingEntity {
     final events = _parseEvents(json['booking_events']);
     final payments = _parsePayments(json['payments']);
     final items = _parseItems(json['booking_items']);
+    final refund = _firstObject(json['booking_refunds']);
     final cancellationEvent = events
         .where((e) => e.eventType == 'BOOKING_CANCELLED')
         .fold<BookingEventEntity?>(
@@ -51,12 +60,15 @@ class BookingModel extends BookingEntity {
                   ? event
                   : latest,
         );
-    final refundAmount = _readNumeric(
-      cancellationEvent?.metadata['refund_amount'],
-    );
-    final refundPercentage = _readNumeric(
-      cancellationEvent?.metadata['refund_percentage'],
-    );
+    final refundAmount =
+        refund == null
+            ? _readNumeric(cancellationEvent?.metadata['refund_amount'])
+            : _readNumeric(refund['requested_amount']);
+    final refundPercentage =
+        refund == null
+            ? _readNumeric(cancellationEvent?.metadata['refund_percentage'])
+            : _readNumeric(refund['refund_percentage']);
+    final refundStatus = refund?['status'] as String?;
     final paidAmount = payments
         .where((payment) => payment.status == 'paid')
         .fold<double>(0, (sum, payment) => sum + payment.amount);
@@ -67,6 +79,7 @@ class BookingModel extends BookingEntity {
       refundAmount: refundAmount,
       payments: payments,
       bookingStatus: status,
+      refundStatus: refundStatus,
     );
 
     final startTime =
@@ -78,10 +91,14 @@ class BookingModel extends BookingEntity {
             ? DateTime.parse(json['end_time'] as String).toLocal()
             : startTime;
 
+    final reviews = json['venue_reviews'];
+    final hasReview =
+        reviews != null && (reviews is List ? reviews.isNotEmpty : true);
+
     return BookingModel(
       id: json['id'] as String? ?? '',
-      userId: json['user_id'] as String? ?? '',
       venueId: json['venue_id'] as String? ?? '',
+      userId: json['user_id'] as String? ?? '',
       status: status,
       totalAmount: totalAmount,
       title: venue['name'] as String? ?? 'Booking',
@@ -89,10 +106,18 @@ class BookingModel extends BookingEntity {
       dateTime: startTime,
       endTime: endTime,
       imageUrl: venue['cover_image'] as String? ?? '',
+      arena: venue.isEmpty ? null : ArenaModel.fromJson(venue),
       checkInCode: json['check_in_code'] as String?,
       sessionStatus: sessionStatus,
       bookingCode: json['booking_code'] as String?,
       cancelReason: json['cancel_reason'] as String?,
+      refundStatus: refundStatus,
+      transactionReference:
+          refund?['refund_arn'] as String? ??
+          refund?['provider_reference'] as String?,
+      expectedRefundDate: null,
+      paymentMethod: json['payment_method'] as String?,
+      quantity: json['quantity'] as int? ?? 1,
       source: json['source'] as String? ?? 'online',
       sessions: sessions,
       events: events,
@@ -106,6 +131,7 @@ class BookingModel extends BookingEntity {
               ? 0
               : (totalAmount - paidAmount + refundAmount),
       paymentState: paymentState,
+      hasReview: hasReview,
     );
   }
 
@@ -222,12 +248,22 @@ class BookingModel extends BookingEntity {
     required double refundAmount,
     required List<BookingPaymentEntity> payments,
     required BookingStatus bookingStatus,
+    required String? refundStatus,
   }) {
     final latestStatus = payments.isEmpty ? null : payments.first.status;
-    if (refundAmount > 0) {
+    if (refundAmount > 0 && refundStatus == 'success') {
       return refundAmount >= paidAmount && paidAmount > 0
           ? BookingPaymentState.refunded
           : BookingPaymentState.partiallyRefunded;
+    }
+    if (refundAmount > 0 &&
+        const {
+          'preparing',
+          'pending',
+          'on_hold',
+          'retry_required',
+        }.contains(refundStatus)) {
+      return BookingPaymentState.pending;
     }
     switch (latestStatus) {
       case 'paid':
@@ -263,5 +299,13 @@ class BookingModel extends BookingEntity {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value) ?? 0;
     return 0;
+  }
+
+  static Map<String, dynamic>? _firstObject(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is List && value.isNotEmpty && value.first is Map) {
+      return Map<String, dynamic>.from(value.first as Map);
+    }
+    return null;
   }
 }

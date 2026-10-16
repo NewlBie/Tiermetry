@@ -1,28 +1,30 @@
 import 'package:flutter/material.dart';
 
 class TiermetryColors {
-  // Brand Violets
-  static const primary = Color(0xFF9733FF);
+  // Core Brand Tokens (Official Design System)
+  /// Primary brand accent (#CCFF00)
+  static const primary = Color(0xFFCCFF00);
+  static const orange = Color(0xFFCCFF00);
+  static const accentOrange = Color(0xFFCCFF00);
+
+  // Brand Accents
   static const violet100 = Color(0xFF2420A9);
   static const violet200 = Color(0xFF2E26BB);
   static const violet300 = Color(0xFF170C33);
 
   // Gradients
-  static const gradientStart = Color(0xFF9733FF);
-  static const gradientEnd = Color(0xFF00C6FF); // cyan-blue
+  static const gradientStart = Color(0xFFCCFF00);
+  static const gradientEnd = Color(0xFFAACC00);
 
   static const brandGradient = RadialGradient(
     center: Alignment(0.4, 0.6),
     radius: 1.4,
-    colors: [
-      Color(0xFF823558),
-      Color(0xFFFF7A30),
-      Color(0xFFFFD034),
-    ],
+    colors: [Color(0xFFCCFF00), Color(0xFFBBE500), Color(0xFFAACC00)],
     stops: [0.25, 0.70, 0.90],
   );
 
-  // Neutrals
+  // Neutrals - Official Brand Colors
+  /// Official App White - Pure plain white
   static const white = Color(0xFFFFFFFF);
   static const gray100 = Color(0xFF999999);
   static const gray200 = Color(0xFF333333);
@@ -36,13 +38,11 @@ class TiermetryColors {
   static const textPrimary = white;
   static const textSecondary = gray100;
 
-  // Surface System (Requested UI Overhaul)
+  // Surface System (App's Dark Surface Palette)
   static const background = Color(0xFF080808);
   static const surface = Color(0xFF151515);
   static const surfaceElement = Color(0xFF212121);
-  static const surfaceUnderlay = Color(
-    0xFF101010,
-  ); // for deeper elements like map backings
+  static const surfaceUnderlay = Color(0xFF101010); // for deeper elements like map backings
 
   // Feature Accents
   static const accentNeonGreen = Color(0xFFB6FF00);
@@ -63,6 +63,6 @@ class TiermetryColors {
   static Color get shadowColor => black.withValues(alpha: 0.28);
   static Color get shadowColorEmphasis => black.withValues(alpha: 0.35);
 
-  // Glow
-  static const glow = Color(0xFFB388FF); // For softness if needed
+  // Glow / Soft accents
+  static const glow = Color(0xFFCCFF00);
 }

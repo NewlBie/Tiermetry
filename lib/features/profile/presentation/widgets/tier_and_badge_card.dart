@@ -1,343 +1,188 @@
-import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:tiermetry/core/theme/colors.dart';
+import 'package:tiermetry/core/theme/radii.dart';
+import 'package:tiermetry/core/theme/spacing.dart';
+import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/widgets/app_surface.dart';
+import 'package:tiermetry/features/wallet/domain/entities/loyalty_account_entity.dart';
+import 'package:tiermetry/features/wallet/domain/entities/vibe_status.dart';
+import 'package:tiermetry/features/wallet/presentation/widgets/vibe_xp_status_card.dart';
 
+/// Displays only badges issued by the server-owned Vibe badge lifecycle.
 class TierAndBadgeCard extends StatelessWidget {
-  final String tierName;
-  final double tierProgress;
-  final int openedBadges;
-  final int totalBadges;
-  final int totalUniqueBadges;
-  final List<String> badgeTitles;
-  final List<Color> badgeColors;
+  final LoyaltyAccountEntity account;
+  final VoidCallback? onStatusTap;
 
-  const TierAndBadgeCard({
-    required this.tierName,
-    required this.tierProgress,
-    required this.openedBadges,
-    required this.totalBadges,
-    required this.totalUniqueBadges,
-    required this.badgeTitles,
-    required this.badgeColors,
-    super.key,
-  });
+  const TierAndBadgeCard({required this.account, this.onStatusTap, super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: TiermetryColors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'TIER',
-            style: GoogleFonts.geist(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1.5,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Current Tier
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+    final badges = account.earnedStatusBadges;
+    return Column(
+      children: [
+        VibeXpStatusCard(account: account, onTap: onStatusTap),
+        const SizedBox(height: TiermetrySpacing.md),
+        AppSurface(
+          width: double.infinity,
+          padding: const EdgeInsets.all(TiermetrySpacing.lg),
+          color: TiermetryColors.surfaceUnderlay,
+          borderRadius: TiermetryRadii.lg,
+          shadows: const [],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                tierName,
-                style: GoogleFonts.geist(
-                  fontSize: 34,
-                  fontWeight: FontWeight.w900,
+                'EARNED BADGES',
+                style: TiermetryTypography.label(
+                  color: TiermetryColors.textMuted,
+                  letterSpacing: 0,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                badges.isEmpty
+                    ? 'Your first badge is waiting'
+                    : '${badges.length} earned',
+                style: TiermetryTypography.titleSmall(
                   color: Colors.white,
-                  letterSpacing: -1.0,
+                  fontSize: 16,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                'Path',
-                style: GoogleFonts.geist(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: TiermetryColors.accentNeonGreen,
+              const SizedBox(height: TiermetrySpacing.md),
+              if (badges.isEmpty)
+                Text(
+                  'Complete eligible activities to unlock badges. Achievements are awarded and verified by HOMIES.',
+                  style: TiermetryTypography.bodySmall(
+                    color: TiermetryColors.textMuted,
+                    height: 1.4,
+                  ),
+                )
+              else
+                Wrap(
+                  spacing: TiermetrySpacing.sm,
+                  runSpacing: TiermetrySpacing.sm,
+                  children: badges
+                      .map((badge) => _BadgeChip(badge: badge))
+                      .toList(growable: false),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 24),
-
-          // Animated Progress Bar
-          _AnimatedProgressBar(progress: tierProgress),
-          const SizedBox(height: 14),
-          
-          // Steps
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const _TierStep('VII', isActive: true),
-              _StepDot(isActive: tierProgress >= 0.25),
-              _StepDot(isActive: tierProgress >= 0.50),
-              _StepDot(isActive: tierProgress >= 0.75),
-              const _TierStep('VIII', isActive: false),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Badges Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'BADGES',
-                    style: GoogleFonts.geist(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1.5,
-                      color: Colors.white54,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '$openedBadges / $totalBadges Opened',
-                    style: GoogleFonts.geist(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                'Open All',
-                style: GoogleFonts.geist(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: TiermetryColors.accentNeonGreen,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Badges List
-          _BadgeList(
-            badgeTitles: badgeTitles, 
-            badgeColors: badgeColors,
-            openedBadges: openedBadges,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnimatedProgressBar extends StatelessWidget {
-  final double progress;
-
-  const _AnimatedProgressBar({required this.progress});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 18,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0.0, end: progress.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 1400),
-            curve: Curves.easeOutExpo, // Duolingo style super-smooth pop
-            builder: (context, value, child) {
-              return Stack(
-                children: [
-                  Container(
-                    width: constraints.maxWidth * value,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          TiermetryColors.accentNeonGreen.withValues(alpha: 0.7),
-                          TiermetryColors.accentNeonGreen,
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: TiermetryColors.accentNeonGreen.withValues(alpha: 0.4),
-                          blurRadius: 12,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Shine highlight on the bar
-                  if (value > 0.08)
-                    Positioned(
-                      top: 4,
-                      right: 12,
-                      child: Container(
-                        width: 14,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.6),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TierStep extends StatelessWidget {
-  final String label;
-  final bool isActive;
-
-  const _TierStep(this.label, {required this.isActive});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: isActive 
-            ? TiermetryColors.accentNeonGreen.withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive 
-              ? TiermetryColors.accentNeonGreen.withValues(alpha: 0.3)
-              : Colors.transparent,
         ),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.geist(
-          fontSize: 14,
-          fontWeight: FontWeight.w800,
-          color: isActive ? TiermetryColors.accentNeonGreen : Colors.white54,
+      ],
+    );
+  }
+}
+
+class _BadgeChip extends StatelessWidget {
+  final EarnedStatusBadge badge;
+
+  const _BadgeChip({required this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _colorForRarity(badge.rarity);
+    return InkWell(
+      borderRadius: BorderRadius.circular(TiermetryRadii.md),
+      onTap: () => _showDetail(context, color),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
         ),
-      ),
-    );
-  }
-}
-
-class _StepDot extends StatelessWidget {
-  final bool isActive;
-
-  const _StepDot({required this.isActive});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOutCubic,
-      width: isActive ? 8 : 6,
-      height: isActive ? 8 : 6,
-      decoration: BoxDecoration(
-        color: isActive ? TiermetryColors.accentNeonGreen : Colors.white24,
-        shape: BoxShape.circle,
-        boxShadow: isActive ? [
-          BoxShadow(
-            color: TiermetryColors.accentNeonGreen.withValues(alpha: 0.6),
-            blurRadius: 8,
-          )
-        ] : null,
-      ),
-    );
-  }
-}
-
-class _BadgeList extends StatelessWidget {
-  final List<String> badgeTitles;
-  final List<Color> badgeColors;
-  final int openedBadges;
-
-  const _BadgeList({
-    required this.badgeTitles, 
-    required this.badgeColors,
-    required this.openedBadges,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 105,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        itemCount: badgeTitles.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 14),
-        itemBuilder: (context, index) {
-          final isAchieved = index < openedBadges;
-          final color = isAchieved ? badgeColors[index] : Colors.grey;
-          final opacity = isAchieved ? 1.0 : 0.25;
-
-          // We alternate between verified bulk icons to ensure compilation
-          final List<Widget Function(double, Color)> icons = [
-            (size, c) => AmazingIconBulk.profile(size: size, color: c),
-            (size, c) => AmazingIconBulk.game(size: size, color: c),
-            (size, c) => AmazingIconBulk.discover(size: size, color: c),
-            (size, c) => AmazingIconBulk.category(size: size, color: c),
-          ];
-          final iconBuilder = icons[index % icons.length];
-          
-          return AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            opacity: opacity,
-            child: Container(
-              width: 86,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  iconBuilder(34.0, color),
-                  const Spacer(),
-                  Text(
-                    badgeTitles[index],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.geist(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(_iconFor(badge.iconName), size: 17, color: color),
+            const SizedBox(width: 6),
+            Text(
+              badge.title,
+              style: TiermetryTypography.caption(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
+
+  void _showDetail(BuildContext context, Color color) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder:
+          (_) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(TiermetrySpacing.screenPadding),
+              child: AppSurface(
+                padding: const EdgeInsets.all(TiermetrySpacing.xl),
+                color: TiermetryColors.surface,
+                borderRadius: TiermetryRadii.lg,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_iconFor(badge.iconName), size: 38, color: color),
+                    const SizedBox(height: TiermetrySpacing.md),
+                    Text(
+                      badge.title,
+                      style: TiermetryTypography.title(color: Colors.white),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${badge.rarity.toUpperCase()} BADGE',
+                      style: TiermetryTypography.label(color: color),
+                    ),
+                    const SizedBox(height: TiermetrySpacing.md),
+                    Text(
+                      badge.criterion.isNotEmpty
+                          ? badge.criterion
+                          : 'Awarded by verified HOMIES activity.',
+                      textAlign: TextAlign.center,
+                      style: TiermetryTypography.bodySmall(
+                        color: TiermetryColors.textMuted,
+                      ),
+                    ),
+                    if (badge.earnedAt != null) ...[
+                      const SizedBox(height: TiermetrySpacing.sm),
+                      Text(
+                        'Earned ${DateFormat.yMMMd().format(badge.earnedAt!)}',
+                        style: TiermetryTypography.caption(
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: TiermetrySpacing.lg),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  IconData _iconFor(String icon) => switch (icon) {
+    'rocket' => Icons.rocket_launch_rounded,
+    'explore' => Icons.explore_rounded,
+    'calendar' => Icons.calendar_month_rounded,
+    'shield' => Icons.shield_rounded,
+    'star' => Icons.stars_rounded,
+    'diamond' => Icons.diamond_rounded,
+    _ => Icons.workspace_premium_rounded,
+  };
+
+  Color _colorForRarity(String rarity) => switch (rarity) {
+    'common' => TiermetryColors.accentCyan,
+    'rare' => TiermetryColors.accentLavender,
+    'epic' => const Color(0xFFFF9F43),
+    'legendary' => TiermetryColors.accentPink,
+    'mythic' => const Color(0xFFFFC857),
+    _ => Colors.white70,
+  };
 }

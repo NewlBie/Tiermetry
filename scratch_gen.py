@@ -1,45 +1,102 @@
-import os
-files = [
-    '018.png', '8ball.png', 'airsofetgun.png', 'archer.png', 'atv.png', 'axe.png', 'badminton.png', 'bowling.png', 'bungee.png', 'camp.png', 'cricket.png', 'dance.png', 'go_kart.png', 'horse.png', 'ice_skate.png', 'indoor_mountain_climb.png', 'jet_ski.png', 'kayak.png', 'laser.png', 'offroad.png', 'padel.png', 'paint.png', 'paintball.png', 'paraglide.png', 'parasail.png', 'pc.png', 'pickel.png', 'pottery.png', 'ps5.png', 'race_sim.png', 'river_raft.png', 'roller.png', 'roller_skate.png', 'scuba.png', 'sky_diving.png', 'surf.png', 'swimming.png', 'trampoline.png', 'treck.png', 'vr.png', 'water_park.png', 'zipline.png'
-]
+import re
 
-groups = {
-    'Gaming & E-Sports': ['pc', 'ps5', 'race_sim', 'vr'],
-    'Adventures & Water': ['bungee', 'camp', 'jet_ski', 'kayak', 'paraglide', 'parasail', 'river_raft', 'scuba', 'sky_diving', 'surf', 'swimming', 'treck', 'water_park', 'zipline'],
-    'Action & Motor': ['airsofetgun', 'archer', 'atv', 'axe', 'go_kart', 'indoor_mountain_climb', 'laser', 'offroad', 'paint', 'paintball'],
-    'Sports & Leisure': ['018', '8ball', 'badminton', 'bowling', 'cricket', 'dance', 'horse', 'ice_skate', 'padel', 'pickel', 'pottery', 'roller', 'roller_skate', 'trampoline']
-}
+def fix_file(path, is_showdown=False):
+    with open(path, 'r') as f:
+        content = f.read()
 
-out = '    devices: [\n'
-cat_id = 1
-unit_id = 1
-for cat_name, items in groups.items():
-    out += f"      ArenaDeviceCatModel(\n"
-    out += f"        id: 'cat-{cat_id}',\n"
-    out += f"        name: '{cat_name}',\n"
-    out += f"        units: [\n"
-    
-    for item in items:
-        name = item.replace('_', ' ').title()
-        if name == '018': name = 'Football Turf'
-        is_occ = (unit_id % 3 == 0)
-        
-        out += f"          ArenaDeviceModel(\n"
-        out += f"            id: 'unit-{unit_id}',\n"
-        out += f"            name: '{name}',\n"
-        out += f"            desc: '{'In use' if is_occ else 'Available'}',\n"
-        out += f"            price: 500,\n"
-        out += f"            image: 'assets/act_imgs/{item}.png',\n"
-        out += f"            isOccupied: {'true' if is_occ else 'false'},\n"
-        if is_occ:
-            out += f"            occupiedTill: now.add(const Duration(hours: 1)),\n"
-        
-        out += f"          ),\n"
-        unit_id += 1
-    out += '        ],\n      ),\n'
-    cat_id += 1
-out += '    ],'
+    # Add Action Row to Header
+    header_old = '''          child: GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: const FaIcon(
+              FontAwesomeIcons.chevronLeft,
+              color: TiermetryColors.white,
+              size: 22,
+            ),
+          ),'''
+    header_new = '''          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const FaIcon(FontAwesomeIcons.chevronLeft, color: TiermetryColors.white, size: 22),
+              ),
+              Row(
+                children: [
+                  const FaIcon(FontAwesomeIcons.shareNodes, color: TiermetryColors.white, size: 20),
+                  const SizedBox(width: 16),
+                  const FaIcon(FontAwesomeIcons.heart, color: TiermetryColors.white, size: 20),
+                ],
+              ),
+            ],
+          ),'''
+    content = content.replace(header_old, header_new)
 
-with open('devices_block.txt', 'w') as f:
-    f.write(out)
-print('Done')
+    # Add Organizer, Schedule, Rules, FAQs
+    sections = '''
+        const SizedBox(height: 32),
+        Text('Organizer', style: TiermetryTypography.h4(color: textColorPrimary)),
+        const SizedBox(height: 12),
+        _buildInfoCard(FontAwesomeIcons.building, event.organizer, textColorSecondary, cardBackgroundColor, accentColor),
+        const SizedBox(height: 24),
+        Text('Schedule', style: TiermetryTypography.h4(color: textColorPrimary)),
+        const SizedBox(height: 12),
+        ...event.schedule.map((s) => Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: _buildInfoCard(FontAwesomeIcons.clock, '${s['time']} - ${s['title']}', textColorSecondary, cardBackgroundColor, accentColor),
+        )),
+        if (event.rules != null) ...[
+          const SizedBox(height: 24),
+          Text('Rules', style: TiermetryTypography.h4(color: textColorPrimary)),
+          const SizedBox(height: 12),
+          Text(event.rules!, style: TiermetryTypography.body(color: textColorSecondary)),
+        ],
+        const SizedBox(height: 24),
+        Text('FAQs', style: TiermetryTypography.h4(color: textColorPrimary)),
+        const SizedBox(height: 12),
+        ...event.faqs.map((f) => Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(f['q']!, style: TiermetryTypography.body(color: textColorPrimary).copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(f['a']!, style: TiermetryTypography.bodySmall(color: textColorSecondary)),
+            ],
+          ),
+        )),
+        const SizedBox(height: 32),
+'''
+
+    # Insert after description
+    desc_regex = re.compile(r"Text\(\s*event\.description!,\s*style:\s*TiermetryTypography\.body\(\s*color:\s*textColorSecondary,\s*\),\s*\),\s*\]")
+    content = desc_regex.sub(lambda m: m.group(0) + sections, content)
+
+    # Add _buildInfoCard helper using Icon widget because FontAwesomeIcons might be FaIconData and we don't want to mess up.
+    # Wait, FaIcon expects IconData? or FaIconData?. If FontAwesomeIcons.building is FaIconData, passing it to IconData causes error.
+    # If we use dynamic it skips compile checks.
+    helper = '''
+  Widget _buildInfoCard(dynamic icon, String text, Color textColor, Color bgColor, Color iconColor) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          FaIcon(icon as IconData?, color: iconColor, size: 16),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: TiermetryTypography.bodySmall(color: textColor))),
+        ],
+      ),
+    );
+  }
+'''
+    if '_buildInfoCard' not in content:
+        content = content.replace('Widget _buildBottomCTA', helper + '\n  Widget _buildBottomCTA')
+
+    with open(path, 'w') as f:
+        f.write(content)
+
+fix_file('lib/features/event/presentation/screens/event_details_screen.dart')
+fix_file('lib/features/event/presentation/screens/showdown_details_screen.dart', True)

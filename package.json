@@ -1,1 +1,15 @@
-{}
+{
+  "scripts": {
+    "supabase": "supabase",
+    "supabase:status": "supabase status",
+    "supabase:migrations": "supabase migration list",
+    "supabase:pull": "supabase db pull",
+    "supabase:pull:auth": "supabase db pull --schema auth",
+    "supabase:pull:storage": "supabase db pull --schema storage",
+    "supabase:push": "supabase db push"
+  },
+  "devDependencies": {
+    "pg": "^8.23.0",
+    "supabase": "^2.115.0"
+  }
+}

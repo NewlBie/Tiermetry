@@ -15,6 +15,7 @@ class TiermetryTheme {
       tertiary: TiermetryColors.accentNeonGreen,
       surface: TiermetryColors.surface,
       onSurface: Colors.white,
+      onPrimary: Colors.black,
     );
 
     return base.copyWith(

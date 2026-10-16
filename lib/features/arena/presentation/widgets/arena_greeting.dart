@@ -60,7 +60,8 @@ class _ArenaGreetingState extends State<ArenaGreeting> {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
-          child: Text((currentGreeting).toUpperCase(),
+          child: Text(
+            (currentGreeting).toUpperCase(),
             style: TiermetryTypography.displayLarge(color: Colors.white),
           ),
         ),
@@ -69,6 +70,9 @@ class _ArenaGreetingState extends State<ArenaGreeting> {
           'Find a match, join a tournament, or watch the pros.',
           style: TiermetryTypography.caption(
             color: Colors.white.withValues(alpha: 0.62),
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.2,
           ),
         ),
       ],

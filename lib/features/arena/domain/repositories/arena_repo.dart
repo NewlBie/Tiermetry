@@ -21,4 +21,9 @@ abstract class ArenaRepo {
     required DateTime startTime,
     required DateTime endTime,
   });
+  Future<DateTime?> getNextAvailableBookingStart({
+    required String serviceId,
+    required Duration duration,
+    required DateTime fromTime,
+  });
 }

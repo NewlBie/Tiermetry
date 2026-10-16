@@ -15,10 +15,8 @@ import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/core/widgets/glass_search_bar.dart';
 import 'package:tiermetry/core/widgets/shimmer_loading.dart';
 
-import '../../domain/entities/arena_entity.dart';
 import '../widgets/arena_card.dart';
 import '../widgets/filter_sheet.dart';
-import 'arena_details_screen.dart';
 
 // Default filter values are now in ArenaFilterResult
 class AllArenasScreen extends StatefulWidget {
@@ -81,7 +79,8 @@ class _AllArenasScreenState extends State<AllArenasScreen>
         platforms: result.platforms,
         onlyOpenNow: result.onlyOpenNow,
         hasOffers: result.onlyOffers,
-        sortBy: result.sortBy == ArenaFilterDefaults.sortBy ? null : result.sortBy,
+        sortBy:
+            result.sortBy == ArenaFilterDefaults.sortBy ? null : result.sortBy,
       );
     }
   }
@@ -91,37 +90,6 @@ class _AllArenasScreenState extends State<AllArenasScreen>
     return Scaffold(
       backgroundColor: TiermetryColors.background,
       appBar: _buildAppBar(),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => ArenaDetailsScreen(
-                arena: ArenaEntity(
-                  id: 'mock-test-arena',
-                  name: 'UI Test Arena',
-                  image: 'assets/images/arena_1.jpg',
-                  rating: 4.8,
-                  capacity: 50,
-                  location: 'UI City',
-                  screenCount: 10,
-                  activity: ArenaActivity.gaming,
-                  shortAddress: '123 Testing Lane',
-                  hours: '24/7',
-                  isOpen: true,
-                  distance: 2.5,
-                  priceTier: 2,
-                  isVerified: true,
-                  latitude: 0,
-                  longitude: 0,
-                ),
-              ),
-            ),
-          );
-        },
-        backgroundColor: TiermetryColors.accentNeonGreen,
-        icon: const Icon(Icons.bug_report, color: Colors.black),
-        label: const Text('Test UI', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-      ),
       body: SafeArea(
         top: false,
         child: RefreshIndicator(
@@ -165,7 +133,8 @@ class _AllArenasScreenState extends State<AllArenasScreen>
         ),
         onPressed: () => Navigator.of(context).pop(),
       ),
-      title: Text(('All Arenas').toUpperCase(),
+      title: Text(
+        ('All Arenas').toUpperCase(),
         style: TiermetryTypography.title(color: Colors.white),
       ),
     );
@@ -173,7 +142,9 @@ class _AllArenasScreenState extends State<AllArenasScreen>
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
+      padding: const EdgeInsets.symmetric(
+        horizontal: TiermetrySpacing.screenPadding,
+      ),
       child: Row(
         children: [
           Expanded(child: GlassSearchBar(controller: _searchController)),
@@ -221,7 +192,9 @@ class _AllArenasScreenState extends State<AllArenasScreen>
       builder: (context, _) {
         if (_arenaCtrl.isLoading) {
           return const SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
+            padding: EdgeInsets.symmetric(
+              horizontal: TiermetrySpacing.screenPadding,
+            ),
             sliver: SliverToBoxAdapter(
               child: ShimmerLoadingVerticalList(
                 itemHeight: 240,
@@ -246,13 +219,17 @@ class _AllArenasScreenState extends State<AllArenasScreen>
         }
 
         return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: TiermetrySpacing.screenPadding,
+          ),
           sliver: SliverList(
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 if (index < _arenaCtrl.arenas.length) {
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: TiermetrySpacing.cardGap),
+                    padding: const EdgeInsets.only(
+                      bottom: TiermetrySpacing.cardGap,
+                    ),
                     child: ArenaCard(arena: _arenaCtrl.arenas[index]),
                   );
                 }

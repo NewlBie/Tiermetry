@@ -1,28 +1,30 @@
-import 'dart:ui';
+import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
-import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/shadows.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 import 'package:tiermetry/core/widgets/app_error_state.dart';
+import 'package:tiermetry/core/widgets/app_image.dart';
+import 'package:tiermetry/core/widgets/app_island_notice.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
 import 'package:tiermetry/features/arena/domain/entities/arena_details_entity.dart';
 import 'package:tiermetry/features/arena/domain/entities/arena_entity.dart';
-import 'package:tiermetry/features/booking/presentation/screens/booking_screen.dart';
-import 'package:tiermetry/features/payment/domain/entities/payment_status.dart';
-import 'package:tiermetry/features/payment/presentation/screens/mock_payment_screen.dart';
+import 'package:tiermetry/features/booking/domain/entities/booking_accessory.dart';
+import 'package:tiermetry/features/booking/domain/entities/booking_entity.dart';
+import 'package:tiermetry/features/booking/presentation/widgets/review_dialog.dart';
 
+import '../../../../features/booking/presentation/screens/final_invoice_screen.dart';
 import '../widgets/booking_sheet.dart';
-import '../widgets/booking_status_overlay.dart';
 import 'arena_map_screen.dart';
 
 class ArenaDetailsScreen extends StatefulWidget {
@@ -37,35 +39,107 @@ class ArenaDetailsScreen extends StatefulWidget {
 class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     with RefreshRateMixin {
   late Future<ArenaDetailsEntity?> _detailsFuture;
-  final Set<String> _selectedDevices = {};
+  late Future<BookingEntity?> _reviewableBookingFuture;
+  final ValueNotifier<Set<String>> _selectedDevices = ValueNotifier(<String>{});
   String? _selectedServiceId;
   bool isDescExpanded = false;
   int activeTab = 0; // 0: Overview, 1: Specs & Games, 2: Rules
-  bool _showSuccessOverlay = false;
-  bool _isProcessingPayment = false;
-  String? _lastHoldId;
-  DateTime? _holdExpiresAt;
+
+  final PageController _imagePageController = PageController();
+  final ValueNotifier<int> _currentImageIndex = ValueNotifier(0);
+  RealtimeChannel? _detailsChannel;
+  Timer? _detailsRefreshDebounce;
 
   @override
   void initState() {
     super.initState();
     _detailsFuture = locator.arenaCtrl.loadArenaDetails(widget.arena.id);
+    _reviewableBookingFuture = locator.bookingCtrl.getReviewableBookingForVenue(
+      widget.arena.id,
+    );
+    _detailsChannel =
+        locator.supabase
+            .channel('arena_details_${widget.arena.id}')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.update,
+              schema: 'public',
+              table: 'venues',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'id',
+                value: widget.arena.id,
+              ),
+              callback: (_) => _scheduleDetailsRefresh(),
+            )
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'venue_reviews',
+              filter: PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'venue_id',
+                value: widget.arena.id,
+              ),
+              callback: (_) => _scheduleDetailsRefresh(),
+            )
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'service_units',
+              callback: (_) => _scheduleDetailsRefresh(),
+            )
+            .subscribe();
+  }
+
+  void _scheduleDetailsRefresh() {
+    _detailsRefreshDebounce?.cancel();
+    _detailsRefreshDebounce = Timer(
+      const Duration(milliseconds: 300),
+      _refreshReviewState,
+    );
+  }
+
+  @override
+  void dispose() {
+    _detailsRefreshDebounce?.cancel();
+    _imagePageController.dispose();
+    _currentImageIndex.dispose();
+    _selectedDevices.dispose();
+    final channel = _detailsChannel;
+    if (channel != null) locator.supabase.removeChannel(channel);
+    super.dispose();
+  }
+
+  void _refreshReviewState() {
+    setState(() {
+      _detailsFuture = locator.arenaCtrl.loadArenaDetails(widget.arena.id);
+      _reviewableBookingFuture = locator.bookingCtrl
+          .getReviewableBookingForVenue(widget.arena.id);
+    });
+  }
+
+  void _showDynamicIslandNotification(String message, Color accentColor) {
+    AppIslandNotice.show(
+      context,
+      title: message,
+      tone: AppIslandNoticeTone.info,
+    );
   }
 
   void toggleSelection(String serviceId, String deviceId) {
-    setState(() {
-      if (_selectedServiceId != null && _selectedServiceId != serviceId) {
-        _selectedDevices.clear();
-      }
-      _selectedServiceId = serviceId;
+    final selected = Set<String>.of(_selectedDevices.value);
+    if (_selectedServiceId != null && _selectedServiceId != serviceId) {
+      selected.clear();
+    }
+    _selectedServiceId = serviceId;
 
-      if (_selectedDevices.contains(deviceId)) {
-        _selectedDevices.remove(deviceId);
-        if (_selectedDevices.isEmpty) _selectedServiceId = null;
-      } else {
-        _selectedDevices.add(deviceId);
-      }
-    });
+    if (selected.contains(deviceId)) {
+      selected.remove(deviceId);
+      if (selected.isEmpty) _selectedServiceId = null;
+    } else {
+      selected.add(deviceId);
+    }
+    _selectedDevices.value = selected;
   }
 
   @override
@@ -96,6 +170,8 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                     _detailsFuture = locator.arenaCtrl.loadArenaDetails(
                       widget.arena.id,
                     );
+                    _reviewableBookingFuture = locator.bookingCtrl
+                        .getReviewableBookingForVenue(widget.arena.id);
                   }),
             );
           }
@@ -104,39 +180,34 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
 
           return Stack(
             children: [
-              Positioned.fill(
-                child: Opacity(
-                  opacity: 0.15,
-                  child: Image.asset(
-                    arenaDetails.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(),
-                  ),
-                ),
-              ),
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
+              const Positioned.fill(child: _ArenaAmbientBackdrop()),
               CustomScrollView(
                 physics: const ClampingScrollPhysics(),
+                cacheExtent: 640,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 slivers: [
                   SliverToBoxAdapter(
-                    child: _buildCoverImage(context, arenaDetails),
+                    child: RepaintBoundary(
+                      child: _buildCoverImage(context, arenaDetails),
+                    ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: TiermetrySpacing.screenPadding,
-                        vertical: TiermetrySpacing.xl,
-                      ),
-                      child: _buildDetailsContent(
-                        context,
-                        arenaDetails,
-                        accentColor,
-                      ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      TiermetrySpacing.screenPadding,
+                      TiermetrySpacing.xl,
+                      TiermetrySpacing.screenPadding,
+                      0,
+                    ),
+                    sliver: SliverList.builder(
+                      itemCount: arenaDetails.devices.length + 4,
+                      itemBuilder:
+                          (context, index) => _buildDetailsSection(
+                            context,
+                            arenaDetails,
+                            accentColor,
+                            index,
+                          ),
                     ),
                   ),
                 ],
@@ -145,100 +216,21 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           );
         },
       ),
-      bottomNavigationBar: _buildBottomBookingBar(context, accentColor),
+      bottomNavigationBar: ValueListenableBuilder<Set<String>>(
+        valueListenable: _selectedDevices,
+        builder:
+            (context, selectedDevices, _) =>
+                _buildBottomBookingBar(context, accentColor, selectedDevices),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton:
-          _showSuccessOverlay
-              ? BookingStatusOverlay(
-                isSuccess: true,
-                title: 'Spot Reserved!',
-                message:
-                    'Your rig is temporarily held at ${widget.arena.name}. Please complete the payment to confirm.',
-                bookingId: _lastHoldId,
-                expiresAt: _holdExpiresAt,
-                actionLabel: 'Pay Now',
-                onTimeout: () {
-                  if (mounted) {
-                    setState(() => _showSuccessOverlay = false);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Reservation hold expired. Please try booking again.',
-                        ),
-                        backgroundColor: TiermetryColors.negative,
-                      ),
-                    );
-                  }
-                },
-                onAction: () async {
-                  if (_lastHoldId != null && !_isProcessingPayment) {
-                    setState(() => _isProcessingPayment = true);
-                    try {
-                      final order = await locator.paymentRepo.initiatePayment(
-                        holdId: _lastHoldId!,
-                      );
-
-                      if (!context.mounted) return;
-
-                      final result = await Navigator.push<dynamic>(
-                        context,
-                        MaterialPageRoute<dynamic>(
-                          builder: (context) => MockPaymentScreen(order: order),
-                        ),
-                      );
-
-                      if (result == PaymentStatus.paid) {
-                        await locator.paymentCtrl.verifyPayment(order.orderId);
-                        if (!context.mounted) return;
-                        setState(() => _showSuccessOverlay = false);
-                        await Navigator.push<void>(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (context) => const BookingScreen(),
-                          ),
-                        );
-                      } else {
-                        // Sync status to DB if it's not null (meaning a button was clicked)
-                        if (result is PaymentStatus) {
-                          await locator.paymentCtrl.verifyPayment(
-                            order.orderId,
-                          );
-                        }
-
-                        // Release the hold on failure or cancel
-                        if (_lastHoldId != null) {
-                          await locator.bookingCtrl.releaseHold(_lastHoldId!);
-                        }
-
-                        if (context.mounted) {
-                          setState(() => _showSuccessOverlay = false);
-                          final message =
-                              result == PaymentStatus.failed
-                                  ? 'Payment failed. Your hold has been released.'
-                                  : 'Payment cancelled. Your hold has been released.';
-                          ScaffoldMessenger.of(
-                            context,
-                          ).showSnackBar(SnackBar(content: Text(message)));
-                        }
-                      }
-                    } catch (e) {
-                      debugPrint('Payment failed: $e');
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(e.toString())));
-                      }
-                    } finally {
-                      if (mounted) setState(() => _isProcessingPayment = false);
-                    }
-                  }
-                },
-              )
-              : null,
     );
   }
 
   Widget _buildCoverImage(BuildContext context, ArenaDetailsEntity arena) {
+    final gallery = arena.galleryImages;
+    final coverWidth =
+        MediaQuery.sizeOf(context).width - (TiermetrySpacing.screenPadding * 2);
+    final coverHeight = coverWidth * 9 / 16;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -271,7 +263,73 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
               children: [
                 Hero(
                   tag: 'arena_${arena.id}',
-                  child: Image.asset(arena.image, fit: BoxFit.cover),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child:
+                        gallery.length > 1
+                            ? Stack(
+                              children: [
+                                PageView.builder(
+                                  controller: _imagePageController,
+                                  onPageChanged:
+                                      (index) =>
+                                          _currentImageIndex.value = index,
+                                  itemCount: gallery.length,
+                                  itemBuilder: (context, index) {
+                                    return AppImage(
+                                      imagePath: gallery[index],
+                                      width: coverWidth,
+                                      height: coverHeight,
+                                    );
+                                  },
+                                ),
+                                Positioned(
+                                  bottom: 12,
+                                  left: 0,
+                                  right: 0,
+                                  child: ValueListenableBuilder<int>(
+                                    valueListenable: _currentImageIndex,
+                                    builder:
+                                        (_, currentIndex, __) => Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: List.generate(
+                                            gallery.length,
+                                            (index) => AnimatedContainer(
+                                              duration: const Duration(
+                                                milliseconds: 220,
+                                              ),
+                                              margin:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 4,
+                                                  ),
+                                              height: 8,
+                                              width:
+                                                  currentIndex == index
+                                                      ? 24
+                                                      : 8,
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    currentIndex == index
+                                                        ? TiermetryColors
+                                                            .accentAppleBlue
+                                                        : Colors.white54,
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            )
+                            : AppImage(
+                              imagePath: gallery.isEmpty ? '' : gallery.first,
+                              width: coverWidth,
+                              height: coverHeight,
+                            ),
+                  ),
                 ),
                 if (arena.isVerified)
                   Positioned(
@@ -304,7 +362,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                     ),
                     color: TiermetryColors.surfaceUnderlay,
                     borderRadius: TiermetryRadii.pill,
-                    border: Border.all(color: Colors.transparent),
                     shadows: const [],
                     child: Row(
                       children: [
@@ -315,7 +372,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          arena.rating.toString(),
+                          '${arena.rating.toStringAsFixed(1)} (${arena.reviews})',
                           style: TiermetryTypography.label(
                             color: Colors.amber,
                           ).copyWith(fontSize: 10),
@@ -332,112 +389,437 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
-  Widget _buildDetailsContent(
+  Widget _buildDetailsSection(
     BuildContext context,
     ArenaDetailsEntity arena,
     Color accentColor,
+    int index,
   ) {
     const textColorPrimary = TiermetryColors.white;
     const textColorSecondary = TiermetryColors.textMuted;
     const cardBackgroundColor = TiermetryColors.surfaceUnderlay;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          (arena.name).toUpperCase(),
-          style: TiermetryTypography.displayLarge(
-            color: textColorPrimary,
-          ).copyWith(
-            height: 1.1,
-            fontSize: 32, // Reduced from 44
-            fontWeight: FontWeight.w900,
+    if (index == 0) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            arena.name.toUpperCase(),
+            style: TiermetryTypography.displayLarge(
+              color: textColorPrimary,
+            ).copyWith(height: 1.1, fontSize: 32, fontWeight: FontWeight.w900),
           ),
-        ),
-        const SizedBox(height: 20),
-        _buildLocationCard(
-          context,
-          arena,
-          textColorSecondary,
-          cardBackgroundColor,
-          accentColor,
-        ),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
+          _buildLocationCard(
+            context,
+            arena,
+            textColorSecondary,
+            cardBackgroundColor,
+            accentColor,
+          ),
+          const SizedBox(height: 20),
+          _buildFeaturesQuickRow(arena, textColorSecondary),
+          const SizedBox(height: TiermetrySpacing.xl),
+          _buildDescription(arena.desc, textColorSecondary, accentColor),
+          const SizedBox(height: TiermetrySpacing.md),
+          _buildInformationPanel(
+            arena,
+            textColorSecondary,
+            cardBackgroundColor,
+            accentColor,
+          ),
+          const SizedBox(height: TiermetrySpacing.xl),
+        ],
+      );
+    }
 
-        // Features Quick Grid (Compact)
-        _buildFeaturesQuickRow(arena, textColorSecondary),
-        const SizedBox(height: TiermetrySpacing.xl),
-
-        // Description with Read More
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    if (index == 1) {
+      return RepaintBoundary(
+        child: Column(
           children: [
-            Text(
-              arena.desc,
-              maxLines: isDescExpanded ? null : 3,
-              overflow:
-                  isDescExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-              style: TiermetryTypography.bodySmall(
-                height: 1.5,
-                color: textColorSecondary,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => setState(() => isDescExpanded = !isDescExpanded),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: TiermetrySpacing.sm,
-                ),
-                child: Text(
-                  isDescExpanded ? 'Read Less' : 'Read More',
-                  style: TiermetryTypography.bodySmall(color: accentColor),
-                ),
-              ),
-            ),
+            _buildVerifiedReviewPanel(arena, accentColor),
+            const SizedBox(height: TiermetrySpacing.sectionGap),
           ],
         ),
-        const SizedBox(height: TiermetrySpacing.md),
+      );
+    }
 
-        // Segmented Control Tabs
-        _buildTabsHeader(accentColor),
-        const SizedBox(height: TiermetrySpacing.xl),
+    if (index == 2) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _infoTitle('Reserve Your Experience'),
+          const SizedBox(height: TiermetrySpacing.lg),
+        ],
+      );
+    }
 
-        // Tab Content
-        _buildTabContent(
-          arena,
-          textColorSecondary,
-          cardBackgroundColor,
-          accentColor,
-        ),
-        const SizedBox(height: TiermetrySpacing.sectionGap),
+    final deviceIndex = index - 3;
+    if (deviceIndex < arena.devices.length) {
+      final deviceGroup = arena.devices[deviceIndex];
+      final sortedUnits = List<ArenaDevice>.of(deviceGroup.units)..sort((a, b) {
+        if (a.isOccupied == b.isOccupied) return 0;
+        return a.isOccupied ? 1 : -1;
+      });
+      return _unitRow(
+        serviceId: deviceGroup.id,
+        label: deviceGroup.name,
+        units: sortedUnits,
+        accentColor: accentColor,
+        cardBackgroundColor: cardBackgroundColor,
+      );
+    }
 
-        _infoTitle('Reserve Your Experience'),
-        const SizedBox(height: TiermetrySpacing.lg),
-        ...arena.devices.map((deviceGroup) {
-          final sortedUnits = List.of(deviceGroup.units)..sort((a, b) {
-            if (a.isOccupied == b.isOccupied) return 0;
-            return a.isOccupied ? 1 : -1;
-          });
+    return const SizedBox(height: 140);
+  }
 
-          return _unitRow(
-            deviceGroup.name,
-            sortedUnits
-                .asMap()
-                .entries
-                .map(
-                  (entry) => _unitCard(
-                    deviceGroup.id,
-                    entry.value,
-                    entry.key,
-                    accentColor,
-                    cardBackgroundColor,
+  Widget _buildVerifiedReviewPanel(
+    ArenaDetailsEntity arena,
+    Color accentColor,
+  ) {
+    return FutureBuilder<BookingEntity?>(
+      future: _reviewableBookingFuture,
+      builder: (context, snapshot) {
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final booking = snapshot.data;
+        final hasCompletedVisit = booking != null;
+        final canReview = hasCompletedVisit && !booking.hasReview;
+        final accent =
+            canReview
+                ? TiermetryColors.positive
+                : TiermetryColors.accentAppleBlue;
+
+        return AppSurface(
+          padding: const EdgeInsets.fromLTRB(
+            TiermetrySpacing.lg,
+            TiermetrySpacing.lg,
+            TiermetrySpacing.lg,
+            TiermetrySpacing.md,
+          ),
+          color: TiermetryColors.surface,
+          borderRadius: TiermetryRadii.lg,
+          shadows: const [],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+                    ),
+                    child: Icon(
+                      canReview
+                          ? Icons.auto_awesome_rounded
+                          : Icons.verified_rounded,
+                      color: accent,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: TiermetrySpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Ratings & Reviews',
+                          style: TiermetryTypography.titleSmall(
+                            color: TiermetryColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _reviewPanelSubtitle(arena, isLoading, booking),
+                          style: TiermetryTypography.bodySmall(
+                            color: TiermetryColors.textMuted,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (!isLoading)
+                    _reviewStatusPill(canReview: canReview, booking: booking),
+                ],
+              ),
+              const SizedBox(height: TiermetrySpacing.md),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(TiermetrySpacing.md),
+                decoration: BoxDecoration(
+                  color: TiermetryColors.surfaceUnderlay,
+                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
+                ),
+                child: Row(
+                  children: [
+                    _reviewMetric(
+                      icon: FontAwesomeIcons.solidStar,
+                      value: arena.rating.toStringAsFixed(1),
+                      label: _reviewCountLabel(arena.reviews),
+                      color: Colors.amber,
+                    ),
+                    const SizedBox(width: TiermetrySpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: List.generate(
+                              5,
+                              (index) => Icon(
+                                Icons.star_rounded,
+                                color:
+                                    index < arena.rating.round()
+                                        ? Colors.amber
+                                        : Colors.white24,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'From verified visits only',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TiermetryTypography.caption(
+                              color: TiermetryColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (arena.reviewItems.isNotEmpty) ...[
+                const SizedBox(height: TiermetrySpacing.lg),
+                Text(
+                  'Recent verified reviews',
+                  style: TiermetryTypography.titleSmall(
+                    color: TiermetryColors.white,
+                  ),
+                ),
+                const SizedBox(height: TiermetrySpacing.sm),
+                ...arena.reviewItems.take(3).map(_reviewTile),
+              ],
+              const SizedBox(height: TiermetrySpacing.md),
+              if (canReview)
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      await ReviewDialog.show(context, booking);
+                      if (mounted) _refreshReviewState();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentColor,
+                      foregroundColor: TiermetryColors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(TiermetryRadii.md),
+                      ),
+                    ),
+                    icon: const Icon(Icons.edit_rounded, size: 19),
+                    label: Text(
+                      'Write a review',
+                      style: TiermetryTypography.action(
+                        color: TiermetryColors.white,
+                      ),
+                    ),
                   ),
                 )
-                .toList(),
-          );
-        }),
-        const SizedBox(height: 140),
-      ],
+              else
+                Row(
+                  children: [
+                    Icon(
+                      isLoading
+                          ? Icons.hourglass_empty_rounded
+                          : booking?.hasReview == true
+                          ? Icons.check_circle_rounded
+                          : Icons.lock_rounded,
+                      size: 17,
+                      color: TiermetryColors.textMuted,
+                    ),
+                    const SizedBox(width: TiermetrySpacing.sm),
+                    Expanded(
+                      child: Text(
+                        isLoading
+                            ? 'Checking your visit history'
+                            : booking?.hasReview == true
+                            ? 'Your verified review is published'
+                            : 'Complete a booking to unlock reviewing',
+                        style: TiermetryTypography.bodySmall(
+                          color: TiermetryColors.textMuted,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _reviewPanelSubtitle(
+    ArenaDetailsEntity arena,
+    bool isLoading,
+    BookingEntity? booking,
+  ) {
+    if (isLoading) return 'Checking your completed visits at ${arena.name}.';
+    if (booking == null) {
+      return 'Feedback unlocks after you complete a booking at this arena.';
+    }
+    if (booking.hasReview) {
+      return 'Your completed visit is already counted in this arena score.';
+    }
+    return 'Your completed visit unlocks one verified review for this arena.';
+  }
+
+  String _reviewCountLabel(int reviews) {
+    return reviews == 1 ? '1 review' : '$reviews reviews';
+  }
+
+  Widget _reviewStatusPill({
+    required bool canReview,
+    required BookingEntity? booking,
+  }) {
+    final isReviewed = booking?.hasReview == true;
+    final color =
+        canReview
+            ? TiermetryColors.positive
+            : isReviewed
+            ? TiermetryColors.accentAppleBlue
+            : TiermetryColors.textMuted;
+    final label =
+        canReview
+            ? 'READY'
+            : isReviewed
+            ? 'SHARED'
+            : 'LOCKED';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(TiermetryRadii.pill),
+      ),
+      child: Text(label, style: TiermetryTypography.label(color: color)),
+    );
+  }
+
+  Widget _reviewTile(ArenaReview review) {
+    final months = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final date =
+        '${months[review.createdAt.month - 1]} ${review.createdAt.day}';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: TiermetrySpacing.sm),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(TiermetrySpacing.md),
+        decoration: BoxDecoration(
+          color: TiermetryColors.surfaceUnderlay,
+          borderRadius: BorderRadius.circular(TiermetryRadii.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ...List.generate(
+                  5,
+                  (index) => Icon(
+                    Icons.star_rounded,
+                    size: 15,
+                    color:
+                        index < review.rating ? Colors.amber : Colors.white24,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '$date · Verified visit',
+                  style: TiermetryTypography.caption(
+                    color: TiermetryColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+            if ((review.comment ?? '').trim().isNotEmpty) ...[
+              const SizedBox(height: TiermetrySpacing.sm),
+              Text(
+                review.comment!.trim(),
+                style: TiermetryTypography.bodySmall(
+                  color: TiermetryColors.white.withValues(alpha: 0.78),
+                  height: 1.4,
+                ),
+              ),
+            ],
+            if (review.highlights.isNotEmpty) ...[
+              const SizedBox(height: TiermetrySpacing.sm),
+              Text(
+                review.highlights.join(' · '),
+                style: TiermetryTypography.caption(
+                  color: TiermetryColors.accentAppleBlue,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _reviewMetric({
+    required FaIconData icon,
+    required String value,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 82),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FaIcon(icon, color: color, size: 17),
+          const SizedBox(width: 7),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TiermetryTypography.titleSmall(
+                  color: TiermetryColors.white,
+                ),
+              ),
+              Text(
+                label,
+                style: TiermetryTypography.caption(
+                  color: TiermetryColors.textMuted,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -462,6 +844,102 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
+  Widget _buildDescription(
+    String description,
+    Color textColorSecondary,
+    Color accentColor,
+  ) {
+    final textStyle = TiermetryTypography.bodySmall(
+      height: 1.5,
+      color: textColorSecondary,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textPainter = TextPainter(
+          text: TextSpan(text: description, style: textStyle),
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+          maxLines: 5,
+        )..layout(maxWidth: constraints.maxWidth);
+        final canExpand = textPainter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              description,
+              maxLines: isDescExpanded ? null : 5,
+              overflow:
+                  isDescExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: textStyle,
+            ),
+            if (canExpand)
+              TextButton(
+                onPressed:
+                    () => setState(() => isDescExpanded = !isDescExpanded),
+                style: TextButton.styleFrom(
+                  foregroundColor: accentColor,
+                  padding: const EdgeInsets.only(top: TiermetrySpacing.sm),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  isDescExpanded ? 'Read less' : 'Read more',
+                  style: TiermetryTypography.bodySmall(
+                    color: accentColor,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInformationPanel(
+    ArenaDetailsEntity arena,
+    Color textColorSecondary,
+    Color cardBackgroundColor,
+    Color accentColor,
+  ) {
+    return AppSurface(
+      padding: const EdgeInsets.all(TiermetrySpacing.sm),
+      color: TiermetryColors.surface,
+      borderRadius: TiermetryRadii.lg,
+      shadows: const [],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildTabsHeader(accentColor),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              TiermetrySpacing.md,
+              TiermetrySpacing.xl,
+              TiermetrySpacing.md,
+              TiermetrySpacing.md,
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: KeyedSubtree(
+                key: ValueKey(activeTab),
+                child: _buildTabContent(
+                  arena,
+                  textColorSecondary,
+                  cardBackgroundColor,
+                  accentColor,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _featureIcon(FaIconData icon, String label, bool active) {
     return Column(
       children: [
@@ -472,7 +950,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                   ? TiermetryColors.accentAppleBlue.withValues(alpha: 0.1)
                   : TiermetryColors.surfaceUnderlay,
           borderRadius: TiermetryRadii.pill,
-          border: Border.all(color: Colors.transparent),
           shadows: const [],
           child: FaIcon(
             icon,
@@ -498,30 +975,56 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
   }
 
   Widget _buildTabsHeader(Color accentColor) {
-    return Row(
-      children: [
-        _tabItem(0, 'Overview', accentColor),
-        const SizedBox(width: 24),
-        _tabItem(1, 'Hardware', accentColor),
-        const SizedBox(width: 24),
-        _tabItem(2, 'Policies', accentColor),
-      ],
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: TiermetryColors.surfaceUnderlay,
+        borderRadius: BorderRadius.circular(TiermetryRadii.md),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: _tabItem(0, 'Overview', accentColor)),
+          Expanded(child: _tabItem(1, 'Specs', accentColor)),
+          Expanded(child: _tabItem(2, 'Policies', accentColor)),
+        ],
+      ),
     );
   }
 
   Widget _tabItem(int index, String label, Color accentColor) {
     final bool isSelected = activeTab == index;
-    return GestureDetector(
-      onTap: () => setState(() => activeTab = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedDefaultTextStyle(
-        duration: const Duration(milliseconds: 200),
-        style: TiermetryTypography.title(
-          color: isSelected ? TiermetryColors.white : TiermetryColors.textMuted,
-          fontSize: 22,
-          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '$label tab',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() => activeTab = index),
+          borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 11),
+            decoration: BoxDecoration(
+              color: isSelected ? TiermetryColors.surfaceElement : null,
+              borderRadius: BorderRadius.circular(TiermetryRadii.sm),
+            ),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TiermetryTypography.bodySmall(
+                color:
+                    isSelected
+                        ? TiermetryColors.white
+                        : TiermetryColors.textMuted,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ),
         ),
-        child: Text(label),
       ),
     );
   }
@@ -537,7 +1040,12 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildOverviewGrid(arena, textColorSecondary, cardBackgroundColor),
+            _buildScheduleCard(
+              arena,
+              textColorSecondary,
+              cardBackgroundColor,
+              accentColor,
+            ),
           ],
         );
       case 1:
@@ -578,7 +1086,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     ),
     color: TiermetryColors.surfaceUnderlay,
     borderRadius: TiermetryRadii.sm,
-    border: Border.all(color: TiermetryColors.borderSubtle, width: 0.5),
     shadows: const [],
     child: Text(
       label,
@@ -588,45 +1095,217 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     ),
   );
 
-  Widget _buildOverviewGrid(
+  FaIconData _getAmenityIcon(String key) {
+    switch (key.trim().toLowerCase()) {
+      case 'ac':
+        return {'Air Conditioning': FontAwesomeIcons.snowflake}.values.first;
+      case 'wifi':
+        return {'Free WiFi': FontAwesomeIcons.wifi}.values.first;
+      case 'food':
+        return {'Food/Snacks': FontAwesomeIcons.utensils}.values.first;
+      case 'cafe':
+        return {'In-house Cafe': FontAwesomeIcons.mugHot}.values.first;
+      case 'parking':
+        return {'Parking': FontAwesomeIcons.squareParking}.values.first;
+      case 'power':
+        return {'Power Backup': FontAwesomeIcons.bolt}.values.first;
+      case 'washroom':
+        return {'Washrooms': FontAwesomeIcons.restroom}.values.first;
+      case 'wheelchair':
+        return {'Wheelchair Access': FontAwesomeIcons.wheelchair}.values.first;
+      case 'lockers':
+        return {'Lockers': FontAwesomeIcons.lock}.values.first;
+      case 'smoking':
+        return {'Smoking Area': FontAwesomeIcons.smoking}.values.first;
+      case 'water':
+        return {'Drinking Water': FontAwesomeIcons.glassWater}.values.first;
+      case 'medical':
+        return {'First Aid': FontAwesomeIcons.suitcaseMedical}.values.first;
+      case 'cctv':
+        return {'CCTV Security': FontAwesomeIcons.video}.values.first;
+      case 'waiting_area':
+        return {'Waiting Area': FontAwesomeIcons.couch}.values.first;
+      case 'vr':
+        return {'VR Setup': FontAwesomeIcons.vrCardboard}.values.first;
+      case 'console':
+        return {'Console Gaming': FontAwesomeIcons.gamepad}.values.first;
+      case 'pc':
+        return {'PC Gaming': FontAwesomeIcons.desktop}.values.first;
+      case 'streaming':
+        return {
+          'Streaming Setup': FontAwesomeIcons.microphoneLines,
+        }.values.first;
+      case 'turf':
+        return {'Turf Field': FontAwesomeIcons.leaf}.values.first;
+      case 'pool':
+        return {'Swimming Pool': FontAwesomeIcons.personSwimming}.values.first;
+      case 'gym':
+        return {'Gym/Fitness': FontAwesomeIcons.dumbbell}.values.first;
+      case 'camping':
+        return {'Camping Area': FontAwesomeIcons.campground}.values.first;
+      case 'skydiving':
+        return {'Skydiving': FontAwesomeIcons.parachuteBox}.values.first;
+      case 'go_karting':
+        return {'Go-Karting': FontAwesomeIcons.flagCheckered}.values.first;
+      case 'paintball':
+        return {'Paintball': FontAwesomeIcons.bullseye}.values.first;
+      case 'bowling':
+        return {'Bowling Alley': FontAwesomeIcons.bowlingBall}.values.first;
+      case 'bar':
+        return {'Bar/Lounge': FontAwesomeIcons.martiniGlass}.values.first;
+      case 'changing_room':
+        return {'Changing Room': FontAwesomeIcons.shirt}.values.first;
+      case 'shower':
+        return {'Shower Facilities': FontAwesomeIcons.shower}.values.first;
+      default:
+        return FontAwesomeIcons.check;
+    }
+  }
+
+  String _getAmenityLabel(String key) {
+    switch (key.trim().toLowerCase()) {
+      case 'ac':
+        return 'Air Conditioning';
+      case 'wifi':
+        return 'Free WiFi';
+      case 'food':
+        return 'Food/Snacks';
+      case 'cafe':
+        return 'In-house Cafe';
+      case 'parking':
+        return 'Parking';
+      case 'power':
+        return 'Power Backup';
+      case 'washroom':
+        return 'Washrooms';
+      case 'wheelchair':
+        return 'Wheelchair Access';
+      case 'lockers':
+        return 'Lockers';
+      case 'smoking':
+        return 'Smoking Area';
+      case 'water':
+        return 'Drinking Water';
+      case 'medical':
+        return 'First Aid';
+      case 'cctv':
+        return 'CCTV Security';
+      case 'waiting_area':
+        return 'Waiting Area';
+      case 'vr':
+        return 'VR Setup';
+      case 'console':
+        return 'Console Gaming';
+      case 'pc':
+        return 'PC Gaming';
+      case 'streaming':
+        return 'Streaming Setup';
+      case 'turf':
+        return 'Turf Field';
+      case 'pool':
+        return 'Swimming Pool';
+      case 'gym':
+        return 'Gym/Fitness';
+      case 'camping':
+        return 'Camping Area';
+      case 'skydiving':
+        return 'Skydiving';
+      case 'go_karting':
+        return 'Go-Karting';
+      case 'paintball':
+        return 'Paintball';
+      case 'bowling':
+        return 'Bowling Alley';
+      case 'bar':
+        return 'Bar/Lounge';
+      case 'changing_room':
+        return 'Changing Room';
+      case 'shower':
+        return 'Shower Facilities';
+      default:
+        return key;
+    }
+  }
+
+  Widget _buildScheduleCard(
     ArenaDetailsEntity arena,
     Color textColorSecondary,
     Color cardBackgroundColor,
+    Color accentColor,
   ) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _specChip(
-                FontAwesomeIcons.clock,
-                'Hours',
-                arena.hours,
-                textColorSecondary,
-                cardBackgroundColor,
+    if (arena.schedule.isEmpty) {
+      return _specChip(
+        FontAwesomeIcons.clock,
+        'Hours',
+        arena.hours.isEmpty ? 'Not specified' : arena.hours,
+        textColorSecondary,
+        cardBackgroundColor,
+      );
+    }
+
+    final days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    return AppSurface(
+      padding: const EdgeInsets.all(TiermetrySpacing.lg),
+      color: cardBackgroundColor,
+      borderRadius: TiermetryRadii.md,
+      shadows: const [],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              FaIcon(FontAwesomeIcons.clock, size: 20, color: accentColor),
+              const SizedBox(width: 12),
+              Text(
+                'Operating Hours',
+                style: TiermetryTypography.title(
+                  color: TiermetryColors.white,
+                  fontSize: 18,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _specChip(
-                FontAwesomeIcons.gaugeHigh,
-                'Internet',
-                arena.internet,
-                textColorSecondary,
-                cardBackgroundColor,
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...days.map((day) {
+            final dayData = arena.schedule[day] as Map<String, dynamic>?;
+            final isClosed = dayData?['closed'] as bool? ?? false;
+            final openTime = dayData?['open'] as String? ?? '-';
+            final closeTime = dayData?['close'] as String? ?? '-';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    day,
+                    style: TiermetryTypography.bodySmall(
+                      color: textColorSecondary,
+                    ),
+                  ),
+                  Text(
+                    isClosed ? 'Closed' : '$openTime - $closeTime',
+                    style: TiermetryTypography.bodySmall(
+                      color:
+                          isClosed ? Colors.redAccent : TiermetryColors.white,
+                      fontWeight:
+                          isClosed ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _specChip(
-          FontAwesomeIcons.chair,
-          'Amenities',
-          arena.amenity,
-          textColorSecondary,
-          cardBackgroundColor,
-        ),
-      ],
+            );
+          }),
+        ],
+      ),
     );
   }
 
@@ -635,57 +1314,58 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     Color textColorSecondary,
     Color cardBackgroundColor,
   ) {
-    List<Widget> specs;
-    if (arena.specs is GamingSpecs) {
-      final gs = arena.specs as GamingSpecs;
-      specs = [
+    final List<Widget> specsList = [];
+    if (arena.specs is DynamicSpecs) {
+      final ds = arena.specs as DynamicSpecs;
+      for (final entry in ds.specs.entries) {
+        specsList.add(
+          _specChip(
+            FontAwesomeIcons.cube,
+            entry.key,
+            entry.value.toString(),
+            textColorSecondary,
+            cardBackgroundColor,
+          ),
+        );
+      }
+    }
+
+    if (arena.internet.isNotEmpty) {
+      specsList.add(
         _specChip(
-          FontAwesomeIcons.desktop,
-          'Monitor',
-          gs.refreshRate,
+          FontAwesomeIcons.gaugeHigh,
+          'Internet',
+          arena.internet,
           textColorSecondary,
           cardBackgroundColor,
         ),
-        _specChip(
-          FontAwesomeIcons.gamepad,
-          'GPU',
-          gs.graphicsCard,
-          textColorSecondary,
-          cardBackgroundColor,
+      );
+    }
+
+    if (arena.amenity.isNotEmpty) {
+      final amenityKeys = arena.amenity.split(',');
+      for (final key in amenityKeys) {
+        if (key.trim().isEmpty) continue;
+        specsList.add(
+          _specChip(
+            _getAmenityIcon(key),
+            'Amenity',
+            _getAmenityLabel(key),
+            textColorSecondary,
+            cardBackgroundColor,
+          ),
+        );
+      }
+    }
+
+    if (specsList.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Text(
+          'No specifications available.',
+          style: TiermetryTypography.bodySmall(color: textColorSecondary),
         ),
-        _specChip(
-          FontAwesomeIcons.microchip,
-          'Processor',
-          gs.processor,
-          textColorSecondary,
-          cardBackgroundColor,
-        ),
-        _specChip(
-          FontAwesomeIcons.keyboard,
-          'Peripherals',
-          'Pro-grade',
-          textColorSecondary,
-          cardBackgroundColor,
-        ),
-      ];
-    } else {
-      final ts = arena.specs as TurfSpecs;
-      specs = [
-        _specChip(
-          FontAwesomeIcons.leaf,
-          'Surface',
-          ts.surface,
-          textColorSecondary,
-          cardBackgroundColor,
-        ),
-        _specChip(
-          FontAwesomeIcons.lightbulb,
-          'Lighting',
-          ts.lighting,
-          textColorSecondary,
-          cardBackgroundColor,
-        ),
-      ];
+      );
     }
 
     return GridView.count(
@@ -696,7 +1376,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 2.8,
-      children: specs,
+      children: specsList,
     );
   }
 
@@ -713,6 +1393,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           'Cancellation',
           arena.cancellationPolicy,
           textColorSecondary,
+          cardBackgroundColor,
         ),
         const SizedBox(height: 16),
         _policyItem(
@@ -720,6 +1401,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           'Contact',
           arena.contactPhone,
           textColorSecondary,
+          cardBackgroundColor,
         ),
         const SizedBox(height: 16),
         ...arena.rules.map(
@@ -728,6 +1410,7 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
             'Rule',
             rule,
             textColorSecondary,
+            cardBackgroundColor,
           ),
         ),
       ],
@@ -739,31 +1422,42 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     String title,
     String value,
     Color textColorSecondary,
+    Color cardBackgroundColor,
   ) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FaIcon(icon, color: TiermetryColors.accentAppleBlue, size: 18),
-        const SizedBox(width: TiermetrySpacing.md),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TiermetryTypography.bodySmall(
-                  color: TiermetryColors.white,
+    return AppSurface(
+      padding: const EdgeInsets.all(TiermetrySpacing.md),
+      color: cardBackgroundColor,
+      borderRadius: TiermetryRadii.sm,
+      shadows: const [],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FaIcon(icon, color: TiermetryColors.accentAppleBlue, size: 18),
+          const SizedBox(width: TiermetrySpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TiermetryTypography.bodySmall(
+                    color: TiermetryColors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TiermetryTypography.bodySmall(color: textColorSecondary),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TiermetryTypography.bodySmall(
+                    color: textColorSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -774,18 +1468,32 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     Color cardBackgroundColor,
     Color accentColor,
   ) {
+    final hasExactPin = arena.hasValidCoordinates;
+    final address =
+        arena.location.trim().isNotEmpty
+            ? arena.location.trim()
+            : arena.shortAddress.trim();
+
     return GestureDetector(
-      onTap:
-          () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => ArenaMapScreen(arena: arena),
-            ),
-          ),
+      onTap: () {
+        if (!hasExactPin) {
+          AppIslandNotice.show(
+            context,
+            title: 'Map pin unavailable',
+            message: 'This arena has not published an exact map pin yet.',
+            tone: AppIslandNoticeTone.warning,
+          );
+          return;
+        }
+
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => ArenaMapScreen(arena: arena)),
+        );
+      },
       child: AppSurface(
         padding: const EdgeInsets.all(TiermetrySpacing.lg),
         color: cardBackgroundColor,
         borderRadius: TiermetryRadii.md,
-        border: Border.all(color: Colors.transparent),
         shadows: const [],
         child: Row(
           children: [
@@ -793,7 +1501,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
               padding: const EdgeInsets.all(TiermetrySpacing.md),
               color: accentColor.withValues(alpha: 0.1),
               borderRadius: TiermetryRadii.pill,
-              border: Border.all(color: Colors.transparent),
               shadows: const [],
               child: Icon(
                 Icons.location_on_rounded,
@@ -807,13 +1514,15 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Location',
+                    hasExactPin ? 'Exact location' : 'Location',
                     style: TiermetryTypography.bodySmall(
                       color: textColorSecondary,
                     ),
                   ),
                   Text(
-                    arena.shortAddress,
+                    address.isEmpty ? 'Address unavailable' : address,
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.bodySmall(
                       color: TiermetryColors.white,
                     ),
@@ -821,10 +1530,12 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                 ],
               ),
             ),
-            FaIcon(
-              FontAwesomeIcons.chevronRight,
-              color: textColorSecondary,
-              size: 14,
+            const SizedBox(width: TiermetrySpacing.md),
+            Text(
+              hasExactPin ? 'VIEW MAP' : 'NO PIN',
+              style: TiermetryTypography.bodySmall(
+                color: hasExactPin ? accentColor : textColorSecondary,
+              ).copyWith(fontSize: 10, fontWeight: FontWeight.w800),
             ),
           ],
         ),
@@ -832,7 +1543,13 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
-  Widget _unitRow(String label, List<Widget> units) {
+  Widget _unitRow({
+    required String serviceId,
+    required String label,
+    required List<ArenaDevice> units,
+    required Color accentColor,
+    required Color cardBackgroundColor,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -843,18 +1560,27 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           ),
         ),
         const SizedBox(height: TiermetrySpacing.md),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          clipBehavior: Clip.none,
-          child: Row(
-            children: [
-              for (int i = 0; i < units.length; i++) ...[
-                units[i],
-                if (i < units.length - 1)
-                  const SizedBox(width: TiermetrySpacing.cardGap),
-              ],
-            ],
+        SizedBox(
+          height: 244,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            clipBehavior: Clip.none,
+            cacheExtent: 360,
+            itemCount: units.length,
+            separatorBuilder:
+                (_, __) => const SizedBox(width: TiermetrySpacing.cardGap),
+            itemBuilder:
+                (context, index) => RepaintBoundary(
+                  child: _unitCard(
+                    context,
+                    serviceId,
+                    units[index],
+                    index,
+                    accentColor,
+                    cardBackgroundColor,
+                  ),
+                ),
           ),
         ),
         const SizedBox(height: TiermetrySpacing.xl),
@@ -862,14 +1588,99 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
+  String? _getActivityImage(String name) {
+    final lowerName = name.toLowerCase().trim();
+    const imageMap = <String, String>{
+      'airsoft': 'airsoft.webp',
+      'arcade machine': 'pc.webp',
+      'archery': 'archer.webp',
+      'archery range': 'archer.webp',
+      'atv quad bike': 'ATV_qwadbike.webp',
+      'axe throwing': 'axe.webp',
+      'badminton': 'badminton.webp',
+      'batting cage': 'cricket.webp',
+      'board game lounge': 'vr.webp',
+      'bowling': 'bowling.webp',
+      'bumper cars': 'gokart.webp',
+      'bungee jumping': 'bungee.webp',
+      'camping': 'camp.webp',
+      'climbing wall': 'mountain_climb.webp',
+      'cricket': 'cricket.webp',
+      'dance': 'dance.webp',
+      'escape room': 'vr.webp',
+      'foosball': 'snooker.webp',
+      'football': 'football.webp',
+      'go-kart': 'gokart.webp',
+      'horse riding': 'horse.webp',
+      'ice skating': 'ice_skate.webp',
+      'jet ski': 'jet_ski.webp',
+      'karaoke room': 'dance.webp',
+      'kayak': 'kayak.webp',
+      'laser tag arena': 'laser_tag.webp',
+      'mini golf': 'snooker.webp',
+      'mountain climbing': 'mountain_climb.webp',
+      'nintendo switch': 'ps5.webp',
+      'offroad': 'offroad.webp',
+      'padel': 'padel.webp',
+      'paintball arena': 'paintball.webp',
+      'paragliding': 'para_glide.webp',
+      'parasailing': 'para_sail.webp',
+      'pc': 'pc.webp',
+      'pickleball': 'pickel.webp',
+      'pool table': 'snooker.webp',
+      'pottery': 'pottery.webp',
+      'ps3': 'ps5.webp',
+      'ps4': 'ps5.webp',
+      'ps5': 'ps5.webp',
+      'race sim': 'race_sim.webp',
+      'river rafting': 'river_raft.webp',
+      'roller coaster': 'roller_coaster.webp',
+      'roller skating': 'roller_skate.webp',
+      'ropes course': 'mountain_climb.webp',
+      'scuba': 'scuba.webp',
+      'shooting range': 'laser_tag.webp',
+      'simulator (flight)': 'vr.webp',
+      'simulator (golf)': 'vr.webp',
+      'simulator (racing)': 'race_sim.webp',
+      'skating rink': 'roller_skate.webp',
+      'sky dive': 'sky_dive.webp',
+      'snooker': 'snooker.webp',
+      'surf': 'surf.webp',
+      'swiming': 'swiming.webp',
+      'table tennis': 'snooker.webp',
+      'trampoline park': 'trampoline.webp',
+      'treck': 'treck.webp',
+      'turf (cricket)': 'cricket.webp',
+      'turf (football)': 'football.webp',
+      'turf (multipurpose)': 'football.webp',
+      'vr room': 'vr.webp',
+      'waterpark': 'waterpark.webp',
+      'xbox one': 'ps5.webp',
+      'xbox series s': 'ps5.webp',
+      'xbox series x': 'ps5.webp',
+      'zip line': 'zipline.webp',
+    };
+
+    final fileName = imageMap[lowerName];
+    if (fileName != null) {
+      return 'assets/activity_images/$fileName';
+    }
+
+    return null;
+  }
+
   Widget _unitCard(
+    BuildContext context,
     String serviceId,
     ArenaDevice unit,
     int index,
     Color accentColor,
     Color cardBackgroundColor,
   ) {
-    final bool isSelected = _selectedDevices.contains(unit.id);
+    final match = RegExp(r'^(.*?)\s+(\d+)$').firstMatch(unit.name);
+    final String baseName = match?.group(1) ?? unit.name;
+    final String assignedNumber = match?.group(2) ?? '${index + 1}';
+    final String? imagePath = _getActivityImage(baseName);
 
     String formatTime(DateTime time) {
       final h = time.hour;
@@ -879,189 +1690,224 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       return '$hour12:$m $ampm';
     }
 
-    return GestureDetector(
-      onTap: () {
-        if (!unit.isOccupied) toggleSelection(serviceId, unit.id);
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 170,
-            height: 220,
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(TiermetryRadii.md),
-              border: Border.all(color: Colors.transparent, width: 2.5),
-              boxShadow: null,
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              clipBehavior: Clip.antiAlias,
-              children: [
-                // 0a. In-Use Red Gradient Overlay
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                  opacity: unit.isOccupied ? 1.0 : 0.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xFFFF0000), // Pure Red
-                          Color(0x00FF0000), // Transparent Red
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+    final imageCacheWidth =
+        (170 * MediaQuery.devicePixelRatioOf(context)).round();
 
-                // 0b. Selected Blue/Accent Gradient Overlay
-                AnimatedOpacity(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOut,
-                  opacity: isSelected ? 1.0 : 0.0,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(TiermetryRadii.md),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          accentColor.withValues(alpha: 0.6),
-                          accentColor.withValues(alpha: 0.0),
-                        ],
-                      ),
-                    ),
-                  ),
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: _selectedDevices,
+      builder: (context, selectedDevices, _) {
+        final isSelected = selectedDevices.contains(unit.id);
+        return GestureDetector(
+          onTap: () {
+            if (unit.isOccupied && !isSelected) {
+              _showDynamicIslandNotification(
+                'Rig is in use. Book for a later slot.',
+                TiermetryColors.negative,
+              );
+            }
+            toggleSelection(serviceId, unit.id);
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 170,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(TiermetryRadii.md),
+                  boxShadow: null,
                 ),
-                Positioned(
-                  left: -10,
-                  top: -20,
-                  child: Text(
-                    '${index + 1}',
-                    textScaler: TextScaler.noScaling,
-                    style: GoogleFonts.inter(
-                      fontSize: 180,
-                      height: 1.0,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white.withValues(alpha: 0.5),
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Image.asset(
-                    unit.image,
-                    fit: BoxFit.contain,
-                    color:
-                        unit.isOccupied
-                            ? TiermetryColors.black.withValues(alpha: 0.5)
-                            : null,
-                    colorBlendMode:
-                        unit.isOccupied ? BlendMode.darken : BlendMode.dst,
-                  ),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        TiermetryColors.black.withValues(alpha: 0.7),
-                        TiermetryColors.black.withValues(alpha: 0.0),
-                      ],
-                      stops: const [0.0, 0.4],
-                    ),
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.all(TiermetrySpacing.md),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          unit.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textScaler: TextScaler.noScaling,
-                          style: GoogleFonts.inter(
-                            color: TiermetryColors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
-                            letterSpacing: -0.5,
-                            height: 1.1,
+                clipBehavior: Clip.antiAlias,
+                child: Stack(
+                  fit: StackFit.expand,
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (unit.isOccupied)
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            TiermetryRadii.md,
+                          ),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0xFFFF0000), // Pure Red
+                              Color(0x00FF0000), // Transparent Red
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '₹${unit.price}',
-                          textScaler: TextScaler.noScaling,
-                          style: GoogleFonts.inter(
-                            color: TiermetryColors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
-                            letterSpacing: -0.5,
+                      ),
+
+                    // Keep the operational red state dominant over selection.
+                    if (!unit.isOccupied && isSelected)
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            TiermetryRadii.md,
+                          ),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              accentColor.withValues(alpha: 0.6),
+                              accentColor.withValues(alpha: 0.0),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: AppSurface(
-                      borderRadius: TiermetryRadii.pill,
-                      color: accentColor,
-                      border: Border.all(color: Colors.transparent),
-                      shadows: const [],
-                      padding: const EdgeInsets.all(TiermetrySpacing.xs),
-                      child: const FaIcon(
-                        FontAwesomeIcons.check,
-                        color: TiermetryColors.white,
-                        size: 16,
+                      ),
+                    Positioned(
+                      left: -10,
+                      top: -20,
+                      child: Text(
+                        assignedNumber,
+                        textScaler: TextScaler.noScaling,
+                        style: GoogleFonts.inter(
+                          fontSize: 180,
+                          height: 1.0,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white.withValues(alpha: 0.5),
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(height: TiermetrySpacing.sm),
-          if (unit.isOccupied)
-            Text(
-              unit.occupiedTill != null
-                  ? 'IN USE TILL ${formatTime(unit.occupiedTill!)}'
-                  : 'IN USE',
-              style: TiermetryTypography.label(color: TiermetryColors.negative),
-            )
-          else if (unit.nextBookingAt != null)
-            Text(
-              'NEXT AT ${formatTime(unit.nextBookingAt!)}',
-              style: TiermetryTypography.label(color: Colors.amber),
-            )
-          else
-            Text(
-              'AVAILABLE',
-              style: TiermetryTypography.label(
-                color: TiermetryColors.accentNeonGreen,
+                    Center(
+                      child:
+                          imagePath != null
+                              ? Image.asset(
+                                imagePath,
+                                fit: BoxFit.contain,
+                                cacheWidth: imageCacheWidth,
+                              )
+                              : Icon(
+                                CupertinoIcons.sportscourt,
+                                size: 80,
+                                color: Colors.white.withValues(alpha: 0.5),
+                              ),
+                    ),
+                    if (unit.isOccupied)
+                      const ColoredBox(color: Color(0x33FF0000)),
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors:
+                              unit.isOccupied
+                                  ? const [Color(0xCC5C0000), Color(0x00330000)]
+                                  : [
+                                    TiermetryColors.black.withValues(
+                                      alpha: 0.7,
+                                    ),
+                                    TiermetryColors.black.withValues(
+                                      alpha: 0.0,
+                                    ),
+                                  ],
+                          stops: const [0.0, 0.4],
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.bottomLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.all(TiermetrySpacing.md),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              baseName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textScaler: TextScaler.noScaling,
+                              style: GoogleFonts.inter(
+                                color: TiermetryColors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                letterSpacing: -0.5,
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${unit.priceRangeLabel}${unit.dayPrices.isEmpty ? '' : ' · day rates'}',
+                              textScaler: TextScaler.noScaling,
+                              style: GoogleFonts.inter(
+                                color: TiermetryColors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (isSelected)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: AppSurface(
+                          borderRadius: TiermetryRadii.pill,
+                          color: accentColor,
+                          shadows: const [],
+                          padding: const EdgeInsets.all(TiermetrySpacing.xs),
+                          child: const FaIcon(
+                            FontAwesomeIcons.check,
+                            color: TiermetryColors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-        ],
-      ),
+              const SizedBox(height: TiermetrySpacing.sm),
+              if (unit.isOccupied)
+                Text(
+                  unit.occupiedTill != null
+                      ? 'IN USE TILL ${formatTime(unit.occupiedTill!)}'
+                      : 'IN USE',
+                  style: TiermetryTypography.label(
+                    color: TiermetryColors.negative,
+                  ),
+                )
+              else if (unit.isMaintenance)
+                Text(
+                  'MAINTENANCE',
+                  style: TiermetryTypography.label(color: Colors.amber),
+                )
+              else if (!unit.isBookable)
+                Text(
+                  unit.availabilityStatus.replaceAll('_', ' ').toUpperCase(),
+                  style: TiermetryTypography.label(color: Colors.amber),
+                )
+              else if (unit.nextBookingAt != null)
+                Text(
+                  'NEXT AT ${formatTime(unit.nextBookingAt!)}',
+                  style: TiermetryTypography.label(color: Colors.amber),
+                )
+              else
+                Text(
+                  'AVAILABLE',
+                  style: TiermetryTypography.label(
+                    color: TiermetryColors.accentNeonGreen,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBottomBookingBar(BuildContext context, Color accentColor) {
-    if (_selectedDevices.isEmpty) return const SizedBox.shrink();
+  Widget _buildBottomBookingBar(
+    BuildContext context,
+    Color accentColor,
+    Set<String> selectedDevices,
+  ) {
+    if (selectedDevices.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1071,30 +1917,25 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       ),
       child: AppSurface(
         borderRadius: 100, // Pill shape
-        color: TiermetryColors.surfaceUnderlay.withValues(alpha: 0.85),
-        border: Border.all(color: TiermetryColors.borderSubtle),
+        color: TiermetryColors.surfaceUnderlay,
         shadows: TiermetryShadows.highEmphasis,
-        clipBehavior: Clip.antiAlias,
-        child: BackdropFilter(
-          filter: TiermetryBlur.filter(TiermetryBlur.md),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: ElevatedButton(
-              onPressed: () => _showBookingSheet(context, accentColor),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: ElevatedButton(
+            onPressed: () => _showBookingSheet(context, accentColor),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accentColor,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(100),
               ),
-              child: Text(
-                'BOOK SELECTED (${_selectedDevices.length})',
-                style: TiermetryTypography.action(
-                  color: TiermetryColors.white,
-                  fontSize: 15,
-                ),
+              elevation: 0,
+            ),
+            child: Text(
+              'BOOK SELECTED (${selectedDevices.length})',
+              style: TiermetryTypography.action(
+                color: TiermetryColors.white,
+                fontSize: 15,
               ),
             ),
           ),
@@ -1103,10 +1944,14 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     );
   }
 
-  void _showBookingSheet(BuildContext context, Color accentColor) {
+  void _showBookingSheet(BuildContext context, Color accentColor) async {
     if (_selectedServiceId == null) return;
+    final arenaDetails = await _detailsFuture;
+    if (arenaDetails == null) return;
 
-    showModalBottomSheet<void>(
+    if (!context.mounted) return;
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1114,15 +1959,13 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
           (context) => BookingSheet(
             venueId: widget.arena.id,
             serviceId: _selectedServiceId!,
-            initialSelectedUnitIds: _selectedDevices.toList(),
+            initialSelectedUnitIds: _selectedDevices.value.toList(),
             accentColor: accentColor,
             onConfirm: ({
               required int duration,
               required DateTime startDateTime,
-              required int players,
-              required List<String> addOns,
               required List<String> serviceUnitIds,
-              required double totalAmount,
+              required List<BookingAccessorySelection> accessorySelections,
             }) async {
               final endDateTime = startDateTime.add(Duration(hours: duration));
 
@@ -1132,24 +1975,45 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
                   startTime: startDateTime,
                   endTime: endDateTime,
                   serviceUnitIds: serviceUnitIds,
+                  accessorySelections: accessorySelections,
                 );
 
                 if (context.mounted) {
-                  Navigator.pop(context);
-                  setState(() {
-                    _lastHoldId = hold.id;
-                    _holdExpiresAt = hold.expiresAt;
-                    _showSuccessOverlay = true;
-                    _selectedDevices.clear();
-                    _selectedServiceId = null;
-                  });
+                  Navigator.pop(context); // Close sheet
+
+                  // Get unit names for the selected IDs
+                  final unitNames =
+                      arenaDetails.devices
+                          .expand((ArenaDeviceCat d) => d.units)
+                          .where(
+                            (ArenaDevice u) => serviceUnitIds.contains(u.id),
+                          )
+                          .map<String>((ArenaDevice u) => u.name)
+                          .toList();
+
+                  await Navigator.push<void>(
+                    context,
+                    MaterialPageRoute<void>(
+                      builder:
+                          (context) => FinalInvoiceScreen(
+                            hold: hold,
+                            venueName: widget.arena.name,
+                            serviceUnitNames: unitNames,
+                            accentColor: accentColor,
+                          ),
+                    ),
+                  );
+
+                  _selectedDevices.value = <String>{};
+                  _selectedServiceId = null;
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(e.toString().replaceAll('Exception: ', '')),
-                    ),
+                  AppIslandNotice.show(
+                    context,
+                    title: 'Could not reserve this slot',
+                    message: e.toString().replaceAll('Exception: ', ''),
+                    tone: AppIslandNoticeTone.error,
                   );
                 }
               }
@@ -1180,7 +2044,6 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
     ),
     color: cardBackgroundColor,
     borderRadius: TiermetryRadii.sm,
-    border: Border.all(color: Colors.transparent),
     shadows: const [],
     child: Row(
       children: [
@@ -1209,4 +2072,29 @@ class _ArenaDetailsScreenState extends State<ArenaDetailsScreen>
       ],
     ),
   );
+}
+
+class _ArenaAmbientBackdrop extends StatelessWidget {
+  const _ArenaAmbientBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return const RepaintBoundary(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: TiermetryColors.background,
+          gradient: RadialGradient(
+            center: Alignment(0.72, -0.82),
+            radius: 1.18,
+            colors: [
+              Color(0x332A65A8),
+              Color(0x14172B45),
+              TiermetryColors.background,
+            ],
+            stops: [0, 0.44, 1],
+          ),
+        ),
+      ),
+    );
+  }
 }

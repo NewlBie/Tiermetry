@@ -9,7 +9,24 @@ import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/typography.dart';
+import 'package:tiermetry/core/utils/error_mapper.dart';
+import 'package:tiermetry/core/widgets/app_island_notice.dart';
 import 'package:tiermetry/features/booking/domain/entities/booking_entity.dart';
+
+String extractBookingCheckInCode(String raw) {
+  final trimmed = raw.trim();
+  final uri = Uri.tryParse(trimmed);
+  if (uri != null) {
+    final code =
+        uri.queryParameters['code'] ??
+        uri.queryParameters['pin'] ??
+        uri.queryParameters['check_in_code'];
+    if (code != null && code.trim().isNotEmpty) {
+      return code.trim();
+    }
+  }
+  return trimmed;
+}
 
 class CheckInSheet extends StatefulWidget {
   final BookingEntity booking;
@@ -58,6 +75,15 @@ class _CheckInSheetState extends State<CheckInSheet> {
     super.dispose();
   }
 
+  void _showDynamicIslandNotification(String message, Color _) {
+    AppIslandNotice.show(
+      context,
+      title: 'Check-in not completed',
+      message: message,
+      tone: AppIslandNoticeTone.error,
+    );
+  }
+
   Future<void> _submitCode(String code) async {
     if (code.isEmpty || _isSubmitting) return;
     setState(() => _isSubmitting = true);
@@ -74,8 +100,9 @@ class _CheckInSheetState extends State<CheckInSheet> {
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+      _showDynamicIslandNotification(
+        ErrorMapper.map(e),
+        TiermetryColors.negative,
       );
       setState(() => _isSubmitting = false);
     }
@@ -119,7 +146,8 @@ class _CheckInSheetState extends State<CheckInSheet> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(('Self Check-In').toUpperCase(),
+              Text(
+                ('Self Check-In').toUpperCase(),
                 style: TiermetryTypography.title(
                   fontSize: 22,
                   color: TiermetryColors.white,
@@ -360,7 +388,8 @@ class _CheckInSheetState extends State<CheckInSheet> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text(('You’re checked in!').toUpperCase(),
+                Text(
+                  ('You’re checked in!').toUpperCase(),
                   style: TiermetryTypography.title(
                     fontSize: 24,
                     color: TiermetryColors.white,

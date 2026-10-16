@@ -1,6 +1,7 @@
 import 'package:amazing_icons/bulk.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tiermetry/core/constants/app_avatars.dart';
 import 'package:tiermetry/core/locator.dart';
 import 'package:tiermetry/core/mixins/refresh_rate_mixin.dart';
 import 'package:tiermetry/core/theme/colors.dart';
@@ -14,6 +15,7 @@ import 'package:tiermetry/core/widgets/top_bar.dart';
 
 import 'features/arena/presentation/screens/arena_screen.dart';
 import 'features/booking/presentation/screens/booking_screen.dart';
+import 'features/booking/presentation/widgets/floating_booking_pill.dart';
 import 'features/event/presentation/screens/event_browser_screen.dart';
 import 'features/event/presentation/screens/my_events_screen.dart';
 import 'features/home/presentation/screens/home_screen.dart';
@@ -34,6 +36,7 @@ class _RootState extends State<Root>
     with TickerProviderStateMixin, RefreshRateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final _authCtrl = locator.authCtrl;
+  final _profileCtrl = locator.profileCtrl;
 
   int _selectedIndex = 0;
   bool _isMenuOpen = false;
@@ -49,19 +52,23 @@ class _RootState extends State<Root>
 
   final List<BottomNavItem> navItems = [
     BottomNavItem(
-      iconBuilder: (size, color) => AmazingIconBulk.home(size: size, color: color),
+      iconBuilder:
+          (size, color) => AmazingIconBulk.home(size: size, color: color),
       label: 'Home',
     ),
     BottomNavItem(
-      iconBuilder: (size, color) => AmazingIconBulk.game(size: size, color: color),
+      iconBuilder:
+          (size, color) => AmazingIconBulk.game(size: size, color: color),
       label: 'Arenas',
     ),
     BottomNavItem(
-      iconBuilder: (size, color) => AmazingIconBulk.discover(size: size, color: color),
+      iconBuilder:
+          (size, color) => AmazingIconBulk.discover(size: size, color: color),
       label: 'Explore',
     ),
     BottomNavItem(
-      iconBuilder: (size, color) => AmazingIconBulk.profile(size: size, color: color),
+      iconBuilder:
+          (size, color) => AmazingIconBulk.profile(size: size, color: color),
       label: 'Profile',
     ),
   ];
@@ -73,6 +80,19 @@ class _RootState extends State<Root>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+    _menuAnimationController.addStatusListener((status) {
+      if (status == AnimationStatus.dismissed ||
+          status == AnimationStatus.completed) {
+        if (mounted) {
+          setState(() {});
+        }
+      }
+    });
+
+    final savedLocation = _profileCtrl.profile?.location.trim();
+    if (savedLocation != null && savedLocation.isNotEmpty) {
+      locator.locationCtrl.selectCity(savedLocation);
+    }
   }
 
   @override
@@ -95,21 +115,31 @@ class _RootState extends State<Root>
   void _handleMenuRoute(String route) {
     // We navigate to existing screens
     Widget? target;
-    switch(route) {
-      case 'booking': target = const BookingScreen(); break;
-      case 'my_events': target = const MyEventsScreen(); break;
-      case 'wallet': target = const TransactionsScreen(); break;
-      case 'account': target = const AccountPrivacyScreen(); break;
-      case 'support': target = const HelpAndSupportScreen(); break;
-      case 'legal': target = const LegalPoliciesScreen(); break;
+    switch (route) {
+      case 'booking':
+        target = const BookingScreen();
+        break;
+      case 'my_events':
+        target = const MyEventsScreen();
+        break;
+      case 'wallet':
+        target = const TransactionsScreen();
+        break;
+      case 'account':
+        target = const AccountPrivacyScreen();
+        break;
+      case 'support':
+        target = const HelpAndSupportScreen();
+        break;
+      case 'legal':
+        target = const LegalPoliciesScreen();
+        break;
     }
-    
+
     if (target != null) {
       Navigator.push(
         context,
-        MaterialPageRoute<void>(
-          builder: (context) => target!,
-        ),
+        MaterialPageRoute<void>(builder: (context) => target!),
       );
     }
   }
@@ -137,7 +167,8 @@ class _RootState extends State<Root>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(('Log out?').toUpperCase(),
+                Text(
+                  ('Log out?').toUpperCase(),
                   style: TiermetryTypography.title(
                     color: TiermetryColors.white,
                   ),
@@ -165,6 +196,7 @@ class _RootState extends State<Root>
                         onPressed: () {
                           Navigator.pop(context);
                           _authCtrl.signOut();
+                          locator.profileCtrl.clear();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.redAccent,
@@ -182,8 +214,6 @@ class _RootState extends State<Root>
       },
     );
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -206,104 +236,154 @@ class _RootState extends State<Root>
       },
       child: Scaffold(
         key: _scaffoldKey,
-      backgroundColor: TiermetryColors.black,
-      body: Stack(
-        children: [
-          IndexedStack(
-            index: _selectedIndex,
-            children: [
-              DeferredPage(
-                index: 0,
-                currentIndex: _selectedIndex,
-                child: Navigator(
-                  key: _navigatorKeys[0],
-                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
-                    builder: (context) => HomeScreen(userName: _authCtrl.user?.name ?? 'Gamer'),
+        backgroundColor: TiermetryColors.black,
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _selectedIndex,
+              children: [
+                DeferredPage(
+                  index: 0,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[0],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder:
+                              (context) => HomeScreen(
+                                userName: _authCtrl.user?.name ?? 'Gamer',
+                              ),
+                        ),
                   ),
                 ),
-              ),
-              DeferredPage(
-                index: 1,
-                currentIndex: _selectedIndex,
-                child: Navigator(
-                  key: _navigatorKeys[1],
-                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
-                    builder: (context) => const ArenaScreen(),
+                DeferredPage(
+                  index: 1,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[1],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const ArenaScreen(),
+                        ),
                   ),
                 ),
-              ),
-              DeferredPage(
-                index: 2,
-                currentIndex: _selectedIndex,
-                child: Navigator(
-                  key: _navigatorKeys[2],
-                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
-                    builder: (context) => const EventBrowserScreen(),
+                DeferredPage(
+                  index: 2,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[2],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const EventBrowserScreen(),
+                        ),
                   ),
                 ),
-              ),
-              DeferredPage(
-                index: 3,
-                currentIndex: _selectedIndex,
-                child: Navigator(
-                  key: _navigatorKeys[3],
-                  onGenerateRoute: (settings) => MaterialPageRoute<void>(
-                    builder: (context) => const ProfileScreen(),
+                DeferredPage(
+                  index: 3,
+                  currentIndex: _selectedIndex,
+                  child: Navigator(
+                    key: _navigatorKeys[3],
+                    onGenerateRoute:
+                        (settings) => MaterialPageRoute<void>(
+                          builder: (context) => const ProfileScreen(),
+                        ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          
-          // BottomNav
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 16,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: TiermetrySpacing.screenPadding,
-              ),
-              child: BottomNav(
-                currentIndex: _selectedIndex,
-                onTap: (index) {
-                  setState(() => _selectedIndex = index);
-                },
-                items: navItems,
-              ),
+              ],
             ),
-          ),
 
-          // Overlay Fullscreen Menu
-          if (_isMenuOpen || _menuAnimationController.isAnimating)
-            Positioned.fill(
-              child: FullscreenDropdownMenu(
-                animation: _menuAnimationController,
-                onClose: _toggleMenu,
-                onNavigateIndex: (index) {
-                  setState(() => _selectedIndex = index);
-                },
-                onPushRoute: _handleMenuRoute,
-                onLogout: _showLogoutSheet,
-                userName: _authCtrl.user?.name ?? 'Gamer',
-                userHandle: '@${(_authCtrl.user?.name ?? 'gamer').toLowerCase().replaceAll(' ', '_')}',
-                userAvatarAsset: 'assets/Seller.png',
-                isOpen: _isMenuOpen,
+            // BottomNav
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: const EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: TiermetrySpacing.screenPadding,
+                  ),
+                  child: BottomNav(
+                    currentIndex: _selectedIndex,
+                    onTap: (index) {
+                      setState(() => _selectedIndex = index);
+                    },
+                    items: navItems,
+                  ),
+                ),
               ),
             ),
 
-          // TopBar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: TopBar(
-              menuAnimationProgress: _menuAnimationController,
-              onMenuTap: _toggleMenu,
+            // Floating Booking Pill (above BottomNav)
+            const Positioned(
+              left: TiermetrySpacing.screenPadding,
+              right: TiermetrySpacing.screenPadding,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                minimum: EdgeInsets.only(bottom: 16),
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 78),
+                  child: FloatingBookingPill(),
+                ),
+              ),
             ),
-          ),
-        ],
+
+            // Overlay Fullscreen Menu
+            if (_isMenuOpen || !_menuAnimationController.isDismissed)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: !_isMenuOpen,
+                  child: ListenableBuilder(
+                    listenable: _profileCtrl,
+                    builder: (context, _) {
+                      final profile = _profileCtrl.profile;
+                      final userName =
+                          profile?.name.isNotEmpty == true
+                              ? profile!.name
+                              : (_authCtrl.user?.name ?? 'Gamer');
+                      final userHandle =
+                          profile?.username?.isNotEmpty == true
+                              ? '@${profile!.username}'
+                              : '@${userName.toLowerCase().replaceAll(' ', '_')}';
+                      final avatarAsset = AppAvatar.assetForId(
+                        profile?.avatarId ??
+                            AppAvatar.idFromAssetOrString(profile?.image) ??
+                            AppAvatar.defaultAvatarId,
+                      );
+
+                      return FullscreenDropdownMenu(
+                        animation: _menuAnimationController,
+                        onClose: _toggleMenu,
+                        onNavigateIndex: (index) {
+                          setState(() => _selectedIndex = index);
+                        },
+                        onPushRoute: _handleMenuRoute,
+                        onLogout: _showLogoutSheet,
+                        userName: userName,
+                        userHandle: userHandle,
+                        userAvatarAsset: avatarAsset,
+                        isOpen: _isMenuOpen,
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+            // TopBar
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: TopBar(
+                menuAnimationProgress: _menuAnimationController,
+                onMenuTap: _toggleMenu,
+              ),
+            ),
+          ],
+        ),
       ),
-    ));
+    );
   }
 }

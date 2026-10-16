@@ -13,12 +13,15 @@ class TiermetryPrimaryButton extends StatelessWidget {
   final double? width;
   final EdgeInsetsGeometry? padding;
 
+  final TextStyle? textStyle;
+
   const TiermetryPrimaryButton({
     required this.text,
     this.onPressed,
     this.trailingIcon,
     this.width,
     this.padding,
+    this.textStyle,
     super.key,
   });
 
@@ -57,11 +60,12 @@ class TiermetryPrimaryButton extends StatelessWidget {
           children: [
             Text(
               text,
-              style: GoogleFonts.urbanist(
-                color: TiermetryColors.black,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: textStyle ??
+                  GoogleFonts.urbanist(
+                    color: TiermetryColors.black,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
             ),
             if (trailingIcon != null) ...[
               const SizedBox(width: 6),

@@ -13,7 +13,15 @@ void main() {
         'total_amount': 600,
         'start_time': '2026-08-20T12:00:00Z',
         'end_time': '2026-08-20T14:00:00Z',
-        'venues': {'name': 'Nexus', 'short_address': 'Test lane'},
+        'venues': {
+          'id': 'venue-1',
+          'name': 'Nexus',
+          'short_address': 'Test lane',
+          'cover_image': 'assets/images/arena_1.jpg',
+          'services': [
+            {'name': 'Sim racing'},
+          ],
+        },
         'booking_items': [
           {
             'id': 'item-1',
@@ -37,6 +45,8 @@ void main() {
 
       expect(booking.assignedAssetName, 'PC #12');
       expect(booking.events.single.eventType, 'BOOKING_ASSET_REASSIGNED');
+      expect(booking.arena?.name, 'Nexus');
+      expect(booking.arena?.tags, ['Sim racing']);
     },
   );
 }

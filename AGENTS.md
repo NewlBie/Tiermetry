@@ -13,3 +13,12 @@ Maintain the brain as part of normal coding work — not as a separate task. Whi
 
 The brain skills (`brain-setup`, `brain-page`, `brain-ingest`, `brain-bootstrap`) are installed in your global skills directory. Prefer `brain init` to scaffold a new project.
 <!-- END brain.md -->
+
+## UI Enhancement and Creation Rules
+
+Whenever I ask you to enhance the UI, create new frontend components, or improve the frontend, you MUST:
+- Use the 'emil-design-eng' skill to apply high-quality design engineering principles.
+- Consider utilizing 'improve-animations' or 'find-animation-opportunities' to make the UI feel alive.
+- Run UI stress tests by reading the 'break-ui' skill to handle edge cases before finishing.
+- Adhere to the established design aesthetics and use the appropriate UI libraries as recommended by these installed tools.
+

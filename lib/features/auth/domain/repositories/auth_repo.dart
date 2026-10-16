@@ -4,7 +4,9 @@ abstract class AuthRepo {
   Stream<UserEntity?> get authStateChanges;
   UserEntity? get currentUser;
   Future<void> signIn({required String email, required String password});
-  Future<void> signUp({
+
+  /// Returns true only when the project requires email OTP confirmation.
+  Future<bool> signUp({
     required String email,
     required String password,
     String? name,
@@ -12,5 +14,6 @@ abstract class AuthRepo {
   Future<void> verifyOTP({required String email, required String token});
   Future<void> resendOTP({required String email});
   Future<void> resetPasswordForEmail({required String email});
+  Future<void> signInWithGoogle();
   Future<void> signOut();
 }

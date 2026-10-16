@@ -148,7 +148,8 @@ class _DrawerProfileHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text((userName).toUpperCase(),
+                  Text(
+                    (userName).toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(
@@ -235,7 +236,8 @@ class _Avatar extends StatelessWidget {
       child:
           avatarAsset == null
               ? Center(
-                child: Text((initials).toUpperCase(),
+                child: Text(
+                  (initials).toUpperCase(),
                   style: TiermetryTypography.title(
                     color: Colors.white,
                     fontSize: 18,

@@ -68,7 +68,8 @@ class _AdventureGreetingState extends State<AdventureGreeting> {
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.center,
-          child: Text((currentGreeting).toUpperCase(),
+          child: Text(
+            (currentGreeting).toUpperCase(),
             textAlign: TextAlign.center,
             style: TiermetryTypography.displayLarge(color: Colors.white),
           ),

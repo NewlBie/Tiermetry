@@ -17,4 +17,16 @@ class GetAvailableUnitsUC {
       endTime: endTime,
     );
   }
+
+  Future<DateTime?> nextAvailableStart({
+    required String serviceId,
+    required Duration duration,
+    required DateTime fromTime,
+  }) {
+    return repository.getNextAvailableBookingStart(
+      serviceId: serviceId,
+      duration: duration,
+      fromTime: fromTime,
+    );
+  }
 }

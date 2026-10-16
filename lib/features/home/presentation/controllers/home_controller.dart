@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:tiermetry/core/locator.dart';
+import 'package:tiermetry/features/community/presentation/controllers/community_ctrl.dart';
 import 'package:tiermetry/features/event/presentation/controllers/event_ctrl.dart';
 import 'package:tiermetry/features/home/presentation/controllers/trending_activity_ctrl.dart';
 import 'package:tiermetry/features/skill/presentation/controllers/skill_ctrl.dart';
@@ -12,6 +13,7 @@ class HomeController {
     // Expose existing feature controllers from the service locator.
     skillCtrl = locator.skillCtrl;
     eventCtrl = locator.eventCtrl;
+    communityCtrl = locator.communityCtrl;
     trendingActivityCtrl = locator.trendingActivityCtrl;
   }
 
@@ -20,6 +22,7 @@ class HomeController {
   late final ScrollController scrollController;
   late final SkillCtrl skillCtrl;
   late final EventCtrl eventCtrl;
+  late final CommunityCtrl communityCtrl;
   late final TrendingActivityCtrl trendingActivityCtrl;
 
   void dispose() {

@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:tiermetry/features/home/presentation/controllers/location_ctrl.dart';
 import '../../../../core/utils/error_mapper.dart';
 
 import '../../domain/entities/arena_details_entity.dart';
@@ -13,12 +15,37 @@ class ArenaCtrl extends ChangeNotifier {
   final GetArenasUC getArenasUC;
   final GetArenaDetailsUC getArenaDetailsUC;
   final GetAvailableUnitsUC getAvailableUnitsUC;
+  final SupabaseClient supabase;
+  final LocationCtrl locationCtrl;
 
   ArenaCtrl({
     required this.getArenasUC,
     required this.getArenaDetailsUC,
     required this.getAvailableUnitsUC,
-  });
+    required this.supabase,
+    required this.locationCtrl,
+  }) {
+    locationCtrl.addListener(_onLocationChanged);
+    _realtimeChannel =
+        supabase
+            .channel('arena_discovery_updates')
+            .onPostgresChanges(
+              event: PostgresChangeEvent.all,
+              schema: 'public',
+              table: 'venues',
+              filter: const PostgresChangeFilter(
+                type: PostgresChangeFilterType.eq,
+                column: 'is_listed',
+                value: true,
+              ),
+              callback: (_) => _scheduleRealtimeRefresh(),
+            )
+            .subscribe();
+    _availabilityTicker = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => notifyListeners(),
+    );
+  }
 
   List<ArenaEntity> _arenas = [];
   List<ArenaEntity> get arenas => _arenas;
@@ -49,21 +76,39 @@ class ArenaCtrl extends ChangeNotifier {
   String? _sortBy;
 
   Timer? _searchDebounce;
+  Timer? _realtimeDebounce;
+  Timer? _availabilityTicker;
+  RealtimeChannel? _realtimeChannel;
+  bool _hasResolvedLocation = false;
 
-  Future<void> loadArenas({bool isRefresh = false}) async {
+  void _onLocationChanged() {
+    final hasLocation = locationCtrl.currentPosition != null;
+    if (!hasLocation || _hasResolvedLocation) return;
+    _hasResolvedLocation = true;
+    if (_arenas.isNotEmpty) loadArenas(isRefresh: true, silent: true);
+  }
+
+  void _scheduleRealtimeRefresh() {
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (_arenas.isNotEmpty) loadArenas(isRefresh: true, silent: true);
+    });
+  }
+
+  Future<void> loadArenas({bool isRefresh = false, bool silent = false}) async {
     if (_isLoading || _isLoadingMore) return;
 
     if (isRefresh) {
       _currentPage = 0;
       _hasMore = true;
-      _arenas = [];
+      if (!silent) _arenas = [];
     }
 
     if (!_hasMore) return;
 
-    if (_currentPage == 0) {
+    if (_currentPage == 0 && !silent) {
       _isLoading = true;
-    } else {
+    } else if (!silent) {
       _isLoadingMore = true;
     }
 
@@ -156,6 +201,11 @@ class ArenaCtrl extends ChangeNotifier {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _realtimeDebounce?.cancel();
+    _availabilityTicker?.cancel();
+    locationCtrl.removeListener(_onLocationChanged);
+    final channel = _realtimeChannel;
+    if (channel != null) supabase.removeChannel(channel);
     super.dispose();
   }
 
@@ -172,6 +222,18 @@ class ArenaCtrl extends ChangeNotifier {
       serviceId: serviceId,
       startTime: startTime,
       endTime: endTime,
+    );
+  }
+
+  Future<DateTime?> loadNextAvailableBookingStart({
+    required String serviceId,
+    required Duration duration,
+    required DateTime fromTime,
+  }) {
+    return getAvailableUnitsUC.nextAvailableStart(
+      serviceId: serviceId,
+      duration: duration,
+      fromTime: fromTime,
     );
   }
 }

@@ -22,37 +22,23 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              (title).toUpperCase(),
-              style: TiermetryTypography.title(color: Colors.white),
-            ),
-            if (tagLabel != null) ...[
-              const SizedBox(width: 8), // TiermetrySpacing.sm
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2, // TiermetrySpacing.xs / 2
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0xFFD4FF00,
-                  ).withValues(alpha: 0.15), // TiermetryColors.accentNeonGreen
-                  border: Border.all(
-                    color: const Color(0xFFD4FF00).withValues(alpha: 0.5),
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+        Expanded(
+          child: Row(
+            children: [
+              Flexible(
                 child: Text(
-                  tagLabel!,
-                  style: TiermetryTypography.label(
-                    color: const Color(0xFFD4FF00),
-                  ).copyWith(fontWeight: FontWeight.bold),
+                  (title).toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TiermetryTypography.title(color: Colors.white),
                 ),
               ),
+              if (tagLabel != null) ...[
+                const SizedBox(width: 8), // TiermetrySpacing.sm
+                _SectionTag(label: tagLabel!),
+              ],
             ],
-          ],
+          ),
         ),
         if (onViewMore != null)
           TextButton(
@@ -73,6 +59,37 @@ class SectionHeader extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _SectionTag extends StatelessWidget {
+  final String label;
+
+  const _SectionTag({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 2, // TiermetrySpacing.xs / 2
+      ),
+      decoration: BoxDecoration(
+        color: const Color(
+          0xFFD4FF00,
+        ).withValues(alpha: 0.15), // TiermetryColors.accentNeonGreen
+        border: Border.all(
+          color: const Color(0xFFD4FF00).withValues(alpha: 0.5),
+        ),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: TiermetryTypography.label(
+          color: const Color(0xFFD4FF00),
+        ).copyWith(fontWeight: FontWeight.bold),
+      ),
     );
   }
 }

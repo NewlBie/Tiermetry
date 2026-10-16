@@ -11,11 +11,15 @@ class AppSearchHero extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final VoidCallback? onClear;
+  final VoidCallback? onFilter;
+  final int? activeFilterCount;
 
   const AppSearchHero({
     required this.controller,
     required this.hintText,
     this.onClear,
+    this.onFilter,
+    this.activeFilterCount,
     super.key,
   });
 
@@ -51,32 +55,85 @@ class AppSearchHero extends StatelessWidget {
                   axisAlignment: 1.0, // Anchor to the right edge
                   child: FadeTransition(
                     opacity: animation,
-                    child: ScaleTransition(
-                      scale: animation,
-                      child: child,
-                    ),
+                    child: ScaleTransition(scale: animation, child: child),
                   ),
                 );
               },
-              child: onClear != null
-                  ? Padding(
-                      key: const ValueKey('clear_btn'),
-                      padding: const EdgeInsets.only(left: TiermetrySpacing.sm),
-                      child: GestureDetector(
-                        onTap: onClear,
-                        child: AppSurface(
-                          width: 48,
-                          height: 48,
-                          color: TiermetryColors.surfaceElement,
-                          borderRadius: TiermetryRadii.md,
-                          border: Border.all(color: Colors.transparent),
-                          shadows: const [],
-                          child: const Icon(Icons.close_rounded, color: Colors.white70),
+              child:
+                  onClear != null
+                      ? Padding(
+                        key: const ValueKey('clear_btn'),
+                        padding: const EdgeInsets.only(
+                          left: TiermetrySpacing.sm,
                         ),
-                      ),
-                    )
-                  : const SizedBox.shrink(key: ValueKey('empty')),
+                        child: GestureDetector(
+                          onTap: onClear,
+                          child: AppSurface(
+                            width: 48,
+                            height: 48,
+                            color: TiermetryColors.surfaceElement,
+                            borderRadius: TiermetryRadii.md,
+                            border: Border.all(color: Colors.transparent),
+                            shadows: const [],
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      )
+                      : const SizedBox.shrink(key: ValueKey('empty')),
             ),
+            if (onFilter != null) ...[
+              const SizedBox(width: TiermetrySpacing.sm),
+              GestureDetector(
+                onTap: onFilter,
+                child: AppSurface(
+                  width: 48,
+                  height: 48,
+                  color:
+                      (activeFilterCount != null && activeFilterCount! > 0)
+                          ? TiermetryColors.accentNeonGreen.withValues(
+                            alpha: 0.15,
+                          )
+                          : TiermetryColors.surfaceElement,
+                  borderRadius: TiermetryRadii.md,
+                  border: Border.all(
+                    color:
+                        (activeFilterCount != null && activeFilterCount! > 0)
+                            ? TiermetryColors.accentNeonGreen
+                            : Colors.transparent,
+                  ),
+                  shadows: const [],
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        color:
+                            (activeFilterCount != null &&
+                                    activeFilterCount! > 0)
+                                ? TiermetryColors.accentNeonGreen
+                                : Colors.white70,
+                      ),
+                      if (activeFilterCount != null && activeFilterCount! > 0)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: TiermetryColors.accentNeonGreen,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

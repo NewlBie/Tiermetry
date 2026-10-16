@@ -7,6 +7,9 @@ class DevelopmentPaymentProvider implements PaymentProvider {
   @override
   String get name => 'development';
 
+  @override
+  String? get checkoutEnvironment => null;
+
   // In-memory store for orders to simulate backend behavior
   final Map<String, PaymentStatus> _orderStatus = {};
 
@@ -37,10 +40,11 @@ class DevelopmentPaymentProvider implements PaymentProvider {
   }
 
   @override
-  Future<void> openPaymentWorkflow(PaymentOrder order) async {
+  Future<PaymentStatus> openPaymentWorkflow(PaymentOrder order) async {
     // This will be handled by the UI controller which might show a mock payment screen
     // For now, we simulate the user "paying"
     _orderStatus[order.orderId] = PaymentStatus.pending;
+    return PaymentStatus.pending;
   }
 
   /// Helper for the dev UI to simulate success/failure

@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -35,8 +33,7 @@ class UpcomingEventCard extends StatelessWidget {
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();
-          Navigator.push(
-            context,
+          Navigator.of(context, rootNavigator: true).push(
             MaterialPageRoute<void>(
               builder: (context) => EventDetailsScreen(event: event),
             ),
@@ -48,7 +45,10 @@ class UpcomingEventCard extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 // Base width of the card designed for 225
-                final double scale = (constraints.maxWidth / 225.0).clamp(1.0, 2.0);
+                final double scale = (constraints.maxWidth / 225.0).clamp(
+                  1.0,
+                  2.0,
+                );
 
                 return Stack(
                   fit: StackFit.expand,
@@ -57,11 +57,13 @@ class UpcomingEventCard extends StatelessWidget {
                     SizedBox.expand(
                       child: AppImage(
                         imagePath: event.image ?? 'assets/Hackathon.jpg',
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
                       ),
                     ),
 
-                    // ── High-Performance Dark Gradient Fade ──
-                    // Replaces the expensive GPU blur with a smooth, 120fps-friendly gradient
+                    // ── High-performance dark gradient fade ──
+                    // One gradient replaces the previous two full-card passes.
                     Positioned.fill(
                       child: IgnorePointer(
                         child: DecoratedBox(
@@ -69,32 +71,11 @@ class UpcomingEventCard extends StatelessWidget {
                             gradient: LinearGradient(
                               begin: Alignment.bottomCenter,
                               end: Alignment.topCenter,
-                              stops: const [0.0, 0.35, 0.60, 1.0],
+                              stops: const [0.0, 0.28, 0.55, 1.0],
                               colors: [
-                                Colors.black.withValues(alpha: 0.95),
-                                Colors.black.withValues(alpha: 0.75),
-                                Colors.black.withValues(alpha: 0.20),
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    // ── Dark gradient (bottom ~35%) ──
-                    Positioned.fill(
-                      child: IgnorePointer(
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomCenter,
-                              end: Alignment.topCenter,
-                              stops: const [0.0, 0.20, 0.40, 1.0],
-                              colors: [
-                                Colors.black.withValues(alpha: 0.92),
-                                Colors.black.withValues(alpha: 0.55),
-                                Colors.black.withValues(alpha: 0.10),
+                                Colors.black.withValues(alpha: 0.99),
+                                Colors.black.withValues(alpha: 0.88),
+                                Colors.black.withValues(alpha: 0.28),
                                 Colors.transparent,
                               ],
                             ),
@@ -184,7 +165,7 @@ class UpcomingEventCard extends StatelessWidget {
                                         ),
                                       ).copyWith(
                                         // Use a smaller scale factor for location to show more insights
-                                        fontSize: 11 * (1 + (scale - 1) * 0.5), 
+                                        fontSize: 11 * (1 + (scale - 1) * 0.5),
                                         height: 1.2,
                                       ),
                                     ),
@@ -195,11 +176,7 @@ class UpcomingEventCard extends StatelessWidget {
                               SizedBox(width: 10 * scale),
 
                               // Date badge (square)
-                              _DateBadge(
-                                month: month, 
-                                day: day, 
-                                scale: scale,
-                              ),
+                              _DateBadge(month: month, day: day, scale: scale),
                             ],
                           ),
                         ],
@@ -207,7 +184,7 @@ class UpcomingEventCard extends StatelessWidget {
                     ),
                   ],
                 );
-              }
+              },
             ),
           ),
         ),
@@ -222,11 +199,7 @@ class _DateBadge extends StatelessWidget {
   final String day;
   final double scale;
 
-  const _DateBadge({
-    required this.month, 
-    required this.day, 
-    this.scale = 1.0,
-  });
+  const _DateBadge({required this.month, required this.day, this.scale = 1.0});
 
   @override
   Widget build(BuildContext context) {

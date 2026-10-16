@@ -65,7 +65,8 @@ class QuestCard extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   // Title
-                  Text((title).toUpperCase(),
+                  Text(
+                    (title).toUpperCase(),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.title(

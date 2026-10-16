@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// ---------------------------------------------------------------------------
-/// TIERMETRY TYPOGRAPHY - Universal Design Tokens
+/// HOMIES TYPOGRAPHY - Universal Design Tokens
 /// ---------------------------------------------------------------------------
 /// Central source for all text styles in the app.
 /// Established on Geist for a modern, sleek aesthetic.
@@ -150,9 +150,7 @@ class TiermetryTypography {
       fontFamily: 'Geist',
       color: color,
       fontSize: fontSize,
-      fontVariations: [
-        FontVariation('wght', (fontWeight.value).toDouble()),
-      ],
+      fontVariations: [FontVariation('wght', (fontWeight.value).toDouble())],
       letterSpacing: letterSpacing,
     );
   }

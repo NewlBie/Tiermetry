@@ -11,7 +11,7 @@ The Home page should feel premium because it is clear, useful, and controlled. E
 | Greeting | Set mood and location context | Editorial header |
 | Intent Search | Let users state what they want | Functional input |
 | Quick Routes | Fast category entry | Compact shortcuts |
-| Live Around You | Nearby live places/inventory | Venue shelf |
+| Communities Around You | Nearby user-created interest groups | Community shelf |
 | Events This Week | Scheduled moments | Date-led event shelf |
 | Trending Activities | Browse categories | Icon grid/list |
 | Featured Skills | Guided learning sessions | Taller editorial cards |

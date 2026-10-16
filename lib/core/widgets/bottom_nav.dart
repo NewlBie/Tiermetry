@@ -1,7 +1,5 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tiermetry/core/constants/feature_flags.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/theme/typography.dart';
 
@@ -9,13 +7,19 @@ class BottomNavItem {
   final Widget Function(double size, Color color) iconBuilder;
   final String label;
 
-  const BottomNavItem({
-    required this.iconBuilder,
-    required this.label,
-  });
+  const BottomNavItem({required this.iconBuilder, required this.label});
 }
 
-class BottomNav extends StatefulWidget {
+/// A compact destination rail whose active state travels between destinations.
+///
+/// Only the rail, icon lift, label, and press state animate. They all use
+/// transforms or opacity so changing destinations stays inexpensive on devices
+/// with a busy home feed behind the navigation.
+class BottomNav extends StatelessWidget {
+  static const _selectionDuration = Duration(milliseconds: 220);
+  static const _pressDuration = Duration(milliseconds: 120);
+  static const _selectionCurve = Cubic(0.23, 1, 0.32, 1);
+
   final List<BottomNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -27,213 +31,214 @@ class BottomNav extends StatefulWidget {
     required this.onTap,
     super.key,
     this.accentColor = TiermetryColors.accentNeonGreen,
-  });
-
-  @override
-  State<BottomNav> createState() => _BottomNavState();
-}
-
-class _BottomNavState extends State<BottomNav>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late Animation<double> _position;
-  double _fromIndex = 0;
-  double _toIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _fromIndex = widget.currentIndex.toDouble();
-    _toIndex = _fromIndex;
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _position = AlwaysStoppedAnimation(_toIndex);
-  }
-
-  @override
-  void didUpdateWidget(covariant BottomNav oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentIndex != widget.currentIndex) {
-      _fromIndex = _position.value;
-      _toIndex = widget.currentIndex.toDouble();
-      _position = Tween<double>(begin: _fromIndex, end: _toIndex).animate(
-        CurvedAnimation(
-          parent: _controller,
-          curve: Curves.easeOutBack, // changed to add some bounce
-        ),
-      );
-      _controller.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleTap(int index) {
-    if (index == widget.currentIndex) return;
-    HapticFeedback.selectionClick();
-    widget.onTap(index);
-  }
+  }) : assert(items.length > 0),
+       assert(currentIndex >= 0 && currentIndex < items.length);
 
   @override
   Widget build(BuildContext context) {
-    final surface = AnimatedBuilder(
-      animation: _position,
-      builder: (context, child) {
-        return RepaintBoundary(
-          child: Container(
-            height: 76,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.75),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _NavSurfacePainter(
-                        position: _position.value,
-                        itemCount: widget.items.length,
-                        accent: widget.accentColor,
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(widget.items.length, (index) {
-                      return Expanded(
-                        child: _NavItemView(
-                          item: widget.items[index],
-                          index: index,
-                          activePosition: _position.value,
-                          accent: widget.accentColor,
-                          onTap: () => _handleTap(index),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
-            ),
+    return RepaintBoundary(
+      child: Container(
+        height: 72,
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF1B1B1B), Color(0xFF111111)],
           ),
-        );
-      },
-    );
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.42),
+              blurRadius: 18,
+              offset: const Offset(0, 9),
+            ),
+          ],
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = constraints.maxWidth / items.length;
 
-    if (FeatureFlags.disableBlur) return surface;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: RepaintBoundary(
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
-          child: surface,
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                _ActiveRail(
+                  index: currentIndex,
+                  itemWidth: itemWidth,
+                  accentColor: accentColor,
+                ),
+                Row(
+                  children: List.generate(items.length, (index) {
+                    return SizedBox(
+                      width: itemWidth,
+                      child: _NavItemView(
+                        item: items[index],
+                        selected: index == currentIndex,
+                        accent: accentColor,
+                        selectionDuration: _selectionDuration,
+                        pressDuration: _pressDuration,
+                        selectionCurve: _selectionCurve,
+                        onTap: () {
+                          if (index == currentIndex) return;
+                          HapticFeedback.selectionClick();
+                          onTap(index);
+                        },
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 }
 
-class _NavItemView extends StatelessWidget {
-  final BottomNavItem item;
+class _ActiveRail extends StatelessWidget {
   final int index;
-  final double activePosition;
-  final Color accent;
-  final VoidCallback onTap;
+  final double itemWidth;
+  final Color accentColor;
 
-  const _NavItemView({
-    required this.item,
+  const _ActiveRail({
     required this.index,
-    required this.activePosition,
-    required this.accent,
-    required this.onTap,
+    required this.itemWidth,
+    required this.accentColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final distance = (index - activePosition).abs().clamp(0.0, 1.0);
-    final active = 1 - distance;
-    final selected = active > 0.55;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: index * itemWidth),
+      duration: BottomNav._selectionDuration,
+      curve: BottomNav._selectionCurve,
+      builder: (context, offset, child) {
+        return Transform.translate(offset: Offset(offset, 0), child: child);
+      },
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          width: itemWidth,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: accentColor.withValues(alpha: 0.18)),
+              ),
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: 22,
+                  height: 2,
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(
+                    color: accentColor,
+                    borderRadius: BorderRadius.circular(99),
+                    boxShadow: [
+                      BoxShadow(
+                        color: accentColor.withValues(alpha: 0.48),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItemView extends StatefulWidget {
+  final BottomNavItem item;
+  final bool selected;
+  final Color accent;
+  final Duration selectionDuration;
+  final Duration pressDuration;
+  final Curve selectionCurve;
+  final VoidCallback onTap;
+
+  const _NavItemView({
+    required this.item,
+    required this.selected,
+    required this.accent,
+    required this.selectionDuration,
+    required this.pressDuration,
+    required this.selectionCurve,
+    required this.onTap,
+  });
+
+  @override
+  State<_NavItemView> createState() => _NavItemViewState();
+}
+
+class _NavItemViewState extends State<_NavItemView> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (mounted) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor =
+        widget.selected ? widget.accent : Colors.white.withValues(alpha: 0.48);
 
     return Semantics(
       button: true,
-      selected: selected,
-      label: item.label,
+      selected: widget.selected,
+      label: widget.item.label,
+      onTap: widget.onTap,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            height: 54,
-            margin: const EdgeInsets.symmetric(horizontal: 5),
-            padding: EdgeInsets.symmetric(horizontal: selected ? 10 : 0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-            ),
+        onTap: widget.onTap,
+        onTapDown: (_) => _setPressed(true),
+        onTapUp: (_) => _setPressed(false),
+        onTapCancel: () => _setPressed(false),
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1,
+          duration: widget.pressDuration,
+          curve: BottomNav._selectionCurve,
+          child: AnimatedSlide(
+            offset: widget.selected ? const Offset(0, -0.06) : Offset.zero,
+            duration: widget.selectionDuration,
+            curve: widget.selectionCurve,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Transform.scale(
-                  scale: 1.0 + (0.12 * active),
-                  child: Transform.translate(
-                    offset: Offset(0, -2 * active),
-                    child: ShaderMask(
-                      blendMode: BlendMode.srcIn,
-                      shaderCallback: (bounds) {
-                        final inactiveColor =
-                            Colors.white.withValues(alpha: 0.42);
-                        return LinearGradient(
-                          begin: Alignment.bottomLeft,
-                          end: Alignment.topRight,
-                          stops: [
-                            0.0,
-                            active,
-                            active + 0.1,
-                            1.0,
-                          ],
-                          colors: [
-                            const Color(0xFFFF007F), // Neon Pink
-                            const Color(0xFFFFE600), // Neon Yellow
-                            inactiveColor,
-                            inactiveColor,
-                          ],
-                        ).createShader(bounds);
-                      },
-                      child: item.iconBuilder(
-                        23 + (active * 2),
-                        Colors.white,
-                      ),
-                    ),
+                AnimatedScale(
+                  scale: widget.selected ? 0.92 : 1,
+                  duration: widget.selectionDuration,
+                  curve: widget.selectionCurve,
+                  child: widget.item.iconBuilder(
+                    widget.selected ? 23 : 24,
+                    iconColor,
                   ),
                 ),
-                const SizedBox(height: 4),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOutCubic,
-                  style: TiermetryTypography.caption(
-                    color:
-                        Color.lerp(
-                          Colors.white.withValues(alpha: 0.38),
-                          Colors.white,
-                          active,
-                        )!,
-                    fontSize: 10,
-                    fontWeight: FontWeight.normal,
-                    letterSpacing: selected ? 0.3 : 0.2,
-                  ),
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
+                const SizedBox(height: 2),
+                AnimatedOpacity(
+                  opacity: widget.selected ? 1 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  curve: widget.selectionCurve,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Text(
+                      widget.item.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TiermetryTypography.caption(
+                        color: widget.accent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.15,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -242,64 +247,5 @@ class _NavItemView extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _NavSurfacePainter extends CustomPainter {
-  final double position;
-  final int itemCount;
-  final Color accent;
-
-  const _NavSurfacePainter({
-    required this.position,
-    required this.itemCount,
-    required this.accent,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (itemCount == 0) return;
-
-    final slot = size.width / itemCount;
-    final center = Offset(slot * (position + 0.5), size.height / 2);
-    final activeRect = Rect.fromCenter(
-      center: center,
-      width: slot * 0.82,
-      height: 56,
-    );
-
-    final glowRect = Rect.fromCenter(
-      center: center,
-      width: slot * 1.7,
-      height: size.height * 1.5,
-    );
-
-    canvas
-      ..drawOval(
-        glowRect,
-        Paint()
-          ..shader = RadialGradient(
-            colors: [accent.withValues(alpha: 0.16), Colors.transparent],
-          ).createShader(glowRect),
-      )
-      ..drawRRect(
-        RRect.fromRectAndRadius(activeRect, const Radius.circular(12)),
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.10),
-              Colors.white.withValues(alpha: 0.035),
-            ],
-          ).createShader(activeRect),
-      );
-  }
-
-  @override
-  bool shouldRepaint(covariant _NavSurfacePainter oldDelegate) {
-    return oldDelegate.position != position ||
-        oldDelegate.itemCount != itemCount ||
-        oldDelegate.accent != accent;
   }
 }

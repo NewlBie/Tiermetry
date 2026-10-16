@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:silky_scroll/silky_scroll.dart';
 import 'package:tiermetry/core/theme/radii.dart';
 import 'package:tiermetry/core/theme/spacing.dart';
 import 'package:tiermetry/core/widgets/app_surface.dart';
@@ -29,33 +28,28 @@ class HorizontalActivitySection extends StatelessWidget {
         const SizedBox(height: TiermetrySpacing.headerToContent),
         SizedBox(
           height: 180,
-          child: SilkyCustomScrollView(
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: TiermetrySpacing.screenPadding),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 16.0),
-                        child: AppSurface(
-                          width: 140,
-                          borderRadius: TiermetryRadii.md,
-                          child: Center(
-                            child: Text(
-                              'Item ${index + 1}',
-                              style: const TextStyle(color: Colors.white54),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                    childCount: 5,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(
+              horizontal: TiermetrySpacing.screenPadding,
+            ),
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: AppSurface(
+                  width: 140,
+                  borderRadius: TiermetryRadii.md,
+                  child: Center(
+                    child: Text(
+                      'Item ${index + 1}',
+                      style: const TextStyle(color: Colors.white54),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              );
+            },
           ),
         ),
       ],

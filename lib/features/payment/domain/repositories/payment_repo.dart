@@ -2,7 +2,14 @@ import '../entities/payment_entity.dart';
 import '../entities/payment_order.dart';
 
 abstract class PaymentRepo {
-  Future<PaymentOrder> initiatePayment({required String holdId});
+  Future<PaymentOrder> initiatePayment({
+    required String holdId,
+    String? method,
+  });
+
+  Future<PaymentOrder?> getPendingCashfreeOrder(String orderId);
+
+  Future<PaymentEntity> completeTiergiesCheckout(String holdId);
 
   Future<PaymentEntity> verifyAndSyncPayment(String orderId);
 

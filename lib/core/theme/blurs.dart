@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 /// ---------------------------------------------------------------------------
-/// TIERMETRY BLURS - Universal Design Tokens
+/// HOMIES BLURS - Universal Design Tokens
 /// ---------------------------------------------------------------------------
 class TiermetryBlur {
   TiermetryBlur._();

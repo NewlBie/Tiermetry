@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// ---------------------------------------------------------------------------
-/// TIERMETRY SPACING - Universal Design Tokens
+/// HOMIES SPACING - Universal Design Tokens
 /// ---------------------------------------------------------------------------
 /// A single source of truth for every spacing value in the app.
 /// Designed on a 4-pt grid system for pixel-perfect visual rhythm.

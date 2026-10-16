@@ -23,10 +23,15 @@ class BentoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final decodedImageSize = (100 * imageScale * pixelRatio).round();
+
     return RepaintBoundary(
       child: AppSurface(
         height: MediaQuery.of(context).size.width < 360 ? 110 : 140,
         borderRadius: TiermetryRadii.md,
+        shadows: const [],
+        border: Border.all(color: const Color(0x0FFFFFFF)),
         child: Stack(
           children: [
             // Background image – bottom right
@@ -43,6 +48,8 @@ class BentoTile extends StatelessWidget {
                     width: 100,
                     height: 100,
                     fit: BoxFit.contain,
+                    cacheWidth: decodedImageSize,
+                    cacheHeight: decodedImageSize,
                     color: Colors.white.withValues(alpha: 0.85),
                     colorBlendMode: BlendMode.modulate,
                   ),
@@ -54,7 +61,8 @@ class BentoTile extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               child: Align(
                 alignment: Alignment.topCenter,
-                child: Text((title).toUpperCase(),
+                child: Text(
+                  (title).toUpperCase(),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

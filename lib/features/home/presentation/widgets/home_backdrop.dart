@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:tiermetry/core/theme/blurs.dart';
 import 'package:tiermetry/core/theme/colors.dart';
 import 'package:tiermetry/core/widgets/dot_grid_background.dart';
 
@@ -17,7 +16,7 @@ class HomeBackdrop extends StatelessWidget {
               Positioned(
                 left: -120,
                 top: -140,
-                child: _BlurBlob(
+                child: _AmbientBlob(
                   size: 340,
                   colors: [
                     TiermetryColors.accentLavender.withValues(alpha: 0.35),
@@ -29,7 +28,7 @@ class HomeBackdrop extends StatelessWidget {
               Positioned(
                 right: -140,
                 top: 60,
-                child: _BlurBlob(
+                child: _AmbientBlob(
                   size: 320,
                   colors: [
                     TiermetryColors.accentNeonGreen.withValues(alpha: 0.12),
@@ -46,23 +45,22 @@ class HomeBackdrop extends StatelessWidget {
   }
 }
 
-class _BlurBlob extends StatelessWidget {
+/// A soft radial wash that gives the same ambient-light impression as the
+/// previous blurred circle without allocating an offscreen blur layer.
+class _AmbientBlob extends StatelessWidget {
   final double size;
   final List<Color> colors;
 
-  const _BlurBlob({required this.size, required this.colors});
+  const _AmbientBlob({required this.size, required this.colors});
 
   @override
   Widget build(BuildContext context) {
-    return ImageFiltered(
-      imageFilter: TiermetryBlur.filter(TiermetryBlur.lg),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: colors),
-        ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: RadialGradient(stops: const [0, 0.42, 1], colors: colors),
       ),
     );
   }

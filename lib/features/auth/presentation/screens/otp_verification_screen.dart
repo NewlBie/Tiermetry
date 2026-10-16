@@ -85,7 +85,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         );
         await Navigator.pushReplacement(
           context,
-          MaterialPageRoute<void>(builder: (context) => const ProfileSetupScreen()),
+          MaterialPageRoute<void>(
+            builder: (context) => const ProfileSetupScreen(),
+          ),
         );
       }
     } catch (e) {
@@ -124,17 +126,18 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               const SizedBox(height: 12),
               Text(
                 'We sent a 6-digit code to ${widget.email}',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
+                style: GoogleFonts.inter(fontSize: 16, color: Colors.white70),
               ),
               const SizedBox(height: 32),
               TextField(
                 controller: _otpController,
                 keyboardType: TextInputType.number,
                 maxLength: 6,
-                style: const TextStyle(color: Colors.white, fontSize: 24, letterSpacing: 8),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  letterSpacing: 8,
+                ),
                 textAlign: TextAlign.center,
                 onChanged: (_) {
                   if (_errorMessage != null) {
@@ -147,22 +150,25 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: _errorMessage != null
-                        ? const BorderSide(color: TiermetryColors.negative)
-                        : BorderSide.none,
+                    borderSide:
+                        _errorMessage != null
+                            ? const BorderSide(color: TiermetryColors.negative)
+                            : BorderSide.none,
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: _errorMessage != null
-                        ? const BorderSide(color: TiermetryColors.negative)
-                        : BorderSide.none,
+                    borderSide:
+                        _errorMessage != null
+                            ? const BorderSide(color: TiermetryColors.negative)
+                            : BorderSide.none,
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(
-                      color: _errorMessage != null
-                          ? TiermetryColors.negative
-                          : TiermetryColors.primary,
+                      color:
+                          _errorMessage != null
+                              ? TiermetryColors.negative
+                              : TiermetryColors.primary,
                     ),
                   ),
                 ),
@@ -189,39 +195,41 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          'Verify',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
+                            'Verify',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
                 ),
               ),
               const SizedBox(height: 24),
               Center(
-                child: _resendCountdown > 0
-                    ? Text(
-                        'Resend code in ${_resendCountdown}s',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.white54,
-                        ),
-                      )
-                    : TextButton(
-                        onPressed: _isLoading ? null : _resendCode,
-                        child: Text(
-                          'Resend Code',
+                child:
+                    _resendCountdown > 0
+                        ? Text(
+                          'Resend code in ${_resendCountdown}s',
                           style: GoogleFonts.inter(
                             fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: TiermetryColors.primary,
+                            color: Colors.white54,
+                          ),
+                        )
+                        : TextButton(
+                          onPressed: _isLoading ? null : _resendCode,
+                          child: Text(
+                            'Resend Code',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: TiermetryColors.primary,
+                            ),
                           ),
                         ),
-                      ),
               ),
             ],
           ),

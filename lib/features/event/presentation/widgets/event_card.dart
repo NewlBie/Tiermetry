@@ -83,21 +83,29 @@ class EventCard extends StatelessWidget {
 
                   const Spacer(),
 
-                  // Tags
-                  Wrap(
-                    spacing: 8,
-                    children:
-                        event.tags.map((tag) {
-                          return AppPill(
-                            text: tag,
+                  // Keep tags in a single rail so variable tag lengths cannot
+                  // consume the fixed-height image card's content space.
+                  SizedBox(
+                    height: 26,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: event.tags.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder:
+                          (context, index) => AppPill(
+                            text: event.tags[index],
                             color: Colors.white.withValues(alpha: 0.2),
                             textColor: Colors.white,
-                          );
-                        }).toList(),
+                          ),
+                    ),
                   ),
                   const SizedBox(height: 10),
 
-                  Text((event.title).toUpperCase(),
+                  Text(
+                    (event.title).toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.titleSmall(
                       fontSize: 18,
                       color: Colors.white,
@@ -107,6 +115,8 @@ class EventCard extends StatelessWidget {
 
                   Text(
                     event.location,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TiermetryTypography.bodySmall(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.85),
@@ -116,8 +126,7 @@ class EventCard extends StatelessWidget {
 
                   GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
+                      Navigator.of(context, rootNavigator: true).push(
                         PageRouteBuilder<void>(
                           transitionDuration: const Duration(milliseconds: 500),
                           pageBuilder:
